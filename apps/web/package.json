@@ -1,0 +1,40 @@
+{
+  "name": "@kensapo/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@kensapo/ai": "workspace:*",
+    "@kensapo/authz": "workspace:*",
+    "@kensapo/decision-engine": "workspace:*",
+    "@kensapo/domain": "workspace:*",
+    "@kensapo/graph": "workspace:*",
+    "@kensapo/ingest": "workspace:*",
+    "@kensapo/similar-projects": "workspace:*",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.57.4",
+    "next": "^15.5.2",
+    "pdf-lib": "^1.17.1",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/postcss": "^4.1.12",
+    "@types/node": "^22.17.2",
+    "@types/react": "^19.1.11",
+    "@types/react-dom": "^19.1.8",
+    "eslint": "^9.33.0",
+    "eslint-config-next": "^15.5.2",
+    "tailwindcss": "^4.1.12",
+    "typescript": "^5.8.3"
+  }
+}

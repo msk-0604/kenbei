@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "pnpm install",
+  "buildCommand": "pnpm --filter @kensapo/web build",
+  "crons": [
+    {
+      "path": "/api/cron/task-deadlines",
+      "schedule": "0 22 * * *"
+    }
+  ]
+}

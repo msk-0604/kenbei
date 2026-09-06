@@ -1,0 +1,22 @@
+{
+  "name": "kensapo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "KENBEI — 現場が終わってからの1〜2時間を、10〜15分にする。",
+  "packageManager": "pnpm@10.24.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @kensapo/web dev",
+    "dev:mobile": "pnpm --filter @kensapo/mobile start",
+    "build": "pnpm --filter @kensapo/web build",
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
