@@ -1,4 +1,8 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const webRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -18,7 +22,11 @@ const nextConfig: NextConfig = {
     },
   },
   outputFileTracingIncludes: {
-    "/api/pdf/[kind]/[id]": ["./fonts/**"],
+    "/api/pdf/[kind]/[id]": [
+      "./fonts/NotoSansJP-Regular.ttf",
+      "./fonts/**",
+      path.join(webRoot, "fonts", "NotoSansJP-Regular.ttf"),
+    ],
   },
 };
 
