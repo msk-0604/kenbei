@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
-const webRoot = path.dirname(fileURLToPath(import.meta.url));
+/** Must stay project-relative. Absolute paths are joined onto the app root on Vercel and ENOENT. */
+export const pdfFontTraceIncludes = ["./fonts/NotoSansJP-Regular.ttf", "./fonts/**"] as const;
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -22,11 +21,7 @@ const nextConfig: NextConfig = {
     },
   },
   outputFileTracingIncludes: {
-    "/api/pdf/[kind]/[id]": [
-      "./fonts/NotoSansJP-Regular.ttf",
-      "./fonts/**",
-      path.join(webRoot, "fonts", "NotoSansJP-Regular.ttf"),
-    ],
+    "/api/pdf/[kind]/[id]": [...pdfFontTraceIncludes],
   },
 };
 

@@ -23,6 +23,15 @@ describe("pdf font path", () => {
     );
   });
 
+  it("uses only relative globs for Vercel file tracing", async () => {
+    const { pdfFontTraceIncludes } = await import("../../next.config");
+    expect(pdfFontTraceIncludes.length).toBeGreaterThan(0);
+    for (const glob of pdfFontTraceIncludes) {
+      expect(glob.startsWith("./")).toBe(true);
+      expect(glob.includes("vercel/path0")).toBe(false);
+    }
+  });
+
   it("finds the committed Noto Sans JP file without PDF_FONT_PATH", () => {
     const file = resolvePdfFontFile("", process.cwd());
     expect(file).toBeTruthy();
