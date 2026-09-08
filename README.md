@@ -52,6 +52,7 @@ AI キーは任意です。未設定でもテンプレートとファイル名�
 - **必須（コア）:** `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `NEXT_PUBLIC_APP_URL` / `SUPABASE_SERVICE_ROLE_KEY`
 - **課金:** FREE 1〜3名 0円 / STANDARD 4〜30名 月額39,800円 / BUSINESS 31〜50名 月額65,000円 / 51名以上は要相談。ENV は `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_STANDARD` / `STRIPE_PRICE_BUSINESS`。Webhook は `/api/stripe/webhook`
 - **本番URL:** `https://app.kenbei.jp`（`NEXT_PUBLIC_APP_URL` / `EXPO_PUBLIC_APP_URL`）
+- **AI:** `OPENAI_API_KEY`（軍師の自然言語）。任意 `KENBEI_AI_MODEL_DEFAULT`（未設定は gpt-4o-mini）。`GEMINI_API_KEY` / `ANTHROPIC_API_KEY` は既存キャプチャ用。
 - **日本語サーバーPDF:** `apps/web/fonts/NotoSansJP-Regular.ttf` をリポジトリに含める（TTF/OTF。Variable Font可。`.ttc` 不可）。`PDF_FONT_PATH` は不要。未配置時は文字化けPDFを出さず 422
 - **Mobile:** `EXPO_PUBLIC_*` のみ。Service Role / Stripe / OpenAI を入れない
 - Expo Push は実機 + EAS `projectId` が必要です

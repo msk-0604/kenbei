@@ -1,106 +1,159 @@
 "use server";
 
-import {
-  briefChatSummary,
-  briefDelayRisk,
-  briefProjectSummary,
-  briefWeeklySummary,
-  proposeTaskTitles,
-  type OpsBriefFacts,
-} from "@kensapo/ai";
-import { briefTodayInJapanese } from "@kensapo/decision-engine";
+import { createProposedTasksAction } from "@/features/site-ops/actions";
+import { createTodayReportDraftAction } from "@/features/reports/actions";
+import { proposePhotoAssistAction } from "@/features/photos/actions";
+import { consumeRateLimit } from "@/lib/rate-limit";
 import { requireWorkspace } from "@/lib/authz-guard";
-import { loadOpsBriefFacts } from "@/features/strategist/facts";
-import { similarProjectsFor } from "@/features/similar/queries";
-import { getAiService, getDecisionEngine } from "@/lib/engines";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { runStrategistAgent, type ChatMessage } from "@/features/strategist/agent-run";
+import type { StrategistProposal } from "@/features/strategist/tools";
 
-export type StrategistState = {
-  answer: string;
-  proposedTasks: string[];
-  intent: string;
-  projectId: string;
+export type StrategistTurn = {
+  role: "user" | "assistant";
+  content: string;
+  tools?: { name: string; ok: boolean }[];
 };
 
-const INTENTS = ["today", "project", "weekly", "chat", "risk", "similar", "tasks"] as const;
-type Intent = (typeof INTENTS)[number];
+export type StrategistChatState = {
+  turns: StrategistTurn[];
+  proposals: StrategistProposal[];
+  error?: string;
+};
 
-function intentOf(value: string): Intent {
-  return INTENTS.includes(value as Intent) ? (value as Intent) : "today";
-}
+const QUICK: Record<string, string> = {
+  today: "今日何をすればいい？帰る前にやることも含めて。",
+  project: "この現場の状況を要約して。遅れと未確認も。",
+  weekly: "最近の日報から週次の要点を出して。",
+  chat: "直近のチャットのやり取りをまとめて。",
+  risk: "遅れている工程と遅延リスクを教えて。",
+  similar: "似た現場を探して。",
+  tasks: "明日のタスク案を出して。まだ作らないで。",
+};
 
-async function polish(text: string): Promise<string> {
-  if (!process.env.OPENAI_API_KEY && !process.env.GEMINI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
-    return text;
-  }
+function parseHistory(raw: string): ChatMessage[] {
   try {
-    return await getAiService().summarize(text, "report");
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed
+      .filter((item): item is ChatMessage => {
+        return (
+          Boolean(item) &&
+          typeof item === "object" &&
+          (item as ChatMessage).role !== undefined &&
+          ((item as ChatMessage).role === "user" || (item as ChatMessage).role === "assistant") &&
+          typeof (item as ChatMessage).content === "string"
+        );
+      })
+      .slice(-6)
+      .map((item) => ({ role: item.role, content: item.content.slice(0, 2000) }));
   } catch {
-    return text;
+    return [];
   }
 }
 
-export async function askStrategistAction(
-  _prev: StrategistState | null,
+async function ownedProjectId(organizationId: string, projectId: string): Promise<string | null> {
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("organization_id", organizationId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  return (data as { id: string } | null)?.id ?? null;
+}
+
+export async function sendStrategistMessageAction(
+  prev: StrategistChatState | null,
   formData: FormData,
-): Promise<StrategistState> {
+): Promise<StrategistChatState> {
   const workspace = await requireWorkspace();
-  const intent = intentOf(String(formData.get("intent") ?? "today"));
-  let projectId = String(formData.get("projectId") ?? "");
+  if (!(await consumeRateLimit(`strategist:${workspace.userId}`, 20, 60_000))) {
+    return {
+      turns: prev?.turns ?? [],
+      proposals: prev?.proposals ?? [],
+      error: "少し時間をおいてからまた聞いてください。",
+    };
+  }
+  const quick = String(formData.get("quick") ?? "");
+  const typed = String(formData.get("message") ?? "").trim();
+  const message = (QUICK[quick] ?? typed).trim();
+  if (!message) {
+    return { turns: prev?.turns ?? [], proposals: [], error: "内容を入力してください。" };
+  }
+  let projectId = String(formData.get("projectId") ?? "").trim();
   if (projectId) {
-    const supabase = await createServerSupabaseClient();
-    const owned = await supabase
-      .from("projects")
-      .select("id")
-      .eq("id", projectId)
-      .eq("organization_id", workspace.organizationId)
-      .is("deleted_at", null)
-      .maybeSingle();
-    if (!owned.data) {
-      projectId = "";
+    projectId = (await ownedProjectId(workspace.organizationId, projectId)) ?? "";
+  }
+  const history = parseHistory(String(formData.get("history") ?? "[]"));
+  const result = await runStrategistAgent({
+    workspace,
+    message,
+    projectId: projectId || null,
+    history,
+  });
+  const turns: StrategistTurn[] = [
+    ...history.map((item): StrategistTurn => ({ role: item.role, content: item.content })),
+    { role: "user" as const, content: message },
+    { role: "assistant" as const, content: result.answer, tools: result.tools },
+  ];
+  return { turns: turns.slice(-12), proposals: result.proposals };
+}
+
+export async function confirmStrategistReportAction(
+  _prev: { error?: string; ok?: string } | null,
+  formData: FormData,
+): Promise<{ error?: string; ok?: string } | null> {
+  const workspace = await requireWorkspace();
+  const projectId = await ownedProjectId(workspace.organizationId, String(formData.get("projectId") ?? ""));
+  if (!projectId) {
+    return { error: "現場を確認できません。" };
+  }
+  const result = await createTodayReportDraftAction(projectId);
+  if (result && "error" in result && result.error) {
+    return { error: result.error };
+  }
+  return { ok: "日報下書きを保存しました。確定は日報画面で人が行います。" };
+}
+
+export async function confirmStrategistTasksAction(
+  _prev: { error?: string; ok?: string } | null,
+  formData: FormData,
+): Promise<{ error?: string; ok?: string } | null> {
+  const result = await createProposedTasksAction(null, formData);
+  if (result && "error" in result && result.error) {
+    return { error: result.error };
+  }
+  if (result && "created" in result) {
+    return { ok: `作成しました（${result.created}件）` };
+  }
+  return { error: "追加する提案を選んでください。" };
+}
+
+export async function confirmStrategistPhotosAction(
+  _prev: { error?: string; ok?: string } | null,
+  formData: FormData,
+): Promise<{ error?: string; ok?: string } | null> {
+  const ids = formData
+    .getAll("photoIds")
+    .map((item) => String(item).trim())
+    .filter(Boolean)
+    .slice(0, 12);
+  if (ids.length === 0) {
+    return { error: "対象写真がありません。" };
+  }
+  let ok = 0;
+  for (const id of ids) {
+    const result = await proposePhotoAssistAction(id);
+    if (!result?.error) {
+      ok += 1;
     }
   }
-  const facts = await loadOpsBriefFacts(workspace.organizationId, projectId || null);
-  const similar = projectId ? await similarProjectsFor(workspace.organizationId, projectId) : null;
-  const similarLines =
-    similar?.matches.map(
-      (item) => `${item.name}（${item.reasons[0]?.label ?? "類似"} / 遅延${item.delayedCount}）`,
-    ) ?? [];
-  const withSimilar: OpsBriefFacts = { ...facts, similarLines };
-  const proposedTasks = proposeTaskTitles(withSimilar);
-
-  let raw = "";
-  if (intent === "today") {
-    const engine = getDecisionEngine();
-    const signals = await engine.listForToday(workspace.organizationId, workspace.membershipId);
-    raw = briefTodayInJapanese(
-      signals.map((item) => ({ title: item.title, reason: String(item.evidence.reason ?? item.title) })),
-    );
-  } else if (intent === "project") {
-    raw = briefProjectSummary(withSimilar);
-  } else if (intent === "weekly") {
-    raw = briefWeeklySummary(withSimilar);
-  } else if (intent === "chat") {
-    raw = briefChatSummary(facts.chatLines ?? []);
-  } else if (intent === "risk") {
-    raw = briefDelayRisk(withSimilar);
-  } else if (intent === "similar") {
-    raw =
-      similarLines.length > 0
-        ? [
-            "【過去の類似現場】",
-            ...similarLines,
-            similar?.stats.avgDurationDays ? `平均工期 ${similar.stats.avgDurationDays}日` : "",
-          ]
-            .filter(Boolean)
-            .join("\n")
-        : "この会社内に比較できる現場がまだありません。";
-  } else {
-    raw = ["【Task提案（未作成）】人がチェックして追加してください。", ...proposedTasks.map((item) => `・${item}`)].join(
-      "\n",
-    );
+  if (ok === 0) {
+    return { error: "分類案を保存できませんでした。" };
   }
-
-  const answer = `${await polish(raw)}\n\n（${workspace.organizationName} のデータのみ。AIは承認・削除・課金・メンバー変更をしません）`;
-  return { answer, proposedTasks: intent === "tasks" ? proposedTasks : [], intent, projectId };
+  return { ok: `${ok}枚の分類案を保存しました。確定は写真確認画面で行います。` };
 }

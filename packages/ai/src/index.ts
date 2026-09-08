@@ -28,3 +28,18 @@ export {
   proposeTaskTitles,
 } from "./ops-briefs";
 export type { OpsBriefFacts } from "./ops-briefs";
+export { resolveAiModel, defaultAiModelFallback } from "./models";
+export type { AiModelTier } from "./models";
+export {
+  OPENAI_STRATEGIST_TOOLS,
+  STRATEGIST_TOOLS,
+  STRATEGIST_TOOL_LEVEL_1,
+  STRATEGIST_TOOL_LEVEL_2,
+  isAllowedStrategistTool,
+  isBlockedStrategistTool,
+  parseToolUuid,
+  routeStrategistHeuristically,
+  sanitizeStrategistToolArgs,
+  strategistSystemPrompt,
+} from "./agent-policy";
+export type { HeuristicRoute, StrategistToolName } from "./agent-policy";

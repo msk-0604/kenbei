@@ -35,6 +35,7 @@ export type PhotoSearchParams = {
   from?: string;
   to?: string;
   proposedOnly?: boolean;
+  unfiledOnly?: boolean;
 };
 
 type PhotoRow = {
@@ -114,6 +115,9 @@ export async function searchPhotos(input: PhotoSearchParams): Promise<PhotoRecor
   }
   if (input.proposedOnly) {
     query = query.eq("classification_status", "proposed");
+  }
+  if (input.unfiledOnly) {
+    query = query.in("classification_status", ["none", "proposed", "failed"]);
   }
   if (input.location) {
     const location = input.location.replace(/[%_,]/g, " ").trim();
