@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createInviteAction, updateCompanySettingsAction } from "@/features/settings/actions";
+import { createInviteAction, setMembershipStatusAction, updateCompanySettingsAction } from "@/features/settings/actions";
 
 export function CompanySettingsForm({
   companyDisplayName,
@@ -83,3 +83,30 @@ export function InviteMemberForm() {
     </div>
   );
 }
+
+export function MembershipStatusForm({
+  membershipId,
+  nextStatus,
+  label,
+}: {
+  membershipId: string;
+  nextStatus: "active" | "disabled";
+  label: string;
+}) {
+  const [state, action, pending] = useActionState(setMembershipStatusAction, null);
+  return (
+    <form action={action} className="mt-2">
+      <input type="hidden" name="membershipId" value={membershipId} />
+      <input type="hidden" name="status" value={nextStatus} />
+      {state?.error ? <p className="mb-2 text-sm text-red-600">{state.error}</p> : null}
+      <button
+        type="submit"
+        disabled={pending}
+        className="rounded-xl border border-zinc-200 bg-white px-3 text-sm font-medium"
+      >
+        {pending ? "更新中…" : label}
+      </button>
+    </form>
+  );
+}
+

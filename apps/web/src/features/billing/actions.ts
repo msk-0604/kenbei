@@ -5,6 +5,7 @@ import { can, requireWorkspace } from "@/lib/authz-guard";
 import { getAppUrl } from "@/lib/env";
 import { persistableBillingPlanCode } from "@kensapo/domain";
 import { stripePriceIdForPlan } from "@/lib/entitlement";
+import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -25,6 +26,12 @@ export async function startCheckoutAction(planCode: string): Promise<{ error: st
   const workspace = await requireWorkspace();
   if (!can(workspace, "org.manage")) {
     return { error: "課金を変更する権限がありません。" };
+  }
+  const limit = await consumeRateLimit(`billing:${workspace.userId}`, 10, 60_000);
+  if (!limit.allowed) {
+    return {
+      error: limit.reason === "unavailable" ? RATE_LIMIT_UNAVAILABLE_MESSAGE : "課金操作が多すぎます。少し待ってからやり直してください。",
+    };
   }
   const secret = stripeSecret();
   const checkoutPlan = persistableBillingPlanCode(planCode);
@@ -73,6 +80,12 @@ async function openBillingPortal(): Promise<{ error: string } | null> {
   if (!can(workspace, "org.manage")) {
     return { error: "権限がありません。" };
   }
+  const limit = await consumeRateLimit(`billing:${workspace.userId}`, 10, 60_000);
+  if (!limit.allowed) {
+    return {
+      error: limit.reason === "unavailable" ? RATE_LIMIT_UNAVAILABLE_MESSAGE : "課金操作が多すぎます。少し待ってからやり直してください。",
+    };
+  }
   const secret = stripeSecret();
   const admin = createAdminSupabaseClient();
   const supabase = admin ?? (await createServerSupabaseClient());
@@ -114,6 +127,12 @@ async function cancelSubscription(): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
   if (!can(workspace, "org.manage")) {
     return { error: "権限がありません。" };
+  }
+  const limit = await consumeRateLimit(`billing:${workspace.userId}`, 10, 60_000);
+  if (!limit.allowed) {
+    return {
+      error: limit.reason === "unavailable" ? RATE_LIMIT_UNAVAILABLE_MESSAGE : "課金操作が多すぎます。少し待ってからやり直してください。",
+    };
   }
   const secret = stripeSecret();
   const admin = createAdminSupabaseClient();

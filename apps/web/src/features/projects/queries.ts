@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { currentOrganizationId } from "@/lib/org-scope";
 
 export type ProjectListItem = {
   id: string;
@@ -29,10 +30,12 @@ function asList<T>(value: T[] | T | null): T[] {
 }
 
 export async function listProjects(): Promise<ProjectListItem[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("projects")
     .select("id, name, status, planned_end_on, customers(name), project_sites(address, is_primary)")
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) {
@@ -65,6 +68,7 @@ export type ProjectDetail = {
 };
 
 export async function getProject(projectId: string): Promise<ProjectDetail | null> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("projects")
@@ -72,6 +76,7 @@ export async function getProject(projectId: string): Promise<ProjectDetail | nul
       "id, name, status, work_summary, caution_note, planned_start_on, planned_end_on, customers(name), project_sites(address, is_primary)",
     )
     .eq("id", projectId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
@@ -119,6 +124,7 @@ export type AssignmentRow = {
 };
 
 export async function listAssignments(projectId: string): Promise<AssignmentRow[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("project_members")
@@ -126,6 +132,7 @@ export async function listAssignments(projectId: string): Promise<AssignmentRow[
       "id, membership_id, role_in_project, starts_on, ends_on, status, memberships(profiles!profile_id(display_name))",
     )
     .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) {
@@ -168,10 +175,12 @@ export type OrgMemberOption = {
 };
 
 export async function listOrgMembers(): Promise<OrgMemberOption[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("memberships")
     .select("id, profiles!profile_id(display_name), roles(code)")
+    .eq("organization_id", organizationId)
     .eq("status", "active")
     .is("deleted_at", null);
   if (error) {
@@ -200,11 +209,13 @@ export type CaptureListItem = {
 };
 
 export async function listProjectCaptures(projectId: string): Promise<CaptureListItem[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("captures")
     .select("id, transcript, created_at, graph_applied_at, capture_fields(status)")
     .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
     .eq("kind", "voice")
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -245,11 +256,13 @@ export type WorkEventRow = {
 };
 
 export async function listWorkEvents(projectId: string): Promise<WorkEventRow[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("work_events")
     .select("id, work_type_key, work_description, location, issue, next_action, created_at")
     .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) {
@@ -276,11 +289,13 @@ export async function listWorkEvents(projectId: string): Promise<WorkEventRow[]>
 }
 
 export async function listConfirmedFields(projectId: string) {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("capture_fields")
     .select("id, field_key, confirmed_value_json, status, created_at")
     .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
     .in("status", ["confirmed", "corrected", "auto_accepted"])
     .is("deleted_at", null)
     .order("created_at", { ascending: false })

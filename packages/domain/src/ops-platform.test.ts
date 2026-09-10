@@ -5,6 +5,7 @@ import {
   onboardingComplete,
   parseMentions,
   acceptOnlySessionOrganization,
+  authorizeExportJobRun,
 } from "./ops-platform";
 import { planAllowsMemberCount, seatLimitError } from "./billing";
 
@@ -29,6 +30,41 @@ describe("tenant isolation helpers", () => {
     expect(acceptOnlySessionOrganization("org-a", "org-b")).toBe(false);
     expect(acceptOnlySessionOrganization("org-a", "org-a")).toBe(true);
     expect(acceptOnlySessionOrganization("org-a", undefined)).toBe(true);
+  });
+
+  it("blocks Company A from running Company B export jobs even if jobId is known", () => {
+    expect(
+      authorizeExportJobRun({
+        sessionOrganizationId: "org-a",
+        jobOrganizationId: "org-b",
+        claimedOrganizationId: "org-b",
+      }),
+    ).toBe(false);
+    expect(
+      authorizeExportJobRun({
+        sessionOrganizationId: "org-a",
+        jobOrganizationId: "org-b",
+      }),
+    ).toBe(false);
+    expect(
+      authorizeExportJobRun({
+        sessionOrganizationId: "org-a",
+        jobOrganizationId: "org-a",
+        claimedOrganizationId: "org-b",
+      }),
+    ).toBe(false);
+    expect(
+      authorizeExportJobRun({
+        sessionOrganizationId: "org-a",
+        jobOrganizationId: null,
+      }),
+    ).toBe(false);
+    expect(
+      authorizeExportJobRun({
+        sessionOrganizationId: "org-a",
+        jobOrganizationId: "org-a",
+      }),
+    ).toBe(true);
   });
 });
 

@@ -68,3 +68,21 @@ export function acceptOnlySessionOrganization(
 ): boolean {
   return !claimedOrganizationId || claimedOrganizationId === sessionOrganizationId;
 }
+
+/** Company A must not run or fetch Company B's export job. */
+export function authorizeExportJobRun(input: {
+  sessionOrganizationId: string;
+  jobOrganizationId: string | null | undefined;
+  claimedOrganizationId?: string;
+}): boolean {
+  if (!input.sessionOrganizationId || !input.jobOrganizationId) {
+    return false;
+  }
+  if (input.jobOrganizationId !== input.sessionOrganizationId) {
+    return false;
+  }
+  if (input.claimedOrganizationId && input.claimedOrganizationId !== input.sessionOrganizationId) {
+    return false;
+  }
+  return true;
+}

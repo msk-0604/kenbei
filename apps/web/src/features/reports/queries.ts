@@ -2,6 +2,7 @@ import "server-only";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signedPhotoUrls } from "@/lib/signed-urls";
+import { currentOrganizationId } from "@/lib/org-scope";
 
 export type DailyReportRecord = {
   id: string;
@@ -55,6 +56,7 @@ function one<T>(value: T | T[] | null | undefined): T | null {
 }
 
 export async function listProjectReports(projectId: string): Promise<DailyReportRecord[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("daily_reports")
@@ -62,6 +64,7 @@ export async function listProjectReports(projectId: string): Promise<DailyReport
       "id, project_id, work_on, status, body, weather, work_location, worker_count, partner_companies_text, equipment_text, progress_note, issues, safety_notes, tomorrow_plan, remarks, draft_source, projects(name), profiles:created_by(display_name)",
     )
     .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("work_on", { ascending: false });
   if (error) {
@@ -92,6 +95,7 @@ export async function listProjectReports(projectId: string): Promise<DailyReport
 }
 
 export async function getReport(reportId: string): Promise<DailyReportRecord | null> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("daily_reports")
@@ -99,6 +103,7 @@ export async function getReport(reportId: string): Promise<DailyReportRecord | n
       "id, project_id, work_on, status, body, weather, work_location, worker_count, partner_companies_text, equipment_text, progress_note, issues, safety_notes, tomorrow_plan, remarks, draft_source, projects(name), profiles:created_by(display_name)",
     )
     .eq("id", reportId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .maybeSingle();
   if (error) {
@@ -112,6 +117,7 @@ export async function getReport(reportId: string): Promise<DailyReportRecord | n
     .from("daily_report_photos")
     .select("photo_id, photos(storage_path)")
     .eq("report_id", reportId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("sort_order");
   type LinkRow = { photo_id: string; photos: { storage_path: string } | { storage_path: string }[] | null };
@@ -149,11 +155,13 @@ export async function getReport(reportId: string): Promise<DailyReportRecord | n
 }
 
 export async function getReportOnDate(projectId: string, workOn: string): Promise<DailyReportRecord | null> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from("daily_reports")
     .select("id")
     .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
     .eq("work_on", workOn)
     .is("deleted_at", null)
     .maybeSingle();
@@ -165,12 +173,14 @@ export async function getReportOnDate(projectId: string, workOn: string): Promis
 }
 
 export async function listDraftReports(): Promise<DailyReportRecord[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("daily_reports")
     .select(
       "id, project_id, work_on, status, body, weather, work_location, worker_count, partner_companies_text, equipment_text, progress_note, issues, safety_notes, tomorrow_plan, remarks, draft_source, projects(name), profiles:created_by(display_name)",
     )
+    .eq("organization_id", organizationId)
     .eq("status", "draft")
     .is("deleted_at", null)
     .order("work_on", { ascending: false })
@@ -203,12 +213,14 @@ export async function listDraftReports(): Promise<DailyReportRecord[]> {
 }
 
 export async function listRecentReports(): Promise<DailyReportRecord[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("daily_reports")
     .select(
       "id, project_id, work_on, status, body, weather, work_location, worker_count, partner_companies_text, equipment_text, progress_note, issues, safety_notes, tomorrow_plan, remarks, draft_source, projects(name), profiles:created_by(display_name)",
     )
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("work_on", { ascending: false })
     .limit(40);
@@ -245,10 +257,12 @@ export type PrintCompany = {
 };
 
 export async function getPrintCompany(fallbackName: string): Promise<PrintCompany> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from("organization_settings")
     .select("company_display_name, logo_storage_path")
+    .eq("organization_id", organizationId)
     .maybeSingle();
   const row = data as { company_display_name: string | null; logo_storage_path: string | null } | null;
   let logoUrl: string | null = null;

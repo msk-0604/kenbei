@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { currentOrganizationId } from "@/lib/org-scope";
 
 export type ProjectDrawing = {
   id: string;
@@ -15,11 +16,13 @@ export type ProjectDrawing = {
 };
 
 export async function listProjectDrawings(projectId: string): Promise<ProjectDrawing[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("documents")
     .select("id, series_id, title, drawing_kind, version, is_latest, storage_path, created_at")
     .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
     .eq("category", "drawing")
     .is("deleted_at", null)
     .order("created_at", { ascending: false });

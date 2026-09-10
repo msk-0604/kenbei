@@ -3,6 +3,7 @@ import "server-only";
 import { isProcessDelayed, isTaskOverdue, projectProgressPercent } from "@kensapo/domain";
 import { tokyoTodayIso } from "@/lib/dates";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { currentOrganizationId } from "@/lib/org-scope";
 
 export type TaskRecord = {
   id: string;
@@ -18,12 +19,14 @@ export type TaskRecord = {
 };
 
 export async function listProjectTasks(projectId: string): Promise<TaskRecord[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const today = tokyoTodayIso();
   const { data, error } = await supabase
     .from("project_tasks")
     .select("id, project_id, title, description, due_on, priority, status, memberships:assignee_membership_id(profiles!profile_id(display_name)), projects(name)")
     .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("due_on", { ascending: true, nullsFirst: false });
   if (error) {
@@ -33,11 +36,13 @@ export async function listProjectTasks(projectId: string): Promise<TaskRecord[]>
 }
 
 export async function listOpenTasks(): Promise<TaskRecord[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const today = tokyoTodayIso();
   const { data, error } = await supabase
     .from("project_tasks")
     .select("id, project_id, title, description, due_on, priority, status, memberships:assignee_membership_id(profiles!profile_id(display_name)), projects(name)")
+    .eq("organization_id", organizationId)
     .neq("status", "done")
     .is("deleted_at", null)
     .order("due_on", { ascending: true, nullsFirst: false })
@@ -99,12 +104,14 @@ export type ProcessRecord = {
 };
 
 export async function listProjectProcesses(projectId: string): Promise<ProcessRecord[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const today = tokyoTodayIso();
   const { data, error } = await supabase
     .from("processes")
     .select("id, name, planned_start_on, planned_end_on, actual_start_on, actual_end_on, percent, status, sort_order")
     .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("sort_order");
   if (error) {
@@ -144,11 +151,13 @@ export function overallProgress(processes: ProcessRecord[]): number {
 }
 
 export async function listDelayedProcesses(): Promise<(ProcessRecord & { projectId: string; projectName: string })[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const today = tokyoTodayIso();
   const { data, error } = await supabase
     .from("processes")
     .select("id, project_id, name, planned_start_on, planned_end_on, actual_start_on, actual_end_on, percent, status, projects(name)")
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .neq("status", "completed");
   if (error) {

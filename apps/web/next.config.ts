@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
-
-/** Must stay project-relative. Absolute paths are joined onto the app root on Vercel and ENOENT. */
-export const pdfFontTraceIncludes = ["./fonts/NotoSansJP-Regular.ttf", "./fonts/**"] as const;
+import { withSentryConfig } from "@sentry/nextjs/config";
+import { pdfFontTraceIncludes } from "./src/lib/pdf-font-trace";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -25,4 +24,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  sourcemaps: { disable: true },
+  telemetry: false,
+});

@@ -6,6 +6,7 @@ import type { PermissionCode } from "@kensapo/domain";
 import { isPermissionCode } from "@kensapo/domain";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
+import { bindSentryWorkspace } from "@/lib/server-log";
 
 export const ORG_COOKIE = "kb_org";
 
@@ -77,6 +78,7 @@ export const getWorkspace = cache(async (): Promise<Workspace | null> => {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
+    bindSentryWorkspace(null);
     return null;
   }
 
@@ -101,7 +103,9 @@ export const getWorkspace = cache(async (): Promise<Workspace | null> => {
 
   const rows = (memberships as MembershipRow[] | null) ?? [];
   if (rows.length === 0) {
-    return emptyWorkspace(user.id, user.email, displayName);
+    const empty = emptyWorkspace(user.id, user.email, displayName);
+    bindSentryWorkspace(empty);
+    return empty;
   }
 
   const organizations: WorkspaceOrg[] = rows.map((row) => {
@@ -122,18 +126,22 @@ export const getWorkspace = cache(async (): Promise<Workspace | null> => {
   const selected =
     organizations.find((item) => item.organizationId === requested) ?? organizations[0];
   if (!selected) {
-    return emptyWorkspace(user.id, user.email, displayName);
+    const empty = emptyWorkspace(user.id, user.email, displayName);
+    bindSentryWorkspace(empty);
+    return empty;
   }
 
   const row = rows.find((item) => item.organization_id === selected.organizationId) ?? rows[0];
   if (!row) {
-    return emptyWorkspace(user.id, user.email, displayName);
+    const empty = emptyWorkspace(user.id, user.email, displayName);
+    bindSentryWorkspace(empty);
+    return empty;
   }
   const permissions = (row.roles?.role_permissions ?? [])
     .map((item) => item.permission_code)
     .filter(isPermissionCode);
 
-  return {
+  const workspace = {
     userId: user.id,
     email: user.email,
     displayName,
@@ -145,6 +153,8 @@ export const getWorkspace = cache(async (): Promise<Workspace | null> => {
     permissions,
     organizations,
   };
+  bindSentryWorkspace(workspace);
+  return workspace;
 });
 
 export function hasOrganization(workspace: Workspace | null): boolean {

@@ -11,6 +11,7 @@ import { getAiService, getConstructionGraph } from "@/lib/engines";
 import { can, requireWorkspace } from "@/lib/authz-guard";
 import { tokyoTodayIso } from "@/lib/dates";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { AI_TIMEOUT_USER_MESSAGE, isAiTimeoutError } from "@kensapo/ai";
 
 function asJsonValue(value: unknown): JsonValue {
   if (
@@ -88,13 +89,22 @@ export async function submitVoiceCaptureAction(formData: FormData): Promise<{ er
   }
 
   const ai = getAiService();
-  const transcription = await ai.transcribe({
-    organizationId: workspace.organizationId,
-    mimeType: audio.type || "audio/webm",
-    storagePath,
-    fileName,
-    audioBytes: bytes,
-  });
+  let transcription;
+  try {
+    transcription = await ai.transcribe({
+      organizationId: workspace.organizationId,
+      mimeType: audio.type || "audio/webm",
+      storagePath,
+      fileName,
+      audioBytes: bytes,
+    });
+  } catch (error) {
+    return {
+      error: isAiTimeoutError(error)
+        ? AI_TIMEOUT_USER_MESSAGE
+        : "音声の文字起こしに失敗しました。もう一度お試しください。",
+    };
+  }
   const structured = await ai.structureCapture(transcription.text, {
     organizationId: workspace.organizationId,
     projectId,

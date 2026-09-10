@@ -2,6 +2,8 @@ import "server-only";
 
 import {
   OPENAI_STRATEGIST_TOOLS,
+  fetchWithAiTimeout,
+  isAiTimeoutError,
   isAllowedStrategistTool,
   resolveAiModel,
   routeStrategistHeuristically,
@@ -9,6 +11,7 @@ import {
 } from "@kensapo/ai";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Workspace } from "@/lib/session";
+import { logServerError, logServerWarn } from "@/lib/server-log";
 import { runStrategistTool, type StrategistProposal, type ToolRunResult } from "@/features/strategist/tools";
 
 const MAX_LOOPS = 4;
@@ -143,7 +146,7 @@ export async function runStrategistAgent(input: {
 
   try {
     for (let loop = 0; loop < MAX_LOOPS; loop += 1) {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      const response = await fetchWithAiTimeout("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -157,9 +160,14 @@ export async function runStrategistAgent(input: {
         }),
       });
       if (!response.ok) {
+        await logServerError(
+          "ai.error",
+          { provider: "openai", op: "strategist", status: response.status, model },
+          { organizationId: input.workspace.organizationId, userId: input.workspace.userId },
+        );
         await logEvent(input.workspace.organizationId, input.projectId, input.message, "llm", false, model);
         const fallback = await runHeuristicAgent(input.workspace, input.message, input.projectId);
-        return { ...fallback, answer: `AIの応答に失敗したため、読み取り結果のみ表示します。\n\n${fallback.answer}` };
+        return { ...fallback, answer: `AIの応答に失敗したため、読み取り結果のみ表示します。時間をおいて再試行できます。\n\n${fallback.answer}` };
       }
       const json = (await response.json()) as {
         choices?: { message?: { content?: string | null; tool_calls?: OpenAiToolCall[] } }[];
@@ -225,9 +233,26 @@ export async function runStrategistAgent(input: {
         await logEvent(input.workspace.organizationId, input.projectId, input.message, name, result.ok, model);
       }
     }
-  } catch {
+  } catch (error) {
+    const timeout = isAiTimeoutError(error);
+    if (timeout) {
+      await logServerWarn(
+        "ai.timeout",
+        { provider: "openai", op: "strategist", model },
+        { organizationId: input.workspace.organizationId, userId: input.workspace.userId },
+      );
+    } else {
+      await logServerError(
+        "ai.error",
+        { provider: "openai", op: "strategist", model, errorName: error instanceof Error ? error.name : "unknown" },
+        { organizationId: input.workspace.organizationId, userId: input.workspace.userId },
+      );
+    }
     const fallback = await runHeuristicAgent(input.workspace, input.message, input.projectId);
-    return { ...fallback, answer: `AI接続に失敗したため、読み取り結果のみ表示します。\n\n${fallback.answer}` };
+    const prefix = timeout
+      ? "AIの応答が時間切れになりました。読み取り結果のみ表示します。もう一度お試しください。"
+      : "AI接続に失敗したため、読み取り結果のみ表示します。もう一度お試しください。";
+    return { ...fallback, answer: `${prefix}\n\n${fallback.answer}` };
   }
 
   await logEvent(input.workspace.organizationId, input.projectId, input.message, "max_loops", false, model);

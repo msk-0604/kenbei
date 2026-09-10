@@ -1,49 +1,134 @@
--- Manual / CI helper. Requires two authenticated roles in one database.
--- Expected: org A member cannot SELECT org B projects, financials, or memberships.
+-- Executable tenant isolation test for CI (local Supabase only).
+-- Company A must not read or write Company B data.
+-- Run via: node scripts/run-rls-isolation.mjs
+-- Does not target Production.
 
--- 1. Sign up user_a and user_b.
--- 2. user_a: SELECT create_organization('会社A');
--- 3. user_b: SELECT create_organization('会社B');
--- 4. As user_a:
+BEGIN;
 
--- SELECT count(*) FROM organizations;
--- Expect: 1 (会社A only)
+CREATE OR REPLACE FUNCTION pg_temp.set_jwt(p_user uuid, p_email text)
+RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM set_config('request.jwt.claim.sub', p_user::text, true);
+  PERFORM set_config('request.jwt.claim.role', 'authenticated', true);
+  PERFORM set_config('request.jwt.claim.email', p_email, true);
+  PERFORM set_config(
+    'request.jwt.claims',
+    json_build_object('sub', p_user::text, 'role', 'authenticated', 'email', p_email)::text,
+    true
+  );
+END;
+$$;
 
--- SELECT * FROM projects;
--- Expect: only organization_id = 会社A
+DO $$
+DECLARE
+  v_user_a uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  v_user_b uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+BEGIN
+  INSERT INTO auth.users (
+    instance_id,
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at
+  )
+  VALUES
+    (
+      '00000000-0000-0000-0000-000000000000',
+      v_user_a,
+      'authenticated',
+      'authenticated',
+      'rls-a@example.test',
+      crypt('test-password', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{}'::jsonb,
+      now(),
+      now()
+    ),
+    (
+      '00000000-0000-0000-0000-000000000000',
+      v_user_b,
+      'authenticated',
+      'authenticated',
+      'rls-b@example.test',
+      crypt('test-password', gen_salt('bf')),
+      now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{}'::jsonb,
+      now(),
+      now()
+    )
+  ON CONFLICT (id) DO NOTHING;
+END $$;
 
--- INSERT INTO projects (organization_id, name) VALUES ('<org-b-id>', '侵入');
--- Expect: policy violation
+DO $$
+DECLARE
+  v_user_a uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  v_user_b uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  v_org_a uuid;
+  v_org_b uuid;
+  v_seen int;
+  v_insert_ok boolean := false;
+BEGIN
+  EXECUTE 'SET LOCAL ROLE authenticated';
 
--- SELECT * FROM work_events;
--- Expect: none from org B
+  PERFORM pg_temp.set_jwt(v_user_a, 'rls-a@example.test');
+  v_org_a := public.create_organization('RLS会社A');
 
--- SELECT * FROM capture_fields;
--- Expect: none from org B
+  PERFORM pg_temp.set_jwt(v_user_b, 'rls-b@example.test');
+  v_org_b := public.create_organization('RLS会社B');
 
--- SELECT * FROM project_messages WHERE organization_id = '<org-b>';
--- Expect: 0. Chat is project-scoped via auth_can_access_project.
+  INSERT INTO public.projects (organization_id, name, created_by, updated_by)
+  VALUES (v_org_b, '会社Bの現場', v_user_b, v_user_b);
 
--- SELECT * FROM export_jobs WHERE organization_id = '<org-b>';
--- Expect: 0
+  INSERT INTO public.export_jobs (organization_id, requested_by, status, format)
+  VALUES (v_org_b, v_user_b, 'queued', 'zip');
 
--- Storage download org B path as org A:
--- Expect: policy violation
+  PERFORM pg_temp.set_jwt(v_user_a, 'rls-a@example.test');
 
--- Invite token of org B accepted by org A email mismatch:
--- Expect: exception
+  SELECT count(*) INTO v_seen FROM public.organizations;
+  IF v_seen <> 1 THEN
+    RAISE EXCEPTION 'RLS fail: user A saw % organizations, expected 1', v_seen;
+  END IF;
 
--- Billing entitlement is server-side; inserting membership beyond plan is app-enforced.
--- organization_billing of org B must not be readable? (org member of A: 0 rows)
+  SELECT count(*) INTO v_seen FROM public.projects WHERE organization_id = v_org_b;
+  IF v_seen <> 0 THEN
+    RAISE EXCEPTION 'RLS fail: user A read Company B projects';
+  END IF;
 
--- Invite: user_a cannot accept org B token unless email matches invitation.
+  SELECT count(*) INTO v_seen FROM public.export_jobs WHERE organization_id = v_org_b;
+  IF v_seen <> 0 THEN
+    RAISE EXCEPTION 'RLS fail: user A read Company B export_jobs';
+  END IF;
 
--- Export isolation: processExportJob filters every row with exportJobOrgSafe(orgA, row.organization_id)
+  SELECT count(*) INTO v_seen FROM public.organization_billing WHERE organization_id = v_org_b;
+  IF v_seen <> 0 THEN
+    RAISE EXCEPTION 'RLS fail: user A read Company B billing';
+  END IF;
 
--- Similar Projects / AI: catalog and prompts are filtered by organization_id from the server session, never from a client-claimed org id.
+  SELECT count(*) INTO v_seen FROM public.memberships WHERE organization_id = v_org_b;
+  IF v_seen <> 0 THEN
+    RAISE EXCEPTION 'RLS fail: user A read Company B memberships';
+  END IF;
 
--- SELECT * FROM ops_signals WHERE organization_id = '<org-b>';
--- Expect: 0
+  BEGIN
+    INSERT INTO public.projects (organization_id, name, created_by, updated_by)
+    VALUES (v_org_b, '侵入', v_user_a, v_user_a);
+    v_insert_ok := true;
+  EXCEPTION
+    WHEN OTHERS THEN
+      v_insert_ok := false;
+  END;
+  IF v_insert_ok THEN
+    RAISE EXCEPTION 'RLS fail: user A inserted a project into Company B';
+  END IF;
+END $$;
 
--- SELECT * FROM audit_logs;
--- Expect: Owner/Executive only. INSERT from client must fail.
+ROLLBACK;

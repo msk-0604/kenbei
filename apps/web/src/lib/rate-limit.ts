@@ -1,6 +1,9 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { decideRateLimit, type RateLimitResult } from "@/lib/rate-limit-policy";
 
-export async function consumeRateLimit(key: string, max: number, windowMs: number): Promise<boolean> {
+export { decideRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE, type RateLimitResult } from "@/lib/rate-limit-policy";
+
+export async function consumeRateLimit(key: string, max: number, windowMs: number): Promise<RateLimitResult> {
   try {
     const supabase = await createServerSupabaseClient();
     const seconds = Math.max(1, Math.ceil(windowMs / 1000));
@@ -9,11 +12,8 @@ export async function consumeRateLimit(key: string, max: number, windowMs: numbe
       p_max: max,
       p_window_seconds: seconds,
     });
-    if (error) {
-      return true;
-    }
-    return data === true;
+    return decideRateLimit({ data, error });
   } catch {
-    return true;
+    return { allowed: false, reason: "unavailable" };
   }
 }

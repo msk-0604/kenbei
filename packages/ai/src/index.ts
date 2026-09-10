@@ -28,6 +28,15 @@ export {
   proposeTaskTitles,
 } from "./ops-briefs";
 export type { OpsBriefFacts } from "./ops-briefs";
+export {
+  AI_TIMEOUT_USER_MESSAGE,
+  AiTimeoutError,
+  DEFAULT_AI_TIMEOUT_MS,
+  aiTimeoutMs,
+  fetchWithAiTimeout,
+  isAiTimeoutError,
+  warnAiCallFailure,
+} from "./timeout";
 export { resolveAiModel, defaultAiModelFallback } from "./models";
 export type { AiModelTier } from "./models";
 export {

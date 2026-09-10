@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { currentOrganizationId } from "@/lib/org-scope";
 
 export type CompanySettings = {
   companyDisplayName: string | null;
@@ -47,10 +48,12 @@ export type InviteRow = {
 };
 
 export async function listInvites(): Promise<InviteRow[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("organization_invitations")
     .select("id, email, expires_at, accepted_at, token, roles(name)")
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(30);
@@ -76,3 +79,42 @@ export async function listInvites(): Promise<InviteRow[]> {
     roleName: one(row.roles)?.name ?? "",
   }));
 }
+
+export type OrganizationMemberRow = {
+  membershipId: string;
+  profileId: string;
+  displayName: string;
+  roleName: string;
+  status: "active" | "disabled" | string;
+};
+
+export async function listOrganizationMembers(): Promise<OrganizationMemberRow[]> {
+  const organizationId = await currentOrganizationId();
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("memberships")
+    .select("id, profile_id, status, profiles!profile_id(display_name), roles(name)")
+    .eq("organization_id", organizationId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+  if (error) {
+    throw new Error(error.message);
+  }
+  type Row = {
+    id: string;
+    profile_id: string;
+    status: string;
+    profiles: { display_name: string } | { display_name: string }[] | null;
+    roles: { name: string } | { name: string }[] | null;
+  };
+  const one = <T,>(value: T | T[] | null): T | null =>
+    !value ? null : Array.isArray(value) ? (value[0] ?? null) : value;
+  return ((data as Row[] | null) ?? []).map((row) => ({
+    membershipId: row.id,
+    profileId: row.profile_id,
+    displayName: one(row.profiles)?.display_name ?? "メンバー",
+    roleName: one(row.roles)?.name ?? "",
+    status: row.status,
+  }));
+}
+

@@ -2,6 +2,7 @@ import "server-only";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signedPhotoUrls } from "@/lib/signed-urls";
+import { currentOrganizationId } from "@/lib/org-scope";
 
 export type PhotoRecord = {
   id: string;
@@ -96,8 +97,15 @@ const PHOTO_SELECT =
   "id, project_id, taken_at, created_at, captured_by, work_type_key, location_spot, floor, area, comment, tags, proposed_work_type_key, proposed_location_spot, proposed_description, proposed_tags, classification_status, storage_path, projects(name), profiles:captured_by(display_name)";
 
 export async function searchPhotos(input: PhotoSearchParams): Promise<PhotoRecord[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
-  let query = supabase.from("photos").select(PHOTO_SELECT).is("deleted_at", null).order("taken_at", { ascending: false }).limit(80);
+  let query = supabase
+    .from("photos")
+    .select(PHOTO_SELECT)
+    .eq("organization_id", organizationId)
+    .is("deleted_at", null)
+    .order("taken_at", { ascending: false })
+    .limit(80);
   if (input.projectId) {
     query = query.eq("project_id", input.projectId);
   }
@@ -143,8 +151,15 @@ export async function searchPhotos(input: PhotoSearchParams): Promise<PhotoRecor
 }
 
 export async function getPhoto(photoId: string): Promise<PhotoRecord | null> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase.from("photos").select(PHOTO_SELECT).eq("id", photoId).is("deleted_at", null).maybeSingle();
+  const { data, error } = await supabase
+    .from("photos")
+    .select(PHOTO_SELECT)
+    .eq("id", photoId)
+    .eq("organization_id", organizationId)
+    .is("deleted_at", null)
+    .maybeSingle();
   if (error) {
     throw new Error(error.message);
   }
@@ -157,11 +172,13 @@ export async function getPhoto(photoId: string): Promise<PhotoRecord | null> {
 }
 
 export async function countPhotosOnDate(projectId: string, dayIso: string): Promise<number> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { count, error } = await supabase
     .from("photos")
     .select("id", { count: "exact", head: true })
     .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .gte("taken_at", `${dayIso}T00:00:00+09:00`)
     .lte("taken_at", `${dayIso}T23:59:59+09:00`);

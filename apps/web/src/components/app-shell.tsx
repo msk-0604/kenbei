@@ -7,6 +7,7 @@ const MOBILE_NAV = [
   { href: "/", label: "今日" },
   { href: "/projects", label: "現場" },
   { href: "/photos", label: "写真" },
+  { href: "/strategist", label: "軍師" },
   { href: "/confirm", label: "確認" },
   { href: "/account", label: "自分" },
 ] as const;
@@ -48,7 +49,7 @@ export async function AppShell({ children }: { children: ReactNode }) {
       </header>
       {children}
       <nav className="fixed inset-x-0 bottom-0 border-t border-[var(--kb-line)] bg-white/95 pb-[env(safe-area-inset-bottom)] md:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-5 text-center text-sm">
+        <div className="mx-auto grid max-w-lg grid-cols-6 text-center text-xs">
           {MOBILE_NAV.map((item) => (
             <Link key={item.href} href={item.href} className="flex items-center justify-center py-3">
               {item.label}

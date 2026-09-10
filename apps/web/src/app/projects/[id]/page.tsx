@@ -121,7 +121,7 @@ export default async function ProjectDetailPage({
           </section>
           <SimilarProjectsPanel result={similar} />
           <section className="rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
-            <h2 className="mb-3 text-base font-medium">この現場のAI要約</h2>
+            <h2 className="mb-3 text-base font-medium">この現場の軍師</h2>
             <StrategistForm projectId={id} />
           </section>
           {canEdit ? (
@@ -277,7 +277,7 @@ async function ChatTab({
   return (
     <div className="mt-6 flex flex-col gap-6">
       <section className="rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
-        <h2 className="mb-3 text-base font-medium">Chat要約</h2>
+        <h2 className="mb-3 text-base font-medium">チャットを軍師に聞く</h2>
         <StrategistForm projectId={projectId} />
       </section>
       <ProjectChatPanel
@@ -302,7 +302,7 @@ async function TasksTab({
   return (
     <div className="mt-6 flex flex-col gap-6">
       <section className="rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
-        <h2 className="mb-3 text-base font-medium">AI Task提案</h2>
+        <h2 className="mb-3 text-base font-medium">タスクを軍師に聞く</h2>
         <StrategistForm projectId={projectId} />
       </section>
       <TaskList tasks={tasks} />

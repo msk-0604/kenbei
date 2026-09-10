@@ -3,7 +3,7 @@
 import { createProposedTasksAction } from "@/features/site-ops/actions";
 import { createTodayReportDraftAction } from "@/features/reports/actions";
 import { proposePhotoAssistAction } from "@/features/photos/actions";
-import { consumeRateLimit } from "@/lib/rate-limit";
+import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
 import { requireWorkspace } from "@/lib/authz-guard";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { runStrategistAgent, type ChatMessage } from "@/features/strategist/agent-run";
@@ -71,11 +71,12 @@ export async function sendStrategistMessageAction(
   formData: FormData,
 ): Promise<StrategistChatState> {
   const workspace = await requireWorkspace();
-  if (!(await consumeRateLimit(`strategist:${workspace.userId}`, 20, 60_000))) {
+  const limit = await consumeRateLimit(`strategist:${workspace.userId}`, 20, 60_000);
+  if (!limit.allowed) {
     return {
       turns: prev?.turns ?? [],
       proposals: prev?.proposals ?? [],
-      error: "少し時間をおいてからまた聞いてください。",
+      error: limit.reason === "unavailable" ? RATE_LIMIT_UNAVAILABLE_MESSAGE : "少し時間をおいてからまた聞いてください。",
     };
   }
   const quick = String(formData.get("quick") ?? "");

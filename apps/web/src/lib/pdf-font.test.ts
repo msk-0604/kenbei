@@ -24,7 +24,7 @@ describe("pdf font path", () => {
   });
 
   it("uses only relative globs for Vercel file tracing", async () => {
-    const { pdfFontTraceIncludes } = await import("../../next.config");
+    const { pdfFontTraceIncludes } = await import("./pdf-font-trace");
     expect(pdfFontTraceIncludes.length).toBeGreaterThan(0);
     for (const glob of pdfFontTraceIncludes) {
       expect(glob.startsWith("./")).toBe(true);

@@ -8,7 +8,7 @@ import {
 import type { PhotoClassification } from "@kensapo/ai";
 import { can, requireWorkspace } from "@/lib/authz-guard";
 import { formString } from "@/lib/form";
-import { consumeRateLimit } from "@/lib/rate-limit";
+import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
 import { getAiService } from "@/lib/engines";
 import { listMemberProfileIdsWithPermission, notifyWorkspaceMembers } from "@/lib/notifications";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -30,8 +30,11 @@ export async function registerPhotosAction(input: {
   if (!can(workspace, "photo.create")) {
     return { error: "写真を登録する権限がありません。" };
   }
-  if (!(await consumeRateLimit(`photo:${workspace.userId}`, 40, 60_000))) {
-    return { error: "アップロードが多すぎます。少し待ってください。" };
+  const limit = await consumeRateLimit(`photo:${workspace.userId}`, 40, 60_000);
+  if (!limit.allowed) {
+    return {
+      error: limit.reason === "unavailable" ? RATE_LIMIT_UNAVAILABLE_MESSAGE : "アップロードが多すぎます。少し待ってください。",
+    };
   }
   if (input.items.length === 0 || input.items.length > MAX_PHOTOS_PER_BATCH) {
     return { error: `1回あたり1〜${MAX_PHOTOS_PER_BATCH}枚までです。` };
@@ -218,7 +221,8 @@ export async function acceptPhotoProposalAction(photoId: string): Promise<{ erro
       tags: row.proposed_tags ?? [],
       classification_status: "confirmed",
     })
-    .eq("id", photoId);
+    .eq("id", photoId)
+    .eq("organization_id", workspace.organizationId);
   if (error) {
     return { error: error.message };
   }

@@ -113,6 +113,13 @@ export async function createInviteAction(
     expires_at: expires.toISOString(),
   });
   if (error) {
+    const message = error.message ?? "";
+    if (error.code === "23505" || message.includes("organization_invitations_pending_email_uidx")) {
+      return { error: "このメールアドレスはすでに招待中です。" };
+    }
+    if (message.includes("KENBEI_SEAT_LIMIT")) {
+      return { error: "座席数が上限です。プランを変更するか、無効な席を整理してください。" };
+    }
     return { error: error.message };
   }
   revalidatePath("/settings");
@@ -129,6 +136,10 @@ export async function acceptInviteAction(token: string): Promise<{ error: string
   }
   const { error } = await supabase.rpc("accept_organization_invite", { p_token: token });
   if (error) {
+    const message = error.message ?? "";
+    if (message.includes("KENBEI_SEAT_LIMIT")) {
+      return { error: "座席数が上限のため参加できません。管理者に連絡してください。" };
+    }
     return { error: error.message };
   }
   const {
@@ -175,3 +186,49 @@ export async function acceptInviteAction(token: string): Promise<{ error: string
   }
   redirect("/");
 }
+
+export async function setMembershipStatusAction(
+  _prev: { error: string } | null,
+  formData: FormData,
+): Promise<{ error: string } | null> {
+  const workspace = await requireWorkspace();
+  if (!can(workspace, "member.manage")) {
+    return { error: "メンバーを変更する権限がありません。" };
+  }
+  const membershipId = formString(formData, "membershipId");
+  const nextStatus = formString(formData, "status");
+  if (!membershipId || (nextStatus !== "active" && nextStatus !== "disabled")) {
+    return { error: "対象が不正です。" };
+  }
+  if (nextStatus === "active") {
+    const seat = await assertSeatAvailable(workspace);
+    if (seat) {
+      return seat;
+    }
+  }
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("set_membership_status", {
+    p_membership_id: membershipId,
+    p_status: nextStatus,
+  });
+  if (error) {
+    const message = error.message ?? "";
+    if (message.includes("KENBEI_SELF_DISABLE")) {
+      return { error: "自分自身は無効化できません。" };
+    }
+    if (message.includes("KENBEI_LAST_MANAGER")) {
+      return { error: "最後の管理者は無効化できません。" };
+    }
+    if (message.includes("KENBEI_SEAT_LIMIT")) {
+      return { error: "座席数が上限です。プランを変更するか、無効な席を整理してください。" };
+    }
+    if (message.includes("permission denied")) {
+      return { error: "メンバーを変更する権限がありません。" };
+    }
+    return { error: error.message };
+  }
+  revalidatePath("/settings");
+  revalidatePath("/");
+  return null;
+}
+

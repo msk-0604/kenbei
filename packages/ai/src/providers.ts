@@ -15,6 +15,7 @@ import { structureTranscriptHeuristic } from "./heuristic";
 import { classifyPhotoHeuristic } from "./photo-heuristic";
 import { draftDailyReportTemplate } from "./report-draft";
 import { classifyPhotoWithOpenAiVision, draftDailyReportWithOpenAi } from "./vision-draft";
+import { fetchWithAiTimeout, isAiTimeoutError, warnAiCallFailure } from "./timeout";
 
 export type HttpAiConfig = {
   apiKey: string;
@@ -51,6 +52,30 @@ function audioBlob(input: TranscriptionInput): Blob {
   return new Blob([copy], { type: input.mimeType || "audio/webm" });
 }
 
+async function providerFetch(
+  url: string,
+  init: RequestInit,
+  meta: { provider: string; op: string },
+): Promise<Response | null> {
+  try {
+    const response = await fetchWithAiTimeout(url, init);
+    if (!response.ok) {
+      warnAiCallFailure("http", { provider: meta.provider, op: meta.op, status: response.status });
+    }
+    return response;
+  } catch (error) {
+    warnAiCallFailure(isAiTimeoutError(error) ? "timeout" : "network", {
+      provider: meta.provider,
+      op: meta.op,
+      errorName: error instanceof Error ? error.name : "unknown",
+    });
+    if (meta.op === "transcribe") {
+      throw isAiTimeoutError(error) ? error : new Error(`${meta.provider} transcription failed`);
+    }
+    return null;
+  }
+}
+
 function uint8ToBase64(bytes: Uint8Array): string {
   let binary = "";
   const chunk = 0x8000;
@@ -68,13 +93,17 @@ export class OpenAiService implements AiService {
     body.set("model", "whisper-1");
     body.set("language", "ja");
     body.append("file", audioBlob(input), input.fileName ?? "capture.webm");
-    const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${this.config.apiKey}` },
-      body,
-    });
-    if (!response.ok) {
-      throw new Error(`OpenAI transcription failed: ${response.status}`);
+    const response = await providerFetch(
+      "https://api.openai.com/v1/audio/transcriptions",
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${this.config.apiKey}` },
+        body,
+      },
+      { provider: "openai", op: "transcribe" },
+    );
+    if (!response || !response.ok) {
+      throw new Error(`OpenAI transcription failed: ${response?.status ?? "network"}`);
     }
     const json = (await response.json()) as { text?: string };
     return {
@@ -90,26 +119,30 @@ export class OpenAiService implements AiService {
     context: CaptureContext,
   ): Promise<StructureCaptureResult> {
     const heuristic = structureTranscriptHeuristic(transcript, context);
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.config.apiKey}`,
-        "Content-Type": "application/json",
+    const response = await providerFetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.config.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          response_format: { type: "json_object" },
+          messages: [
+            {
+              role: "system",
+              content:
+                "建設現場の報告から JSON だけ返す。keys: fields[{key,value,confidence,needsConfirmation}]. key は work_type, work_description, material, quantity, unit, location, issue, next_action, note のみ。確定はしない。",
+            },
+            { role: "user", content: transcript },
+          ],
+        }),
       },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "建設現場の報告から JSON だけ返す。keys: fields[{key,value,confidence,needsConfirmation}]. key は work_type, work_description, material, quantity, unit, location, issue, next_action, note のみ。確定はしない。",
-          },
-          { role: "user", content: transcript },
-        ],
-      }),
-    });
-    if (!response.ok) {
+      { provider: "openai", op: "structureCapture" },
+    );
+    if (!response || !response.ok) {
       return wrap("openai", "gpt-4o-mini", heuristic, { fallback: "heuristic", transcript });
     }
     const json = (await response.json()) as {
@@ -176,26 +209,30 @@ export class OpenAiService implements AiService {
   }
 
   async summarize(text: string, purpose: "report" | "incident" | "lesson" = "report"): Promise<string> {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${this.config.apiKey}`,
-        "Content-Type": "application/json",
+    const response = await providerFetch(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.config.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content:
+                "日本語で簡潔に要約する。与えられた事実以外は書かない。承認・削除・課金・メンバー変更は提案しない。確認用の下書き。purpose=" +
+                purpose,
+            },
+            { role: "user", content: text },
+          ],
+        }),
       },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "日本語で簡潔に要約する。与えられた事実以外は書かない。承認・削除・課金・メンバー変更は提案しない。確認用の下書き。purpose=" +
-              purpose,
-          },
-          { role: "user", content: text },
-        ],
-      }),
-    });
-    if (!response.ok) {
+      { provider: "openai", op: "summarize" },
+    );
+    if (!response || !response.ok) {
       return text;
     }
     const json = (await response.json()) as { choices?: { message?: { content?: string } }[] };
@@ -217,7 +254,7 @@ export class GeminiAiService implements AiService {
   async transcribe(input: TranscriptionInput): Promise<TranscriptionResult> {
     const bytes = input.audioBytes ?? new Uint8Array();
     const b64 = uint8ToBase64(bytes);
-    const response = await fetch(
+    const response = await providerFetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.config.apiKey}`,
       {
         method: "POST",
@@ -233,9 +270,10 @@ export class GeminiAiService implements AiService {
           ],
         }),
       },
+      { provider: "gemini", op: "transcribe" },
     );
-    if (!response.ok) {
-      throw new Error(`Gemini transcription failed: ${response.status}`);
+    if (!response || !response.ok) {
+      throw new Error(`Gemini transcription failed: ${response?.status ?? "network"}`);
     }
     const json = (await response.json()) as {
       candidates?: { content?: { parts?: { text?: string }[] } }[];
@@ -254,7 +292,7 @@ export class GeminiAiService implements AiService {
     context: CaptureContext,
   ): Promise<StructureCaptureResult> {
     const heuristic = structureTranscriptHeuristic(transcript, context);
-    const response = await fetch(
+    const response = await providerFetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${this.config.apiKey}`,
       {
         method: "POST",
@@ -271,8 +309,9 @@ export class GeminiAiService implements AiService {
           ],
         }),
       },
+      { provider: "gemini", op: "structureCapture" },
     );
-    if (!response.ok) {
+    if (!response || !response.ok) {
       return wrap("gemini", "gemini-2.0-flash", heuristic, { fallback: "heuristic" });
     }
     const json = (await response.json()) as {
@@ -336,25 +375,29 @@ export class AnthropicAiService implements AiService {
     context: CaptureContext,
   ): Promise<StructureCaptureResult> {
     const heuristic = structureTranscriptHeuristic(transcript, context);
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": this.config.apiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
+    const response = await providerFetch(
+      "https://api.anthropic.com/v1/messages",
+      {
+        method: "POST",
+        headers: {
+          "x-api-key": this.config.apiKey,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-3-5-haiku-latest",
+          max_tokens: 1024,
+          messages: [
+            {
+              role: "user",
+              content: `建設現場の報告を JSON だけ。{"fields":[{"key":"work_type","value":"","confidence":0.8,"needsConfirmation":true}]}。key は work_type, work_description, material, quantity, unit, location, issue, next_action, note。\n${transcript}`,
+            },
+          ],
+        }),
       },
-      body: JSON.stringify({
-        model: "claude-3-5-haiku-latest",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: `建設現場の報告を JSON だけ。{"fields":[{"key":"work_type","value":"","confidence":0.8,"needsConfirmation":true}]}。key は work_type, work_description, material, quantity, unit, location, issue, next_action, note。\n${transcript}`,
-          },
-        ],
-      }),
-    });
-    if (!response.ok) {
+      { provider: "anthropic", op: "structureCapture" },
+    );
+    if (!response || !response.ok) {
       return wrap("anthropic", "claude-3-5-haiku-latest", heuristic, { fallback: "heuristic" });
     }
     const json = (await response.json()) as { content?: { text?: string }[] };

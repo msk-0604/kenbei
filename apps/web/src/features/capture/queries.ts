@@ -2,6 +2,7 @@ import "server-only";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { JsonValue } from "@kensapo/domain";
+import { currentOrganizationId } from "@/lib/org-scope";
 
 export type CaptureFieldView = {
   id: string;
@@ -22,11 +23,13 @@ export type CaptureView = {
 };
 
 export async function getCaptureView(captureId: string): Promise<CaptureView | null> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const capture = await supabase
     .from("captures")
     .select("id, project_id, transcript, graph_applied_at")
     .eq("id", captureId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .maybeSingle();
   const row = capture.data as {
@@ -44,6 +47,7 @@ export async function getCaptureView(captureId: string): Promise<CaptureView | n
       "id, field_key, confidence, proposed_value_json, corrected_value_json, confirmed_value_json, status",
     )
     .eq("capture_id", captureId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
   type FieldRow = {

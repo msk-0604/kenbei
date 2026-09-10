@@ -78,6 +78,7 @@ export async function listTodayProjects(workspace: Workspace): Promise<TodayProj
     .from("site_sessions")
     .select("id, project_id, started_at, ended_at")
     .eq("membership_id", workspace.membershipId)
+    .eq("organization_id", workspace.organizationId)
     .eq("work_on", today)
     .is("deleted_at", null);
 
@@ -180,6 +181,7 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
       .from("photos")
       .select("id, project_id")
       .in("project_id", ids)
+      .eq("organization_id", workspace.organizationId)
       .is("deleted_at", null)
       .gte("taken_at", `${today}T00:00:00+09:00`)
       .lte("taken_at", `${today}T23:59:59+09:00`),
@@ -187,18 +189,21 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
       .from("daily_reports")
       .select("id, project_id, status")
       .in("project_id", ids)
+      .eq("organization_id", workspace.organizationId)
       .eq("work_on", today)
       .is("deleted_at", null),
     supabase
       .from("project_tasks")
       .select("id, project_id, status, due_on")
       .in("project_id", ids)
+      .eq("organization_id", workspace.organizationId)
       .neq("status", "done")
       .is("deleted_at", null),
     supabase
       .from("processes")
       .select("project_id, percent, status, planned_end_on")
       .in("project_id", ids)
+      .eq("organization_id", workspace.organizationId)
       .is("deleted_at", null),
   ]);
 
@@ -246,6 +251,7 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
   const proposedPhotos = await supabase
     .from("photos")
     .select("id", { count: "exact", head: true })
+    .eq("organization_id", workspace.organizationId)
     .eq("classification_status", "proposed")
     .is("deleted_at", null);
   const pendingCaptures = await countPendingCaptures(workspace);

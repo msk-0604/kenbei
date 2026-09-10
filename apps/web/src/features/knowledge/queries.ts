@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { currentOrganizationId } from "@/lib/org-scope";
 
 export type KnowledgeDoc = {
   id: string;
@@ -13,10 +14,12 @@ export type KnowledgeDoc = {
 };
 
 export async function listCompanyDocuments(): Promise<KnowledgeDoc[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("documents")
     .select("id, title, kind, description, mime_type, storage_path, created_at")
+    .eq("organization_id", organizationId)
     .is("project_id", null)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
@@ -55,11 +58,13 @@ export async function listCompanyDocuments(): Promise<KnowledgeDoc[]> {
 }
 
 export async function listProjectDocuments(projectId: string): Promise<KnowledgeDoc[]> {
+  const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("documents")
     .select("id, title, kind, description, mime_type, storage_path, created_at")
     .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) {
@@ -111,10 +116,12 @@ export async function searchCompanyKnowledge(query: string): Promise<KnowledgeHi
     return [];
   }
   const supabase = await createServerSupabaseClient();
+  const organizationId = await currentOrganizationId();
   const [docs, entries] = await Promise.all([
     supabase
       .from("documents")
       .select("id, title, description")
+      .eq("organization_id", organizationId)
       .is("project_id", null)
       .is("deleted_at", null)
       .or(`title.ilike.%${safe}%,description.ilike.%${safe}%`)
@@ -122,6 +129,7 @@ export async function searchCompanyKnowledge(query: string): Promise<KnowledgeHi
     supabase
       .from("knowledge_entries")
       .select("id, title, body")
+      .eq("organization_id", organizationId)
       .is("deleted_at", null)
       .or(`title.ilike.%${safe}%,body.ilike.%${safe}%`)
       .limit(10),

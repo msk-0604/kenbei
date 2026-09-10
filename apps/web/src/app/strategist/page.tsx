@@ -10,13 +10,14 @@ export default async function StrategistPage() {
   const projects = await listProjects();
   return (
     <AppShell>
-      <h1 className="text-3xl font-semibold tracking-tight">AI軍師</h1>
-      <p className="mt-2 text-zinc-600">
-        この会社のデータだけを読みます。自然言語で聞いてください。日報・タスク・写真分類は確認後のみ実行し、削除・確定・課金はしません。
-      </p>
-      <div className="mt-6">
-        <StrategistForm projects={projects.map((item) => ({ id: item.id, name: item.name }))} />
-      </div>
+      <header className="mb-6">
+        <p className="text-sm font-medium tracking-wide text-[var(--kb-amber)]">AI軍師</p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight">現場に、軍師を。</h1>
+        <p className="mt-2 max-w-xl text-base text-zinc-600">
+          この会社のデータだけを読んで答えます。日報・タスク・写真分類は確認してから実行。削除・確定・課金はしません。
+        </p>
+      </header>
+      <StrategistForm projects={projects.map((item) => ({ id: item.id, name: item.name }))} />
     </AppShell>
   );
 }

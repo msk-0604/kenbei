@@ -81,6 +81,15 @@ export {
 } from "./blackboard";
 export type { ConstructionBlackboard } from "./blackboard";
 export {
+  canChangeMembershipStatus,
+  membershipStatusChangeError,
+} from "./membership-status";
+export type {
+  MembershipLifecycleStatus,
+  MembershipStatusChangeInput,
+  MembershipStatusChangeResult,
+} from "./membership-status";
+export {
   OPS_SIGNAL_TYPES,
   assertSameOrganization,
   filterSameOrganization,
@@ -88,5 +97,6 @@ export {
   onboardingComplete,
   exportJobOrgSafe,
   acceptOnlySessionOrganization,
+  authorizeExportJobRun,
 } from "./ops-platform";
 export type { OpsSignalType, OpsSignalInput, OnboardingFlags } from "./ops-platform";

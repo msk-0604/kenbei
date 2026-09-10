@@ -11,7 +11,13 @@ async function scoped<T extends { organization_id: string }>(
   return (rows ?? []).filter((row) => exportJobOrgSafe(orgId, row.organization_id));
 }
 
-export async function processExportJob(jobId: string): Promise<{ error: string } | null> {
+export async function processExportJob(
+  jobId: string,
+  expectedOrganizationId: string,
+): Promise<{ error: string; code?: "forbidden" } | null> {
+  if (!expectedOrganizationId) {
+    return { error: "forbidden", code: "forbidden" };
+  }
   const admin = createAdminSupabaseClient();
   if (!admin) {
     return { error: "SUPABASE_SERVICE_ROLE_KEY が未設定です。エクスポートできません。" };
@@ -23,7 +29,10 @@ export async function processExportJob(jobId: string): Promise<{ error: string }
     status: string;
     requested_by: string;
   } | null;
-  if (!job || job.status !== "queued") {
+  if (!job || job.organization_id !== expectedOrganizationId) {
+    return { error: "forbidden", code: "forbidden" };
+  }
+  if (job.status !== "queued") {
     return null;
   }
   await admin
