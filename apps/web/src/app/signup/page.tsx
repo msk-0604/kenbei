@@ -3,7 +3,15 @@ import { AuthShell } from "@/components/auth-shell";
 import { SignUpForm } from "@/features/auth/sign-up-form";
 import { isSupabaseConfigured } from "@/lib/env";
 
-export default function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const params = await searchParams;
+  const nextPath =
+    params.next && params.next.startsWith("/") && !params.next.startsWith("//") ? params.next : undefined;
+
   if (!isSupabaseConfigured()) {
     return (
       <AuthShell title="設定が必要です" description="Supabase の環境変数がまだありません。">
@@ -14,10 +22,13 @@ export default function SignUpPage() {
 
   return (
     <AuthShell title="アカウント作成" description="メールとパスワードだけです。会社名は次の画面で聞きます。">
-      <SignUpForm />
+      <SignUpForm nextPath={nextPath} />
       <p className="mt-6 text-sm text-zinc-600">
         すでにアカウントがある方は{" "}
-        <Link href="/login" className="font-medium text-zinc-900 underline">
+        <Link
+          href={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login"}
+          className="font-medium text-zinc-900 underline"
+        >
           サインイン
         </Link>
       </p>

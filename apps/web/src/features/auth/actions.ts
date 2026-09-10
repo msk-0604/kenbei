@@ -22,12 +22,16 @@ export async function signUpAction(
     return { error: "パスワードは8文字以上にしてください。" };
   }
 
+  const next = formString(formData, "next");
+  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "";
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${getAppUrl()}/auth/callback`,
+      emailRedirectTo: safeNext
+        ? `${getAppUrl()}/auth/callback?next=${encodeURIComponent(safeNext)}`
+        : `${getAppUrl()}/auth/callback`,
     },
   });
   if (error) {
@@ -50,7 +54,7 @@ export async function signInAction(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     if (error.code === "email_not_confirmed" || /not confirmed/i.test(error.message)) {
-      return { error: "メールが未確認です。届いていなくても、Supabase の Users で Confirm すれば入れます。" };
+      return { error: "メールが未確認です。届いた確認メールのリンクを開いてから、もう一度サインインしてください。" };
     }
     return { error: "メールアドレスまたはパスワードが正しくありません。" };
   }

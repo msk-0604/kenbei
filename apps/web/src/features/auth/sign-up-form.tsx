@@ -3,11 +3,12 @@
 import { useActionState } from "react";
 import { signUpAction } from "@/features/auth/actions";
 
-export function SignUpForm() {
+export function SignUpForm({ nextPath }: { nextPath?: string }) {
   const [state, action, pending] = useActionState(signUpAction, null);
 
   return (
     <form action={action} className="flex flex-col gap-4">
+      {nextPath ? <input type="hidden" name="next" value={nextPath} /> : null}
       <label className="flex flex-col gap-1 text-sm font-medium">
         メールアドレス
         <input

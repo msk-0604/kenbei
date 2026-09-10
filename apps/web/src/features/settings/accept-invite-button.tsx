@@ -22,7 +22,7 @@ export function AcceptInviteButton({ token }: { token: string }) {
           });
         }}
       >
-        {pending ? "??????" : "?????????"}
+        {pending ? "参加中…" : "この会社に参加する"}
       </button>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>

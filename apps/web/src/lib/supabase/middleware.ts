@@ -50,6 +50,8 @@ export async function updateSession(request: NextRequest) {
     path === "/login" ||
     path === "/signup" ||
     path === "/join" ||
+    path === "/forgot-password" ||
+    path === "/reset-password" ||
     path.startsWith("/signup/") ||
     path.startsWith("/auth/") ||
     path.startsWith("/api/");
