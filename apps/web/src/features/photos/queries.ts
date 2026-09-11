@@ -93,15 +93,18 @@ function mapPhoto(row: PhotoRow, urls: Map<string, string>): PhotoRecord {
   };
 }
 
-const PHOTO_SELECT =
+const PHOTO_LIST_SELECT =
   "id, project_id, taken_at, created_at, captured_by, work_type_key, location_spot, floor, area, comment, tags, proposed_work_type_key, proposed_location_spot, proposed_description, proposed_tags, classification_status, storage_path, projects(name), profiles:captured_by(display_name)";
 
-export async function searchPhotos(input: PhotoSearchParams): Promise<PhotoRecord[]> {
+export async function searchPhotos(
+  input: PhotoSearchParams,
+  options: { thumbnail?: boolean; skipUrls?: boolean } = { thumbnail: true },
+): Promise<PhotoRecord[]> {
   const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
   let query = supabase
     .from("photos")
-    .select(PHOTO_SELECT)
+    .select(PHOTO_LIST_SELECT)
     .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("taken_at", { ascending: false })
@@ -146,7 +149,12 @@ export async function searchPhotos(input: PhotoSearchParams): Promise<PhotoRecor
     throw new Error(error.message);
   }
   const rows = (data as PhotoRow[] | null) ?? [];
-  const urls = await signedPhotoUrls(rows.map((row) => row.storage_path));
+  const urls = options.skipUrls
+    ? new Map<string, string>()
+    : await signedPhotoUrls(
+        rows.map((row) => row.storage_path),
+        options.thumbnail ? { width: 480, height: 360, resize: "cover", quality: 60 } : undefined,
+      );
   return rows.map((row) => mapPhoto(row, urls));
 }
 
@@ -155,7 +163,7 @@ export async function getPhoto(photoId: string): Promise<PhotoRecord | null> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("photos")
-    .select(PHOTO_SELECT)
+    .select(PHOTO_LIST_SELECT)
     .eq("id", photoId)
     .eq("organization_id", organizationId)
     .is("deleted_at", null)
@@ -189,5 +197,5 @@ export async function countPhotosOnDate(projectId: string, dayIso: string): Prom
 }
 
 export async function listProposedPhotos(): Promise<PhotoRecord[]> {
-  return searchPhotos({ proposedOnly: true });
+  return searchPhotos({ proposedOnly: true }, { skipUrls: true });
 }

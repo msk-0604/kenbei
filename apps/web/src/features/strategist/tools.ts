@@ -208,11 +208,14 @@ async function executeLevelTool(
   }
 
   if (name === "list_today_photos") {
-    const photos = await searchPhotos({
-      projectId: ctx.projectId ?? undefined,
-      from: ctx.today,
-      to: ctx.today,
-    });
+    const photos = await searchPhotos(
+      {
+        projectId: ctx.projectId ?? undefined,
+        from: ctx.today,
+        to: ctx.today,
+      },
+      { skipUrls: true },
+    );
     return {
       name,
       ok: true,
@@ -231,10 +234,13 @@ async function executeLevelTool(
   }
 
   if (name === "list_unfiled_photos") {
-    const photos = await searchPhotos({
-      projectId: ctx.projectId ?? undefined,
-      unfiledOnly: true,
-    });
+    const photos = await searchPhotos(
+      {
+        projectId: ctx.projectId ?? undefined,
+        unfiledOnly: true,
+      },
+      { skipUrls: true },
+    );
     return {
       name,
       ok: true,
@@ -294,7 +300,10 @@ async function executeLevelTool(
     if (!ctx.projectId) {
       return { name, ok: false, json: JSON.stringify({ error: "日報下書きには現場が必要です。まだ作成していません。" }) };
     }
-    const photos = await searchPhotos({ projectId: ctx.projectId, from: ctx.today, to: ctx.today });
+    const photos = await searchPhotos(
+      { projectId: ctx.projectId, from: ctx.today, to: ctx.today },
+      { skipUrls: true },
+    );
     const proposal: StrategistProposal = {
       kind: "report_draft",
       projectId: ctx.projectId,
@@ -335,8 +344,10 @@ async function executeLevelTool(
     }
     const photos =
       ctx.photoIds.length > 0
-        ? (await searchPhotos({ projectId: ctx.projectId ?? undefined })).filter((item) => ctx.photoIds.includes(item.id))
-        : await searchPhotos({ projectId: ctx.projectId ?? undefined, unfiledOnly: true });
+        ? (await searchPhotos({ projectId: ctx.projectId ?? undefined }, { skipUrls: true })).filter((item) =>
+            ctx.photoIds.includes(item.id),
+          )
+        : await searchPhotos({ projectId: ctx.projectId ?? undefined, unfiledOnly: true }, { skipUrls: true });
     const items = compact(photos, 8).map((item) => {
       const classified = classifyPhotoHeuristic(item.comment ?? item.storagePath);
       return {

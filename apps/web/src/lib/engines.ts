@@ -35,7 +35,7 @@ export function getDecisionEngine(): DecisionEngine {
     listForManagement: (organizationId) => engine.listForManagement(organizationId),
     async listForToday(organizationId, membershipId) {
       const signals = await engine.listForToday(organizationId, membershipId);
-      await persistOpsSignals(organizationId, signals).catch(() => undefined);
+      void persistOpsSignals(organizationId, signals).catch(() => undefined);
       return signals;
     },
   };

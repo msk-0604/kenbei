@@ -82,24 +82,26 @@ export const getWorkspace = cache(async (): Promise<Workspace | null> => {
     return null;
   }
 
-  const { data: profileRow } = await supabase
-    .from("profiles")
-    .select("display_name, preferred_organization_id")
-    .eq("id", user.id)
-    .maybeSingle();
+  const [{ data: profileRow }, { data: memberships }, cookieStore] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("display_name, preferred_organization_id")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("memberships")
+      .select(
+        "id, organization_id, organizations(name), roles(code, name, role_permissions(permission_code))",
+      )
+      .eq("profile_id", user.id)
+      .eq("status", "active")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: true }),
+    cookies(),
+  ]);
 
   const profile = profileRow as { display_name: string; preferred_organization_id: string | null } | null;
   const displayName = profile?.display_name ?? user.email ?? "ユーザー";
-
-  const { data: memberships } = await supabase
-    .from("memberships")
-    .select(
-      "id, organization_id, organizations(name), roles(code, name, role_permissions(permission_code))",
-    )
-    .eq("profile_id", user.id)
-    .eq("status", "active")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: true });
 
   const rows = (memberships as MembershipRow[] | null) ?? [];
   if (rows.length === 0) {
@@ -120,7 +122,6 @@ export const getWorkspace = cache(async (): Promise<Workspace | null> => {
     };
   });
 
-  const cookieStore = await cookies();
   const requested =
     cookieStore.get(ORG_COOKIE)?.value || profile?.preferred_organization_id || organizations[0]?.organizationId;
   const selected =

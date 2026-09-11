@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { Suspense } from "react";
+import { AppChrome } from "@/components/app-chrome";
+import { OrgSwitcher } from "@/features/org/org-switcher";
+import { getWorkspace } from "@/lib/session";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,10 +27,28 @@ export const viewport: Viewport = {
   themeColor: "#0f172a",
 };
 
+async function OrgSwitcherSlot() {
+  const workspace = await getWorkspace();
+  if (!workspace?.organizationId) {
+    return null;
+  }
+  return <OrgSwitcher currentId={workspace.organizationId} organizations={workspace.organizations} />;
+}
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ja">
-      <body className="min-h-dvh bg-[var(--kb-paper)] text-[var(--kb-ink)] antialiased">{children}</body>
+      <body className="min-h-dvh bg-[var(--kb-paper)] text-[var(--kb-ink)] antialiased">
+        <AppChrome
+          orgSwitcher={
+            <Suspense fallback={<div className="h-10 w-16" />}>
+              <OrgSwitcherSlot />
+            </Suspense>
+          }
+        >
+          {children}
+        </AppChrome>
+      </body>
     </html>
   );
 }

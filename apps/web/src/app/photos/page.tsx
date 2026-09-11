@@ -2,7 +2,7 @@ import Link from "next/link";
 import { parseSiteSearchQuery } from "@kensapo/domain";
 import { AppShell } from "@/components/app-shell";
 import { searchPhotos } from "@/features/photos/queries";
-import { listProjects } from "@/features/projects/queries";
+import { listProjectOptions } from "@/features/projects/queries";
 import { tokyoTodayIso } from "@/lib/dates";
 import { requireWorkspace } from "@/lib/authz-guard";
 
@@ -32,7 +32,7 @@ export default async function PhotosPage({
       from: params.from || parsed.from,
       to: params.to || parsed.to,
     }),
-    listProjects(),
+    listProjectOptions(),
   ]);
 
   return (

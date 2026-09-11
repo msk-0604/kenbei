@@ -1,13 +1,13 @@
 import { AppShell } from "@/components/app-shell";
 import { StrategistForm } from "@/features/strategist/form";
-import { listProjects } from "@/features/projects/queries";
+import { listProjectOptions } from "@/features/projects/queries";
 import { requireWorkspace } from "@/lib/authz-guard";
 
 export const dynamic = "force-dynamic";
 
 export default async function StrategistPage() {
   await requireWorkspace();
-  const projects = await listProjects();
+  const projects = await listProjectOptions();
   return (
     <AppShell>
       <header className="mb-6">
@@ -17,7 +17,7 @@ export default async function StrategistPage() {
           この会社のデータだけを読んで答えます。日報・タスク・写真分類は確認してから実行。削除・確定・課金はしません。
         </p>
       </header>
-      <StrategistForm projects={projects.map((item) => ({ id: item.id, name: item.name }))} />
+      <StrategistForm projects={projects} />
     </AppShell>
   );
 }

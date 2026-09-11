@@ -29,6 +29,21 @@ function asList<T>(value: T[] | T | null): T[] {
   return Array.isArray(value) ? value : [value];
 }
 
+export async function listProjectOptions(): Promise<{ id: string; name: string }[]> {
+  const organizationId = await currentOrganizationId();
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("projects")
+    .select("id, name")
+    .eq("organization_id", organizationId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+  if (error) {
+    throw new Error(error.message);
+  }
+  return (data as { id: string; name: string }[] | null) ?? [];
+}
+
 export async function listProjects(): Promise<ProjectListItem[]> {
   const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();

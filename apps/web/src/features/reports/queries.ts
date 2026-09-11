@@ -60,9 +60,7 @@ export async function listProjectReports(projectId: string): Promise<DailyReport
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("daily_reports")
-    .select(
-      "id, project_id, work_on, status, body, weather, work_location, worker_count, partner_companies_text, equipment_text, progress_note, issues, safety_notes, tomorrow_plan, remarks, draft_source, projects(name), profiles:created_by(display_name)",
-    )
+    .select("id, project_id, work_on, status, projects(name)")
     .eq("project_id", projectId)
     .eq("organization_id", organizationId)
     .is("deleted_at", null)
@@ -177,9 +175,7 @@ export async function listDraftReports(): Promise<DailyReportRecord[]> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("daily_reports")
-    .select(
-      "id, project_id, work_on, status, body, weather, work_location, worker_count, partner_companies_text, equipment_text, progress_note, issues, safety_notes, tomorrow_plan, remarks, draft_source, projects(name), profiles:created_by(display_name)",
-    )
+    .select("id, project_id, work_on, status, projects(name)")
     .eq("organization_id", organizationId)
     .eq("status", "draft")
     .is("deleted_at", null)
@@ -217,9 +213,7 @@ export async function listRecentReports(): Promise<DailyReportRecord[]> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("daily_reports")
-    .select(
-      "id, project_id, work_on, status, body, weather, work_location, worker_count, partner_companies_text, equipment_text, progress_note, issues, safety_notes, tomorrow_plan, remarks, draft_source, projects(name), profiles:created_by(display_name)",
-    )
+    .select("id, project_id, work_on, status, projects(name)")
     .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("work_on", { ascending: false })

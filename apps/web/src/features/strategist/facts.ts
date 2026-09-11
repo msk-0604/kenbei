@@ -13,18 +13,6 @@ export async function loadOpsBriefFacts(
   const today = tokyoTodayIso();
   const weekAgo = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
 
-  const org = await supabase.from("organizations").select("name").eq("id", organizationId).maybeSingle();
-  let projectName: string | undefined;
-  if (projectId) {
-    const project = await supabase
-      .from("projects")
-      .select("name")
-      .eq("id", projectId)
-      .eq("organization_id", organizationId)
-      .maybeSingle();
-    projectName = (project.data as { name: string } | null)?.name;
-  }
-
   let tasksQuery = supabase
     .from("project_tasks")
     .select("title, status, due_on")
@@ -73,7 +61,16 @@ export async function loadOpsBriefFacts(
     chatQuery = chatQuery.eq("project_id", projectId);
   }
 
-  const [tasks, processes, pending, drafts, week, chat] = await Promise.all([
+  const [org, project, tasks, processes, pending, drafts, week, chat] = await Promise.all([
+    supabase.from("organizations").select("name").eq("id", organizationId).maybeSingle(),
+    projectId
+      ? supabase
+          .from("projects")
+          .select("name")
+          .eq("id", projectId)
+          .eq("organization_id", organizationId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
     tasksQuery,
     procQuery,
     pendingQuery,
@@ -81,6 +78,7 @@ export async function loadOpsBriefFacts(
     weekQuery,
     chatQuery,
   ]);
+  const projectName = (project.data as { name: string } | null)?.name;
 
   const overdueTaskTitles = ((tasks.data as { title: string; status: string; due_on: string | null }[] | null) ?? [])
     .filter((row) => isTaskOverdue({ status: row.status, dueOn: row.due_on, todayIso: today }))

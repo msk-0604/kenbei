@@ -11,9 +11,13 @@ export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
   const workspace = await requireWorkspace();
-  const [reports, today] = await Promise.all([listRecentReports(), listTodayProjects(workspace)]);
+  const reportsPromise = listRecentReports();
+  const today = await listTodayProjects(workspace);
   const first = today[0];
-  const weekly = await loadOpsBriefFacts(workspace.organizationId, first?.projectId ?? null);
+  const [reports, weekly] = await Promise.all([
+    reportsPromise,
+    loadOpsBriefFacts(workspace.organizationId, first?.projectId ?? null),
+  ]);
 
   return (
     <AppShell>
