@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import { can, requireWorkspace } from "@/lib/authz-guard";
 import { getAppUrl } from "@/lib/env";
 import { persistableBillingPlanCode } from "@kensapo/domain";
+import { summarizeStripeCheckoutFailure } from "@/features/billing/stripe-error";
 import { stripePriceIdForPlan } from "@/lib/entitlement";
 import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
+import { logServerError } from "@/lib/server-log";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -42,28 +44,51 @@ export async function startCheckoutAction(planCode: string): Promise<{ error: st
   if (!secret || !price) {
     return { error: "Stripe の Price ID が未設定です。" };
   }
-  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${secret}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      mode: "subscription",
-      success_url: `${getAppUrl()}/settings/billing?ok=1`,
-      cancel_url: `${getAppUrl()}/settings/billing?canceled=1`,
-      client_reference_id: workspace.organizationId,
-      "line_items[0][price]": price,
-      "line_items[0][quantity]": "1",
-      "subscription_data[metadata][organization_id]": workspace.organizationId,
-      "subscription_data[metadata][plan_code]": checkoutPlan,
-      "metadata[organization_id]": workspace.organizationId,
-      "metadata[plan_code]": checkoutPlan,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${secret}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        mode: "subscription",
+        success_url: `${getAppUrl()}/settings/billing?ok=1`,
+        cancel_url: `${getAppUrl()}/settings/billing?canceled=1`,
+        client_reference_id: workspace.organizationId,
+        "line_items[0][price]": price,
+        "line_items[0][quantity]": "1",
+        "subscription_data[metadata][organization_id]": workspace.organizationId,
+        "subscription_data[metadata][plan_code]": checkoutPlan,
+        "metadata[organization_id]": workspace.organizationId,
+        "metadata[plan_code]": checkoutPlan,
+      }),
+    });
+  } catch {
+    await logServerError(
+      "stripe.checkout.session_failed",
+      { reason: "network", plan: checkoutPlan },
+      { organizationId: workspace.organizationId, userId: workspace.userId },
+    );
+    return { error: "Checkout を開始できませんでした。" };
+  }
   const json = (await res.json()) as { url?: string; error?: { message: string } };
   if (!json.url) {
-    return { error: json.error?.message ?? "Checkout を開始できませんでした。" };
+    const summary = summarizeStripeCheckoutFailure(res.status, json);
+    await logServerError(
+      "stripe.checkout.session_failed",
+      {
+        reason: "stripe_api",
+        plan: checkoutPlan,
+        status: summary.status,
+        stripe_type: summary.type,
+        stripe_code: summary.code,
+        stripe_message: summary.message,
+      },
+      { organizationId: workspace.organizationId, userId: workspace.userId },
+    );
+    return { error: summary.message };
   }
   redirect(json.url);
 }
