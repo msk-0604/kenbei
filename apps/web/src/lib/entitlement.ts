@@ -1,6 +1,7 @@
 import "server-only";
 
 import { billingPlanByCode, persistableBillingPlanCode, seatLimitError } from "@kensapo/domain";
+import { readServerEnv } from "@/lib/server-env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Workspace } from "@/lib/session";
 
@@ -63,18 +64,32 @@ export async function assertSeatAvailable(workspace: Workspace): Promise<{ error
   return null;
 }
 
-export function stripePriceIdForPlan(planCode: string): string | null {
+const STANDARD_PRICE_KEYS = ["STRIPE_PRICE_STANDARD", "STRIPE_PRICE_PRO", "STRIPE_PRICE_TEAM"] as const;
+const BUSINESS_PRICE_KEYS = ["STRIPE_PRICE_BUSINESS"] as const;
+
+export function resolveStripePriceForPlan(planCode: string): {
+  price: string | null;
+  triedKeys: string[];
+  emptyKeys: string[];
+} {
   const official = persistableBillingPlanCode(planCode);
-  if (official === "pro" || planCode === "standard" || planCode === "team") {
-    return (
-      process.env.STRIPE_PRICE_STANDARD ||
-      process.env.STRIPE_PRICE_PRO ||
-      process.env.STRIPE_PRICE_TEAM ||
-      null
-    );
+  const triedKeys =
+    official === "pro" || planCode === "standard" || planCode === "team"
+      ? [...STANDARD_PRICE_KEYS]
+      : official === "business"
+        ? [...BUSINESS_PRICE_KEYS]
+        : [];
+  const emptyKeys: string[] = [];
+  for (const key of triedKeys) {
+    const value = readServerEnv(key);
+    if (value) {
+      return { price: value, triedKeys, emptyKeys };
+    }
+    emptyKeys.push(key);
   }
-  if (official === "business") {
-    return process.env.STRIPE_PRICE_BUSINESS || null;
-  }
-  return null;
+  return { price: null, triedKeys, emptyKeys };
+}
+
+export function stripePriceIdForPlan(planCode: string): string | null {
+  return resolveStripePriceForPlan(planCode).price;
 }

@@ -5,14 +5,15 @@ import { can, requireWorkspace } from "@/lib/authz-guard";
 import { getAppUrl } from "@/lib/env";
 import { persistableBillingPlanCode } from "@kensapo/domain";
 import { summarizeStripeCheckoutFailure } from "@/features/billing/stripe-error";
-import { stripePriceIdForPlan } from "@/lib/entitlement";
+import { resolveStripePriceForPlan } from "@/lib/entitlement";
 import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
+import { readServerEnv } from "@/lib/server-env";
 import { logServerError } from "@/lib/server-log";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function stripeSecret(): string | null {
-  const key = process.env.STRIPE_SECRET_KEY;
+  const key = readServerEnv("STRIPE_SECRET_KEY");
   return key && !key.includes("YOUR_") ? key : null;
 }
 
@@ -40,10 +41,26 @@ export async function startCheckoutAction(planCode: string): Promise<{ error: st
   if (checkoutPlan !== "pro" && checkoutPlan !== "business") {
     return { error: "このプランは画面から契約できません。51名以上は要相談です。" };
   }
-  const price = stripePriceIdForPlan(planCode);
-  if (!secret || !price) {
-    return { error: "Stripe の Price ID が未設定です。" };
+  const priceLookup = resolveStripePriceForPlan(planCode);
+  if (!secret) {
+    await logServerError(
+      "stripe.checkout.env_missing",
+      { missing: "STRIPE_SECRET_KEY", plan: checkoutPlan },
+      { organizationId: workspace.organizationId, userId: workspace.userId },
+    );
+    return { error: "原因: Vercel の STRIPE_SECRET_KEY が空です。" };
   }
+  if (!priceLookup.price) {
+    await logServerError(
+      "stripe.checkout.env_missing",
+      { missing: priceLookup.emptyKeys.join(","), plan: checkoutPlan },
+      { organizationId: workspace.organizationId, userId: workspace.userId },
+    );
+    return {
+      error: `原因: Vercel の ${priceLookup.emptyKeys.join(" / ")} が空です。`,
+    };
+  }
+  const price = priceLookup.price;
   let res: Response;
   try {
     res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
