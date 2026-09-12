@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
   },
   outputFileTracingIncludes: {
     "/api/pdf/[kind]/[id]": [...pdfFontTraceIncludes],
+    "/api/pdf/[kind]/[id]/route": [...pdfFontTraceIncludes],
   },
 };
 

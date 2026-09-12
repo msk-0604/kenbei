@@ -54,6 +54,7 @@ export function pdfFontCandidates(envPath: string | undefined, cwd = process.cwd
     cwdFonts,
     ...walkDirs(cwd).flatMap(fontNamesUnder),
     ...(lambdaRoot ? fontNamesUnder(lambdaRoot) : []),
+    ...["/var/task", "/var/task/apps/web"].flatMap(fontNamesUnder),
     fromModule,
   ];
 }
