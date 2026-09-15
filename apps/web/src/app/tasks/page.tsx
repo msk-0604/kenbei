@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { TASK_STATUS_LABELS } from "@kensapo/domain";
 import { AppShell } from "@/components/app-shell";
+import { EmptyGuide } from "@/components/empty-guide";
+import { AppLink } from "@/components/app-nav";
 import { listOpenTasks } from "@/features/site-ops/queries";
 import { CompleteTaskButton } from "@/features/today/complete-task-button";
 import { can, requireWorkspace } from "@/lib/authz-guard";
@@ -42,7 +44,13 @@ export default async function TasksPage() {
           </li>
         ))}
       </ul>
-      {tasks.length === 0 ? <p className="mt-6 text-zinc-500">未完了のタスクはありません。</p> : null}
+      {tasks.length === 0 ? (
+        <EmptyGuide
+          title="未完了のタスクはありません"
+          body="写真から残作業を登録すると、Todayでまとめて確認できます。"
+          action={<AppLink href="/photos">写真を見る</AppLink>}
+        />
+      ) : null}
     </AppShell>
   );
 }

@@ -48,7 +48,7 @@ export function CreateProjectForm() {
       </select>
       {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
       <button type="submit" disabled={pending} className="rounded-2xl bg-zinc-900 font-medium text-white">
-        {pending ? "作成中…" : "現場を作る"}
+        {pending ? "作成中…" : "現場を作成"}
       </button>
     </form>
   );

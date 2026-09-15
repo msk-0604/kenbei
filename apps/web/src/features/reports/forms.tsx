@@ -5,15 +5,25 @@ import { confirmReportAction, createTodayReportDraftAction, saveReportAction } f
 import type { DailyReportRecord } from "@/features/reports/queries";
 import type { PhotoRecord } from "@/features/photos/queries";
 
-export function CreateTodayReportButton({ projectId }: { projectId: string }) {
+export function CreateTodayReportButton({
+  projectId,
+  variant = "primary",
+}: {
+  projectId: string;
+  variant?: "primary" | "secondary";
+}) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const look =
+    variant === "secondary"
+      ? "border border-[var(--kb-line)] bg-white text-[var(--kb-ink)] hover:bg-zinc-50"
+      : "bg-[var(--kb-ink)] text-white hover:bg-zinc-800";
   return (
     <div className="flex flex-col gap-2">
       <button
         type="button"
         disabled={pending}
-        className="rounded-2xl bg-zinc-900 font-medium text-white"
+        className={`kb-tap min-h-12 w-full rounded-2xl font-medium disabled:opacity-60 ${look}`}
         onClick={() => {
           setPending(true);
           void createTodayReportDraftAction(projectId).then((result) => {

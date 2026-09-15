@@ -69,7 +69,7 @@ export default async function DataExportPage({
   return (
     <AppShell>
       <p className="text-sm text-zinc-500">
-        <a href="/settings">会社設定</a>
+        <a href="/settings">設定</a>
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">データエクスポート</h1>
       <p className="mt-2 text-zinc-600">この会社のデータだけを JSON / CSV 入り ZIP で受け取れます。他社データは混ざりません。</p>

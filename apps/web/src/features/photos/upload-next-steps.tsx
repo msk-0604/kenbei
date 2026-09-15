@@ -2,29 +2,28 @@
 
 import Link from "next/link";
 import { CreateTodayReportButton } from "@/features/reports/forms";
+import { AppLink } from "@/components/app-nav";
 
 export function PhotoUploadNextSteps({
   projectId,
   canReport,
+  photoId,
 }: {
   projectId: string;
   canReport: boolean;
+  photoId?: string | null;
 }) {
+  const taskHref = photoId ? `/photos/${photoId}` : `/projects/${projectId}?tab=photos`;
   return (
-    <div className="flex flex-col gap-3 rounded-3xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
-      <p className="font-medium text-emerald-950">写真を保存しました。次はどれにしますか。</p>
+    <div className="kb-enter flex flex-col gap-3 rounded-3xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
+      <p className="font-medium text-emerald-950">写真を保存しました。次はタスクか日報です。</p>
+      <AppLink href={taskHref}>{photoId ? "この写真からタスクを追加" : "写真からタスクを追加"}</AppLink>
+      {canReport ? <CreateTodayReportButton projectId={projectId} variant="secondary" /> : null}
       <Link
         href={`/projects/${projectId}?tab=photos`}
-        className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-white px-4 font-medium text-zinc-900 ring-1 ring-zinc-200"
+        className="kb-tap inline-flex min-h-12 items-center justify-center rounded-2xl px-4 text-sm font-medium text-zinc-600"
       >
         写真一覧を見る
-      </Link>
-      {canReport ? <CreateTodayReportButton projectId={projectId} /> : null}
-      <Link
-        href={`/projects/${projectId}?tab=tasks`}
-        className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-white px-4 font-medium text-zinc-900 ring-1 ring-zinc-200"
-      >
-        タスクを追加
       </Link>
     </div>
   );

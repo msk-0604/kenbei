@@ -8,7 +8,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "KENBEI",
-  description: "現場が終わってからの1〜2時間を、10〜15分にする。施工管理者のためのKENBEI。",
+  description: "現場の記録から、今日の事務まで。施工管理者のためのKENBEI。",
   applicationName: "KENBEI",
   appleWebApp: {
     capable: true,

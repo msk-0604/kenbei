@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { parseSiteSearchQuery } from "@kensapo/domain";
 import { AppShell } from "@/components/app-shell";
+import { EmptyGuide } from "@/components/empty-guide";
+import { AppLink } from "@/components/app-nav";
 import { searchPhotos } from "@/features/photos/queries";
 import { listProjectOptions } from "@/features/projects/queries";
 import { tokyoTodayIso } from "@/lib/dates";
@@ -39,7 +41,7 @@ export default async function PhotosPage({
     <AppShell>
       <div className="flex items-end justify-between gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">写真</h1>
-        <Link href="/photos/upload" className="rounded-2xl bg-zinc-900 px-4 font-medium text-white">
+        <Link href="/photos/upload" className="kb-tap rounded-2xl bg-[var(--kb-ink)] px-4 font-medium text-white">
           上げる
         </Link>
       </div>
@@ -66,7 +68,7 @@ export default async function PhotosPage({
           <input type="date" name="from" defaultValue={params.from ?? ""} className="rounded-xl border border-zinc-200 px-3" />
           <input type="date" name="to" defaultValue={params.to ?? ""} className="rounded-xl border border-zinc-200 px-3" />
         </div>
-        <button type="submit" className="rounded-2xl bg-zinc-900 font-medium text-white">
+        <button type="submit" className="kb-tap rounded-2xl bg-[var(--kb-ink)] font-medium text-white">
           探す
         </button>
       </form>
@@ -87,7 +89,19 @@ export default async function PhotosPage({
           </li>
         ))}
       </ul>
-      {photos.length === 0 ? <p className="mt-6 text-zinc-500">該当する写真はありません。</p> : null}
+      {photos.length === 0 ? (
+        params.q || params.projectId || params.workType || params.location || params.from || params.to ? (
+          <p className="mt-6 text-zinc-500">条件に合う写真はありません。条件を変えて探してください。</p>
+        ) : (
+          <div className="mt-6">
+            <EmptyGuide
+              title="まだ写真がありません"
+              body="現場写真を登録すると、タスクや日報につなげられます。"
+              action={<AppLink href="/photos/upload">写真を上げる</AppLink>}
+            />
+          </div>
+        )
+      ) : null}
     </AppShell>
   );
 }

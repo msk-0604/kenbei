@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PROJECT_STATUS_LABELS } from "@kensapo/domain";
 import { AppShell } from "@/components/app-shell";
+import { EmptyGuide } from "@/components/empty-guide";
 import { CreateProjectForm } from "@/features/projects/forms";
 import { listProjects } from "@/features/projects/queries";
 import { can, requireWorkspace } from "@/lib/authz-guard";
@@ -15,16 +16,25 @@ export default async function ProjectsPage() {
   return (
     <AppShell>
       <h1 className="text-3xl font-semibold tracking-tight">現場</h1>
+      {projects.length === 0 ? (
+        <div className="mt-6">
+          <EmptyGuide
+            title="まだ現場がありません"
+            body="最初の現場を登録して、写真・タスク・日報をまとめましょう。"
+            action={canCreate ? undefined : <p className="text-sm text-zinc-500">現場の作成権限がありません。</p>}
+          />
+        </div>
+      ) : null}
       {canCreate ? (
-        <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-zinc-100">
-          <h2 className="mb-3 text-base font-medium">新しい現場</h2>
+        <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
+          <h2 className="mb-3 text-base font-medium">現場を作成</h2>
           <CreateProjectForm />
         </section>
       ) : null}
       <ul className="mt-6 flex flex-col gap-3">
         {projects.map((project) => (
           <li key={project.id}>
-            <Link href={`/projects/${project.id}`} className="block rounded-3xl bg-white p-5 shadow-sm ring-1 ring-zinc-100">
+            <Link href={`/projects/${project.id}`} className="kb-tap block rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
               <p className="text-lg font-medium">{project.name}</p>
               <p className="mt-1 text-sm text-zinc-500">
                 {PROJECT_STATUS_LABELS[project.status as keyof typeof PROJECT_STATUS_LABELS] ?? project.status}
@@ -35,7 +45,6 @@ export default async function ProjectsPage() {
           </li>
         ))}
       </ul>
-      {projects.length === 0 ? <p className="mt-6 text-zinc-500">表示できる現場はありません。</p> : null}
     </AppShell>
   );
 }

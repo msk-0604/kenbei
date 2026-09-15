@@ -1,8 +1,10 @@
 import { AppShell } from "@/components/app-shell";
+import { PlanBillingPanel } from "@/features/billing/plan-billing-panel";
 import { CompanySettingsForm, InviteMemberForm, MembershipStatusForm } from "@/features/settings/forms";
 import { getCompanySettings, listInvites, listOrganizationMembers } from "@/features/settings/queries";
 import { getAppUrl } from "@/lib/env";
 import { can, requireWorkspace } from "@/lib/authz-guard";
+import { getEntitlement } from "@/lib/entitlement";
 
 export const dynamic = "force-dynamic";
 
@@ -12,21 +14,36 @@ export default async function SettingsPage() {
   if (!canManage) {
     return (
       <AppShell>
-        <h1 className="text-3xl font-semibold tracking-tight">会社</h1>
-        <p className="mt-3 text-zinc-600">会社設定を変更する権限がありません。</p>
+        <h1 className="text-3xl font-semibold tracking-tight">設定</h1>
+        <p className="mt-3 text-zinc-600">設定を変更する権限がありません。</p>
       </AppShell>
     );
   }
-  const [settings, invites, members] = await Promise.all([
+  const [settings, invites, members, entitlement] = await Promise.all([
     getCompanySettings(workspace.organizationId),
     listInvites(),
     can(workspace, "member.manage") ? listOrganizationMembers() : Promise.resolve([]),
+    can(workspace, "org.manage")
+      ? getEntitlement(workspace.organizationId)
+      : Promise.resolve(null),
   ]);
 
   return (
     <AppShell>
-      <h1 className="text-3xl font-semibold tracking-tight">会社設定</h1>
-      <p className="mt-2 text-base text-zinc-600">KENBEI を御社の道具として使えるようにします。</p>
+      <h1 className="text-3xl font-semibold tracking-tight">設定</h1>
+      <p className="mt-2 text-base leading-7 text-zinc-600">
+        会社としてKENBEIを導入する判断と、表示名・メンバーの管理ができます。
+      </p>
+      {entitlement ? (
+        <div className="mt-6">
+          <PlanBillingPanel
+            planCode={entitlement.planCode}
+            status={entitlement.status}
+            cancelAtPeriodEnd={entitlement.cancelAtPeriodEnd}
+            variant="settings"
+          />
+        </div>
+      ) : null}
       <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
         <h2 className="mb-3 text-base font-medium">表示名とロゴ</h2>
         <CompanySettingsForm
@@ -82,11 +99,6 @@ export default async function SettingsPage() {
         <a href="/settings/data" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
           データエクスポート
         </a>
-        {can(workspace, "org.manage") ? (
-          <a href="/settings/billing" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
-            お支払い
-          </a>
-        ) : null}
       </nav>
     </AppShell>
   );

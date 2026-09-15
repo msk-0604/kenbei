@@ -22,7 +22,7 @@ export const DESKTOP_NAV = [
   { href: "/confirm", label: "確認", icon: "check" },
   { href: "/strategist", label: "軍師", icon: "ai" },
   { href: "/knowledge", label: "資料", icon: "docs" },
-  { href: "/settings", label: "会社", icon: "org" },
+  { href: "/settings", label: "設定", icon: "org" },
   { href: "/account", label: "自分", icon: "me" },
 ] as const;
 
@@ -159,7 +159,7 @@ export function AppLink({
     <Link
       href={href}
       prefetch
-      className={`inline-flex min-h-12 items-center justify-center rounded-2xl px-4 text-base font-medium transition-all duration-150 active:scale-[0.98] ${styles} ${className ?? ""}`}
+      className={`inline-flex min-h-12 items-center justify-center rounded-2xl px-4 text-base font-medium kb-tap ${styles} ${className ?? ""}`}
     >
       <LinkBusy>{children}</LinkBusy>
     </Link>
@@ -182,8 +182,8 @@ function DesktopItem({
       href={href}
       prefetch
       aria-current={active ? "page" : undefined}
-      className={`inline-flex min-h-10 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium transition-all duration-150 active:scale-[0.98] ${
-        active ? "bg-[var(--kb-ink)] text-white shadow-sm" : "text-zinc-600 hover:bg-white/80 hover:text-zinc-900"
+      className={`kb-tap inline-flex min-h-10 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-medium ${
+        active ? "bg-[var(--kb-ink)] text-white" : "text-zinc-600 hover:bg-white/80 hover:text-zinc-900"
       }`}
     >
       <LinkBusy>
@@ -210,7 +210,7 @@ function MobileItem({
       href={href}
       prefetch
       aria-current={active ? "page" : undefined}
-      className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 pt-1 text-[11px] font-medium transition-colors duration-150 ${
+      className={`kb-tap relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 pt-1 text-xs font-medium ${
         active ? "text-[var(--kb-ink)]" : "text-zinc-400"
       }`}
     >
@@ -227,11 +227,25 @@ export function AppNav({ orgSwitcher }: { orgSwitcher: ReactNode }) {
   const pathname = usePathname();
   return (
     <>
+      <header className="mb-6 flex items-center justify-between gap-3 md:hidden">
+        <Link href="/" prefetch className="text-lg font-semibold tracking-tight">
+          KENBEI
+        </Link>
+        <Link
+          href="/settings"
+          prefetch
+          className={`kb-tap inline-flex min-h-10 items-center rounded-full px-3 text-sm font-medium ${
+            isActivePath(pathname, "/settings") ? "bg-[var(--kb-ink)] text-white" : "bg-white text-zinc-700 ring-1 ring-[var(--kb-line)]"
+          }`}
+        >
+          設定
+        </Link>
+      </header>
       <header className="mb-8 hidden items-center justify-between gap-4 md:flex">
         <Link href="/" prefetch className="shrink-0 text-lg font-semibold tracking-tight">
           KENBEI
         </Link>
-        <nav className="flex flex-1 flex-wrap items-center justify-center gap-1 rounded-full bg-white/70 p-1 ring-1 ring-[var(--kb-line)] backdrop-blur">
+        <nav className="flex flex-1 flex-wrap items-center justify-center gap-1 rounded-full bg-white p-1 ring-1 ring-[var(--kb-line)]">
           {DESKTOP_NAV.map((item) => (
             <DesktopItem
               key={item.href}
@@ -244,7 +258,7 @@ export function AppNav({ orgSwitcher }: { orgSwitcher: ReactNode }) {
         </nav>
         <div className="shrink-0">{orgSwitcher}</div>
       </header>
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--kb-line)] bg-white/90 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(15,23,42,0.06)] backdrop-blur-md md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--kb-line)] bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-6">
           {MOBILE_NAV.map((item) => (
             <MobileItem

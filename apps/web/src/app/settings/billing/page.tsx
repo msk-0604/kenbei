@@ -1,10 +1,6 @@
 import { AppShell } from "@/components/app-shell";
-import {
-  cancelSubscriptionAction,
-  openBillingPortalAction,
-  startCheckoutFormAction,
-} from "@/features/billing/actions";
-import { CheckoutSubmitButton } from "@/features/billing/checkout-submit-button";
+import { cancelSubscriptionAction, openBillingPortalAction } from "@/features/billing/actions";
+import { PlanBillingPanel } from "@/features/billing/plan-billing-panel";
 import { redactStripeSecrets } from "@/features/billing/stripe-error";
 import { can, requireWorkspace } from "@/lib/authz-guard";
 import { getEntitlement } from "@/lib/entitlement";
@@ -28,7 +24,7 @@ export default async function BillingPage({
   if (!can(workspace, "org.manage")) {
     return (
       <AppShell>
-        <h1 className="text-3xl font-semibold">Billing</h1>
+        <h1 className="text-3xl font-semibold">会社の導入</h1>
         <p className="mt-3">管理者のみが契約を変更できます。</p>
       </AppShell>
     );
@@ -37,16 +33,10 @@ export default async function BillingPage({
   return (
     <AppShell>
       <p className="text-sm text-zinc-500">
-        <a href="/settings">会社設定</a>
+        <a href="/settings">設定</a>
       </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">お支払い</h1>
-      <p className="mt-2 text-zinc-600">
-        現在 {entitlement.planName}（最大{entitlement.maxMembers ?? "要相談"}名） / {entitlement.status}
-        {entitlement.cancelAtPeriodEnd ? "（期末で解約予約）" : ""}
-      </p>
-      <p className="mt-2 text-sm text-zinc-500">
-        FREE 1〜3名 0円 / STANDARD 4〜30名 月額39,800円 / BUSINESS 31〜50名 月額65,000円 / 51名以上は要相談
-      </p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">会社の導入</h1>
+      <p className="mt-2 text-sm leading-6 text-zinc-600">プランの確認とお支払いは、この画面から進めます。</p>
       {error ? (
         <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-200" role="alert">
           {error}
@@ -62,18 +52,14 @@ export default async function BillingPage({
           Checkout をキャンセルしました。
         </p>
       ) : null}
-      <div className="mt-6 grid gap-3 md:grid-cols-2">
-        {[
-          { code: "standard", label: "STANDARD にアップグレード（4〜30名 / 月額39,800円）" },
-          { code: "business", label: "BUSINESS にアップグレード（31〜50名 / 月額65,000円）" },
-        ].map((plan) => (
-          <form key={plan.code} action={startCheckoutFormAction}>
-            <input type="hidden" name="planCode" value={plan.code} />
-            <CheckoutSubmitButton label={plan.label} />
-          </form>
-        ))}
+      <div className="mt-6">
+        <PlanBillingPanel
+          planCode={entitlement.planCode}
+          status={entitlement.status}
+          cancelAtPeriodEnd={entitlement.cancelAtPeriodEnd}
+          variant="billing"
+        />
       </div>
-      <p className="mt-3 text-sm text-zinc-500">51名以上は自動決済できません。営業へご相談ください。</p>
       <form action={openBillingPortalAction} className="mt-4">
         <button type="submit" className="rounded-2xl bg-white px-4 py-2 ring-1 ring-zinc-200">
           カスタマーポータル（ダウングレード含む）

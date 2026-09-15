@@ -33,7 +33,7 @@ export function CompanySettingsForm({
       </label>
       {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
       <button type="submit" disabled={pending} className="rounded-2xl bg-[var(--kb-ink)] font-medium text-white">
-        {pending ? "保存中…" : "会社設定を保存"}
+        {pending ? "保存中…" : "設定を保存"}
       </button>
     </form>
   );

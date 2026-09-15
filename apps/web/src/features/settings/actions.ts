@@ -22,7 +22,7 @@ export async function updateCompanySettingsAction(
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
   if (!can(workspace, "org.manage") && !can(workspace, "member.manage")) {
-    return { error: "会社設定を変更する権限がありません。" };
+    return { error: "設定を変更する権限がありません。" };
   }
   const displayName = formString(formData, "companyDisplayName");
   const supabase = await createServerSupabaseClient();

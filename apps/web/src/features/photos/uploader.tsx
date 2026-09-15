@@ -54,6 +54,7 @@ export function PhotoUploader({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [savedPhotoId, setSavedPhotoId] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [online, setOnline] = useState(true);
   const [useBlackboard, setUseBlackboard] = useState(true);
@@ -98,7 +99,7 @@ export function PhotoUploader({
     await saveBlackboardDraft(organizationId, projectId, next);
   }
 
-  async function uploadPrepared(items: QueuedPhoto[]): Promise<void> {
+  async function uploadPrepared(items: QueuedPhoto[]): Promise<string | null> {
     const supabase = createBrowserSupabaseClient();
     const registered: {
       id: string;
@@ -136,6 +137,7 @@ export function PhotoUploader({
     }
     await removeQueuedPhotos(uploadedIds);
     await refreshPending();
+    return result.ids[0] ?? registered[0]?.id ?? null;
   }
 
   async function flushQueue() {
@@ -149,8 +151,10 @@ export function PhotoUploader({
     setBusy(true);
     setError(null);
     try {
-      await uploadPrepared(queued);
+      const photoId = await uploadPrepared(queued);
       setProgress(`${queued.length}枚の未送信を送りました`);
+      setSavedPhotoId(photoId);
+      setSaved(true);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "未送信の再送に失敗しました");
     } finally {
@@ -168,6 +172,7 @@ export function PhotoUploader({
     setError(null);
     setDone(0);
     setSaved(false);
+    setSavedPhotoId(null);
     try {
       await saveBlackboardDraft(organizationId, projectId, board);
       const prepared: QueuedPhoto[] = [];
@@ -204,8 +209,9 @@ export function PhotoUploader({
         );
         return;
       }
-      await uploadPrepared(prepared);
+      const photoId = await uploadPrepared(prepared);
       setProgress(`${prepared.length}枚を保存しました`);
+      setSavedPhotoId(photoId);
       setSaved(true);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "アップロードに失敗しました");
@@ -315,7 +321,9 @@ export function PhotoUploader({
         </p>
       ) : null}
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
-      {saved ? <PhotoUploadNextSteps projectId={projectId} canReport={canCreateReport} /> : null}
+      {saved ? (
+        <PhotoUploadNextSteps projectId={projectId} canReport={canCreateReport} photoId={savedPhotoId} />
+      ) : null}
     </div>
   );
 }

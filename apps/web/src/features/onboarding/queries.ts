@@ -6,10 +6,10 @@ import type { Workspace } from "@/lib/session";
 
 export async function loadOnboardingFlags(
   workspace: Workspace,
-): Promise<OnboardingFlags & { complete: boolean; firstProjectId: string | null }> {
+): Promise<OnboardingFlags & { complete: boolean; firstProjectId: string | null; hasReport: boolean }> {
   const supabase = await createServerSupabaseClient();
   const orgId = workspace.organizationId;
-  const [projects, members, invites, photos, tasks] = await Promise.all([
+  const [projects, members, invites, photos, tasks, reports] = await Promise.all([
     supabase
       .from("projects")
       .select("id")
@@ -21,6 +21,7 @@ export async function loadOnboardingFlags(
     supabase.from("organization_invitations").select("id", { count: "exact", head: true }).eq("organization_id", orgId).is("deleted_at", null),
     supabase.from("photos").select("id", { count: "exact", head: true }).eq("organization_id", orgId).is("deleted_at", null),
     supabase.from("project_tasks").select("id", { count: "exact", head: true }).eq("organization_id", orgId).is("deleted_at", null),
+    supabase.from("daily_reports").select("id", { count: "exact", head: true }).eq("organization_id", orgId).is("deleted_at", null),
   ]);
   const firstProjectId = ((projects.data as { id: string }[] | null) ?? [])[0]?.id ?? null;
   const flags: OnboardingFlags = {
@@ -30,5 +31,10 @@ export async function loadOnboardingFlags(
     hasPhoto: (photos.count ?? 0) > 0,
     hasTask: (tasks.count ?? 0) > 0,
   };
-  return { ...flags, complete: onboardingComplete(flags), firstProjectId };
+  return {
+    ...flags,
+    complete: onboardingComplete(flags),
+    firstProjectId,
+    hasReport: (reports.count ?? 0) > 0,
+  };
 }

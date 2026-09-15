@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { briefWeeklySummary } from "@kensapo/ai";
 import { AppShell } from "@/components/app-shell";
+import { EmptyGuide } from "@/components/empty-guide";
+import { AppLink } from "@/components/app-nav";
 import { listRecentReports } from "@/features/reports/queries";
 import { listTodayProjects } from "@/features/today/queries";
 import { CreateTodayReportButton } from "@/features/reports/forms";
@@ -11,27 +13,25 @@ export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
   const workspace = await requireWorkspace();
-  const reportsPromise = listRecentReports();
-  const today = await listTodayProjects(workspace);
+  const [reports, today] = await Promise.all([listRecentReports(), listTodayProjects(workspace)]);
   const first = today[0];
-  const [reports, weekly] = await Promise.all([
-    reportsPromise,
-    loadOpsBriefFacts(workspace.organizationId, first?.projectId ?? null),
-  ]);
+  const weekly = await loadOpsBriefFacts(workspace.organizationId, first?.projectId ?? null);
 
   return (
     <AppShell>
       <h1 className="text-3xl font-semibold tracking-tight">日報</h1>
-      {first ? (
+      {first && reports.length > 0 ? (
         <div className="mt-6">
           <CreateTodayReportButton projectId={first.projectId} />
         </div>
       ) : null}
-      <section className="mt-6 whitespace-pre-wrap rounded-3xl bg-white p-5 text-sm ring-1 ring-zinc-100">
-        <h2 className="mb-2 text-base font-medium">週次要約（下書き）</h2>
-        <p>{briefWeeklySummary(weekly)}</p>
-        <p className="mt-2 text-xs text-zinc-500">確定操作ではありません。日報の確定は各日報画面で行います。</p>
-      </section>
+      {reports.length > 0 ? (
+        <section className="mt-6 whitespace-pre-wrap rounded-3xl bg-white p-5 text-sm ring-1 ring-zinc-100">
+          <h2 className="mb-2 text-base font-medium">週次要約（下書き）</h2>
+          <p>{briefWeeklySummary(weekly)}</p>
+          <p className="mt-2 text-xs text-zinc-500">確定操作ではありません。日報の確定は各日報画面で行います。</p>
+        </section>
+      ) : null}
       <ul className="mt-6 flex flex-col gap-3">
         {reports.map((report) => (
           <li key={report.id}>
@@ -44,7 +44,21 @@ export default async function ReportsPage() {
           </li>
         ))}
       </ul>
-      {reports.length === 0 ? <p className="mt-6 text-zinc-500">日報はまだありません。</p> : null}
+      {reports.length === 0 ? (
+        <div className="mt-6">
+          <EmptyGuide
+            title="まだ日報がありません"
+            body="今日の写真や進捗をもとに日報を作成できます。"
+            action={
+              first ? (
+                <CreateTodayReportButton projectId={first.projectId} />
+              ) : (
+                <AppLink href="/projects">現場を作成</AppLink>
+              )
+            }
+          />
+        </div>
+      ) : null}
     </AppShell>
   );
 }

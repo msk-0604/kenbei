@@ -30,8 +30,14 @@ export default async function AccountPage() {
         {ROLE_MAP[workspace.roleCode] ?? workspace.roleName} / {workspace.roleName}
       </p>
       <nav className="mt-8 flex flex-col gap-3">
-        <Link href="/settings" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
-          会社設定
+        <Link href="/settings" className="kb-tap rounded-2xl bg-white px-4 py-3 ring-1 ring-[var(--kb-line)]">
+          設定
+        </Link>
+        <Link href="/settings/billing" className="kb-tap rounded-2xl bg-white px-4 py-3 ring-1 ring-[var(--kb-line)]">
+          会社の導入
+        </Link>
+        <Link href="/settings/data" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
+          データエクスポート
         </Link>
         <Link href="/confirm" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
           確認待ち {notifications.length > 0 ? `（${notifications.length}）` : ""}
