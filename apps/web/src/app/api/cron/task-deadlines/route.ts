@@ -7,7 +7,6 @@ import {
   taskDeadlineOrFilter,
   type TaskDeadlineCursor,
 } from "@/features/cron/task-deadline-cursor";
-import { diagnoseCronSecret, isCronDiagRequest } from "@/features/cron/cron-secret-diag";
 import { tokyoTodayIso } from "@/lib/dates";
 import { readServerEnv } from "@/lib/server-env";
 import { logServerInfo, logServerWarn } from "@/lib/server-log";
@@ -31,9 +30,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (isCronDiagRequest(request.headers)) {
-    return NextResponse.json(diagnoseCronSecret(request.headers, process.env["CRON_SECRET"]));
-  }
   const secret = readServerEnv("CRON_SECRET");
   const bearer = request.headers.get("authorization");
   const headerSecret = request.headers.get("x-cron-secret");
