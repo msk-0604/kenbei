@@ -8,6 +8,7 @@ import {
   type TaskDeadlineCursor,
 } from "@/features/cron/task-deadline-cursor";
 import { tokyoTodayIso } from "@/lib/dates";
+import { readServerEnv } from "@/lib/server-env";
 import { logServerInfo, logServerWarn } from "@/lib/server-log";
 import { sendExpoPushToMember } from "@/lib/push";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -29,7 +30,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const secret = process.env.CRON_SECRET;
+  const secret = readServerEnv("CRON_SECRET");
   const bearer = request.headers.get("authorization");
   const headerSecret = request.headers.get("x-cron-secret");
   const authorized = Boolean(secret) && (bearer === `Bearer ${secret}` || headerSecret === secret);
