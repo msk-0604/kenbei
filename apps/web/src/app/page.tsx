@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const workspace = await requireWorkspace();
-  const [{ projects, ops, pendingCaptureId }, onboarding, signals] = await Promise.all([
+  const [{ projects, ops, pendingCaptureId, focusTasks }, onboarding, signals] = await Promise.all([
     loadTodayBoard(workspace),
     loadOnboardingFlags(workspace),
     getDecisionEngine().listForToday(workspace.organizationId, workspace.membershipId),
@@ -28,6 +28,7 @@ export default async function HomePage() {
           title: item.title,
           reason: String(item.evidence.reason ?? ""),
         }))}
+        focusTasks={focusTasks}
       />
     </AppShell>
   );

@@ -1,16 +1,18 @@
 import Link from "next/link";
-import { estimateOfficeMinutes } from "@kensapo/domain";
+import { estimateOfficeMinutes, TASK_STATUS_LABELS } from "@kensapo/domain";
 import { can } from "@/lib/authz-guard";
 import type { Workspace } from "@/lib/session";
 import { formatTokyoDate } from "@/lib/dates";
 import { SiteButtons } from "@/features/today/site-buttons";
+import { CompleteTaskButton } from "@/features/today/complete-task-button";
 import { CreateTodayReportButton } from "@/features/reports/forms";
 import type { TodayBoardProject, TodayOps } from "@/features/today/queries";
+import type { TodayFocusTask } from "@/features/today/focus-tasks";
 import { OnboardingChecklist } from "@/features/onboarding/checklist";
 import type { OnboardingFlags } from "@kensapo/domain";
 
 const ROLE_LABEL: Record<string, string> = {
-  owner: "Owner",
+  owner: "代表",
   executive: "経営",
   manager: "管理",
   supervisor: "監督",
@@ -27,13 +29,15 @@ export function TodayView({
   pendingCaptureId,
   onboarding,
   signals,
+  focusTasks,
 }: {
   workspace: Workspace;
   projects: TodayBoardProject[];
   ops: TodayOps;
   pendingCaptureId: string | null;
-  onboarding: OnboardingFlags & { complete: boolean };
+  onboarding: OnboardingFlags & { complete: boolean; firstProjectId?: string | null };
   signals: { id: string; title: string; reason: string }[];
+  focusTasks: TodayFocusTask[];
 }) {
   const canCapture = can(workspace, "capture.create");
   const first = projects[0];
@@ -55,7 +59,7 @@ export function TodayView({
         </p>
       </header>
 
-      <OnboardingChecklist flags={onboarding} complete={onboarding.complete} />
+      <OnboardingChecklist flags={onboarding} complete={onboarding.complete} firstProjectId={onboarding.firstProjectId} />
 
       {signals.length > 0 ? (
         <section className="rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
@@ -101,6 +105,36 @@ export function TodayView({
           {ops.overdueTaskCount > 0 && ops.delayedCount > 0 ? " / " : null}
           {ops.delayedCount > 0 ? `工程遅延 ${ops.delayedCount}件` : null}
         </p>
+      ) : null}
+
+      {focusTasks.length > 0 ? (
+        <section className="rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
+          <h2 className="text-lg font-medium">今日やること</h2>
+          <p className="mt-1 text-sm text-zinc-500">期限超過と、今日中の仕事だけ出しています。</p>
+          <ul className="mt-4 flex flex-col gap-3">
+            {focusTasks.map((task) => (
+              <li
+                key={task.id}
+                className={`rounded-2xl px-4 py-3 ring-1 ${
+                  task.overdue ? "bg-red-50 ring-red-200" : "bg-zinc-50 ring-zinc-100"
+                }`}
+              >
+                <p className="text-sm text-zinc-500">{task.projectName}</p>
+                <p className="mt-1 font-medium">{task.title}</p>
+                <p className="mt-1 text-sm text-zinc-500">
+                  {task.overdue ? "期限超過" : task.dueToday ? "今日期限" : "進行中"}
+                  {task.dueOn ? ` / ${task.dueOn}` : ""}
+                  {` / ${TASK_STATUS_LABELS[task.status as keyof typeof TASK_STATUS_LABELS] ?? task.status}`}
+                </p>
+                {can(workspace, "project.update") || can(workspace, "capture.create") ? (
+                  <div className="mt-3">
+                    <CompleteTaskButton taskId={task.id} projectId={task.projectId} />
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {pendingCaptureId ? (

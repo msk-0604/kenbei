@@ -2,6 +2,7 @@ import "server-only";
 
 import { isProcessDelayed, isTaskOverdue, projectProgressPercent } from "@kensapo/domain";
 import { tokyoTodayIso } from "@/lib/dates";
+import { pickTodayFocusTasks, type TodayFocusTask } from "@/features/today/focus-tasks";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Workspace } from "@/lib/session";
 
@@ -158,6 +159,7 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
   projects: TodayBoardProject[];
   ops: TodayOps;
   pendingCaptureId: string | null;
+  focusTasks: TodayFocusTask[];
 }> {
   const today = tokyoTodayIso();
   const supabase = await createServerSupabaseClient();
@@ -188,6 +190,7 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
         confirmCount: pendingCaptures,
       },
       pendingCaptureId,
+      focusTasks: [],
     };
   }
 
@@ -209,7 +212,7 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
       .is("deleted_at", null),
     supabase
       .from("project_tasks")
-      .select("id, project_id, status, due_on")
+      .select("id, project_id, title, status, due_on")
       .in("project_id", ids)
       .eq("organization_id", workspace.organizationId)
       .neq("status", "done")
@@ -231,7 +234,9 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
   const photoRows = (photos.data as { id: string; project_id: string }[] | null) ?? [];
   const reportRows = (reports.data as { id: string; project_id: string; status: string }[] | null) ?? [];
   const taskRows =
-    (tasks.data as { id: string; project_id: string; status: string; due_on: string | null }[] | null) ?? [];
+    (tasks.data as
+      | { id: string; project_id: string; title: string; status: string; due_on: string | null }[]
+      | null) ?? [];
   const processRows =
     (processes.data as
       | { project_id: string; percent: number; status: string; planned_end_on: string | null }[]
@@ -269,6 +274,18 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
   const draftReports = reportRows.filter((row) => row.status === "draft").length;
   const overdue = board.reduce((sum, item) => sum + item.overdueTaskCount, 0);
   const delayedCount = board.filter((item) => item.delayed).length;
+  const projectNameById = new Map(board.map((item) => [item.projectId, item.projectName]));
+  const focusTasks = pickTodayFocusTasks(
+    taskRows.map((row) => ({
+      id: row.id,
+      projectId: row.project_id,
+      title: row.title,
+      status: row.status,
+      dueOn: row.due_on,
+    })),
+    projectNameById,
+    today,
+  );
   return {
     projects: board,
     ops: {
@@ -281,5 +298,6 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
         draftReports + overdue + delayedCount + (proposedPhotos.count ?? 0) + pendingCaptures,
     },
     pendingCaptureId,
+    focusTasks,
   };
 }

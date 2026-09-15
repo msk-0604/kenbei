@@ -55,6 +55,8 @@ export async function createTaskAction(
     }
   }
   revalidatePath("/");
+  revalidatePath("/tasks");
+  revalidatePath("/photos");
   revalidatePath("/confirm");
   revalidatePath(`/projects/${projectId}`);
   return null;
@@ -101,6 +103,8 @@ export async function updateTaskStatusAction(taskId: string, status: string, pro
   }
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/confirm");
+  revalidatePath("/");
+  revalidatePath("/tasks");
   return null;
 }
 

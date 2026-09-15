@@ -12,9 +12,11 @@ const ITEMS: { key: keyof OnboardingFlags; label: string; href: string }[] = [
 export function OnboardingChecklist({
   flags,
   complete,
+  firstProjectId,
 }: {
   flags: OnboardingFlags;
   complete: boolean;
+  firstProjectId?: string | null;
 }) {
   if (complete) {
     return (
@@ -30,7 +32,14 @@ export function OnboardingChecklist({
       <ul className="mt-3 flex flex-col gap-2">
         {ITEMS.map((item) => (
           <li key={item.key}>
-            <Link href={item.href} className="flex items-center justify-between rounded-2xl bg-zinc-50 px-4 py-3">
+            <Link
+              href={
+                item.key === "hasTask" && firstProjectId
+                  ? `/projects/${firstProjectId}?tab=tasks`
+                  : item.href
+              }
+              className="flex items-center justify-between rounded-2xl bg-zinc-50 px-4 py-3"
+            >
               <span>{item.label}</span>
               <span>{flags[item.key] ? "完了" : "これから"}</span>
             </Link>

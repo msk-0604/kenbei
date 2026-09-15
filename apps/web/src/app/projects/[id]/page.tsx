@@ -151,6 +151,7 @@ export default async function ProjectDetailPage({
           projectName={project.name}
           companyName={workspace.organizationName}
           canUpload={canPhoto}
+          canCreateReport={can(workspace, "capture.confirm") || canEdit}
         />
       ) : null}
 
@@ -201,12 +202,14 @@ async function PhotosTab({
   projectName,
   companyName,
   canUpload,
+  canCreateReport,
 }: {
   projectId: string;
   organizationId: string;
   projectName: string;
   companyName: string;
   canUpload: boolean;
+  canCreateReport: boolean;
 }) {
   const photos = await searchPhotos({ projectId });
   return (
@@ -217,6 +220,7 @@ async function PhotosTab({
           projectId={projectId}
           projectName={projectName}
           companyName={companyName}
+          canCreateReport={canCreateReport}
         />
       ) : null}
       <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">

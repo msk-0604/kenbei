@@ -37,6 +37,7 @@ export default async function PhotoUploadPage({
             projectId={projectId}
             projectName={selected?.name}
             companyName={workspace.organizationName}
+            canCreateReport={can(workspace, "capture.confirm") || can(workspace, "project.update")}
           />
         ) : (
           <p className="text-base text-zinc-600">現場を作成すると、ここで写真を保存できます。</p>

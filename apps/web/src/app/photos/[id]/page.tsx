@@ -4,8 +4,10 @@ import { AppShell } from "@/components/app-shell";
 import { AcceptPhotoButton } from "@/features/photos/accept-button";
 import { PhotoAssistButton } from "@/features/photos/assist-button";
 import { PhotoEditForm } from "@/features/photos/edit-form";
+import { PhotoCreateTaskForm } from "@/features/photos/create-task-form";
 import { getPhoto } from "@/features/photos/queries";
-import { requireWorkspace } from "@/lib/authz-guard";
+import { can, requireWorkspace } from "@/lib/authz-guard";
+import { tokyoTodayIso } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +16,13 @@ export default async function PhotoDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireWorkspace();
+  const workspace = await requireWorkspace();
   const { id } = await params;
   const photo = await getPhoto(id);
   if (!photo) {
     notFound();
   }
+  const canTask = can(workspace, "project.update") || can(workspace, "capture.create");
 
   return (
     <AppShell>
@@ -57,6 +60,18 @@ export default async function PhotoDetailPage({
       <div className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
         <PhotoEditForm photo={photo} />
       </div>
+      {canTask && photo.projectId ? (
+        <PhotoCreateTaskForm
+          photoId={photo.id}
+          projectId={photo.projectId}
+          projectName={photo.projectName}
+          proposedDescription={photo.proposedDescription}
+          comment={photo.comment}
+          workTypeKey={photo.workTypeKey}
+          locationSpot={photo.locationSpot}
+          defaultDueOn={tokyoTodayIso()}
+        />
+      ) : null}
     </AppShell>
   );
 }

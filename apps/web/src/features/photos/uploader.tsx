@@ -23,6 +23,7 @@ import {
 import { extensionForMime, photoStoragePath } from "@/lib/storage-paths";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { registerPhotosAction } from "@/features/photos/actions";
+import { PhotoUploadNextSteps } from "@/features/photos/upload-next-steps";
 
 type FieldKey = keyof ConstructionBlackboard;
 
@@ -40,16 +41,19 @@ export function PhotoUploader({
   projectId,
   projectName,
   companyName,
+  canCreateReport = false,
 }: {
   organizationId: string;
   projectId: string;
   projectName?: string;
   companyName?: string;
+  canCreateReport?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(0);
+  const [saved, setSaved] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [online, setOnline] = useState(true);
   const [useBlackboard, setUseBlackboard] = useState(true);
@@ -163,6 +167,7 @@ export function PhotoUploader({
     setBusy(true);
     setError(null);
     setDone(0);
+    setSaved(false);
     try {
       await saveBlackboardDraft(organizationId, projectId, board);
       const prepared: QueuedPhoto[] = [];
@@ -201,6 +206,7 @@ export function PhotoUploader({
       }
       await uploadPrepared(prepared);
       setProgress(`${prepared.length}枚を保存しました`);
+      setSaved(true);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "アップロードに失敗しました");
       setProgress("送れなかった写真は端末に残します");
@@ -309,6 +315,7 @@ export function PhotoUploader({
         </p>
       ) : null}
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {saved ? <PhotoUploadNextSteps projectId={projectId} canReport={canCreateReport} /> : null}
     </div>
   );
 }

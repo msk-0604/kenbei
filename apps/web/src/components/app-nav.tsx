@@ -9,8 +9,8 @@ export const MOBILE_NAV = [
   { href: "/", label: "今日", icon: "today" },
   { href: "/projects", label: "現場", icon: "site" },
   { href: "/photos", label: "写真", icon: "photo" },
-  { href: "/strategist", label: "軍師", icon: "ai" },
-  { href: "/confirm", label: "確認", icon: "check" },
+  { href: "/tasks", label: "タスク", icon: "check" },
+  { href: "/reports", label: "日報", icon: "report" },
   { href: "/account", label: "自分", icon: "me" },
 ] as const;
 
