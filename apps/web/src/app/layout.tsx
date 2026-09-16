@@ -10,6 +10,14 @@ export const metadata: Metadata = {
   title: "KENBEI",
   description: "現場の記録から、今日の事務まで。施工管理者のためのKENBEI。",
   applicationName: "KENBEI",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     title: "KENBEI",

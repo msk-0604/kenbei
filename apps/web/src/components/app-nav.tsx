@@ -228,8 +228,8 @@ export function AppNav({ orgSwitcher }: { orgSwitcher: ReactNode }) {
   return (
     <>
       <header className="mb-6 flex items-center justify-between gap-3 md:hidden">
-        <Link href="/" prefetch className="text-lg font-semibold tracking-tight">
-          KENBEI
+        <Link href="/" prefetch className="inline-flex shrink-0 items-center" aria-label="KENBEI">
+          <img src="/icon-192.png" alt="KENBEI" width={36} height={36} className="h-9 w-9 rounded-[10px]" />
         </Link>
         <Link
           href="/settings"
@@ -242,8 +242,8 @@ export function AppNav({ orgSwitcher }: { orgSwitcher: ReactNode }) {
         </Link>
       </header>
       <header className="mb-8 hidden items-center justify-between gap-4 md:flex">
-        <Link href="/" prefetch className="shrink-0 text-lg font-semibold tracking-tight">
-          KENBEI
+        <Link href="/" prefetch className="inline-flex shrink-0 items-center" aria-label="KENBEI">
+          <img src="/icon-192.png" alt="KENBEI" width={36} height={36} className="h-9 w-9 rounded-[10px]" />
         </Link>
         <nav className="flex flex-1 flex-wrap items-center justify-center gap-1 rounded-full bg-white p-1 ring-1 ring-[var(--kb-line)]">
           {DESKTOP_NAV.map((item) => (
