@@ -15,7 +15,7 @@ export function PhotoUploadNextSteps({
 }) {
   const taskHref = photoId ? `/photos/${photoId}` : `/projects/${projectId}?tab=photos`;
   return (
-    <div className="kb-enter flex flex-col gap-3 rounded-3xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
+    <div className="kb-enter mb-6 flex flex-col gap-3 rounded-3xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
       <p className="font-medium text-emerald-950">写真を保存しました。次はタスクか日報です。</p>
       <AppLink href={taskHref}>{photoId ? "この写真からタスクを追加" : "写真からタスクを追加"}</AppLink>
       {canReport ? <CreateTodayReportButton projectId={projectId} variant="secondary" /> : null}

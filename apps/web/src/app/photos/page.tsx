@@ -6,6 +6,7 @@ import { AppLink } from "@/components/app-nav";
 import { searchPhotos } from "@/features/photos/queries";
 import { listProjectOptions } from "@/features/projects/queries";
 import { tokyoTodayIso } from "@/lib/dates";
+import { PhotoThumb } from "@/components/photo-thumb";
 import { requireWorkspace } from "@/lib/authz-guard";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +43,7 @@ export default async function PhotosPage({
       <div className="flex items-end justify-between gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">写真</h1>
         <Link href="/photos/upload" className="kb-tap rounded-2xl bg-[var(--kb-ink)] px-4 font-medium text-white">
-          上げる
+          写真を追加
         </Link>
       </div>
       <form className="mt-6 flex flex-col gap-3 rounded-3xl bg-white p-4 ring-1 ring-zinc-100">
@@ -77,8 +78,7 @@ export default async function PhotosPage({
           <li key={photo.id}>
             <Link href={`/photos/${photo.id}`} className="block overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-100">
               {photo.url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={photo.url} alt="" className="h-36 w-full object-cover" />
+                <PhotoThumb src={photo.url} />
               ) : (
                 <div className="flex h-36 items-center justify-center text-sm text-zinc-400">画像なし</div>
               )}

@@ -32,9 +32,9 @@ export function AppChrome({
     return <>{children}</>;
   }
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-5 pb-28 pt-6 md:px-8 md:pb-12 md:pt-8">
+    <div className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-5 pt-6 pb-[calc(8.5rem+env(safe-area-inset-bottom))] md:px-8 md:pb-12 md:pt-8">
       <AppNav orgSwitcher={orgSwitcher} />
-      <div className="min-h-0 flex-1">{children}</div>
+      <div className="pb-4 md:pb-0">{children}</div>
     </div>
   );
 }

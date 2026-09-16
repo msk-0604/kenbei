@@ -1,5 +1,6 @@
 import "server-only";
 
+import { signedUrlServesImage } from "@/lib/signed-url-check";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type PhotoTransform = {
@@ -52,6 +53,10 @@ export async function signedPhotoUrls(
       }
     }),
   );
+  const sample = map.values().next().value as string | undefined;
+  if (sample && !(await signedUrlServesImage(sample))) {
+    return signedOriginalUrls(paths);
+  }
   if (map.size === paths.length) {
     return map;
   }

@@ -52,18 +52,20 @@ export function TodayView({
       <header>
         <p className="text-sm text-zinc-500">{formatTokyoDate()}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">今日やること</h1>
-        <p className="mt-2 text-base text-zinc-600">{PRODUCT_LEAD}</p>
-        <div className="mt-4 rounded-3xl bg-[var(--kb-card)] p-4 ring-1 ring-[var(--kb-line)]">
-          <KenbeiFlow compare />
-          <p className="mt-3 text-sm leading-6 text-zinc-600">{PRODUCT_SUPPORT}</p>
-        </div>
+        {first ? <p className="mt-2 text-base text-zinc-600">{PRODUCT_LEAD}</p> : null}
       </header>
 
       {first ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <AppLink href={photoHref}>写真を上げる</AppLink>
-          <CreateTodayReportButton projectId={first.projectId} />
-        </div>
+        <>
+          <div className="rounded-3xl bg-[var(--kb-card)] p-4 ring-1 ring-[var(--kb-line)]">
+            <KenbeiFlow compare />
+            <p className="mt-3 text-sm leading-6 text-zinc-600">{PRODUCT_SUPPORT}</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <AppLink href={photoHref}>写真を上げる</AppLink>
+            <CreateTodayReportButton projectId={first.projectId} />
+          </div>
+        </>
       ) : (
         <EmptyGuide
           title="まだ現場がありません"
