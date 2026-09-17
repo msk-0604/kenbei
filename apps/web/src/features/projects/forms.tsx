@@ -9,12 +9,17 @@ export function CreateProjectForm() {
   const [state, action, pending] = useActionState(createProjectAction, null);
   return (
     <form action={action} className="flex flex-col gap-3">
-      <input
-        name="name"
-        required
-        placeholder="現場名"
-        className="rounded-xl border border-zinc-200 bg-white px-4 text-base"
-      />
+      <label className="flex flex-col gap-1 text-sm font-medium">
+        現場名
+        <input
+          name="name"
+          required
+          autoComplete="off"
+          enterKeyHint="next"
+          placeholder="例: ○○マンション改修"
+          className="rounded-xl border border-zinc-200 bg-white px-4 text-base"
+        />
+      </label>
       <input
         name="customerName"
         placeholder="顧客名"

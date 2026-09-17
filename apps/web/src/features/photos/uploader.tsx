@@ -296,16 +296,15 @@ export function PhotoUploader({
         ) : null}
       </section>
 
-      <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--kb-line)] bg-white px-4 text-center">
+      <label className="kb-tap flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--kb-line)] bg-white px-4 text-center">
         <span className="text-lg font-medium">写真を選ぶ / 撮る</span>
         <span className="mt-1 text-sm text-zinc-500">
-          複数枚OK。黒板付きでも端末に先に残せます。
+          アルバムから選ぶか、カメラで撮れます。複数枚OKです。
         </span>
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp"
           multiple
-          capture="environment"
           className="sr-only"
           disabled={busy}
           onChange={(event) => {

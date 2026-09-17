@@ -15,7 +15,7 @@ export default async function OnboardingPage() {
   return (
     <AuthShell
       title="会社を作成"
-      description="支店や部署の設定は不要です。あとから追加できます。"
+      description="最初に会社名だけ登録します。現場名は次の画面で登録できます。"
     >
       <CreateOrganizationForm />
     </AuthShell>

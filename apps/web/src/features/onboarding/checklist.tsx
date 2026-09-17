@@ -55,7 +55,9 @@ export function OnboardingChecklist({
             item.key === "hasTask" && firstProjectId
               ? `/projects/${firstProjectId}?tab=tasks`
               : item.key === "hasPhoto"
-                ? "/photos/upload"
+                ? firstProjectId
+                  ? `/photos/upload?projectId=${firstProjectId}`
+                  : "/photos/upload"
                 : item.href;
           return (
             <li key={item.key}>

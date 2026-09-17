@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
+import { EmptyGuide } from "@/components/empty-guide";
+import { AppLink } from "@/components/app-nav";
 import { PhotoUploader } from "@/features/photos/uploader";
 import { ProjectPicker } from "@/features/photos/project-picker";
 import { listTodayProjects } from "@/features/today/queries";
@@ -40,10 +42,15 @@ export default async function PhotoUploadPage({
             canCreateReport={can(workspace, "capture.confirm") || can(workspace, "project.update")}
           />
         ) : (
-          <p className="text-base text-zinc-600">現場を作成すると、ここで写真を保存できます。</p>
+          <EmptyGuide
+            title="先に現場を登録"
+            body="写真は現場に紐づけます。現場名を登録してから撮りましょう。"
+            action={
+              can(workspace, "project.create") ? <AppLink href="/projects">現場を作成</AppLink> : undefined
+            }
+          />
         )}
       </div>
-      {selected ? <p className="mt-4 text-sm text-zinc-500">{selected.name}</p> : null}
     </AppShell>
   );
 }

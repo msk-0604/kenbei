@@ -13,6 +13,7 @@ import {
 } from "@/features/projects/queries";
 import { searchPhotos } from "@/features/photos/queries";
 import { PhotoUploader } from "@/features/photos/uploader";
+import { PhotoThumb } from "@/components/photo-thumb";
 import { listProjectReports } from "@/features/reports/queries";
 import { CreateTodayReportButton } from "@/features/reports/forms";
 import {
@@ -228,8 +229,7 @@ async function PhotosTab({
           <li key={photo.id}>
             <Link href={`/photos/${photo.id}`} className="block overflow-hidden rounded-2xl bg-white ring-1 ring-zinc-100">
               {photo.url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={photo.url} alt="" className="h-36 w-full object-cover" />
+                <PhotoThumb src={photo.url} />
               ) : (
                 <div className="flex h-36 items-center justify-center text-sm text-zinc-400">画像なし</div>
               )}
