@@ -3,32 +3,19 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
-
-function hideAppChrome(pathname: string): boolean {
-  if (pathname === "/login" || pathname === "/signup" || pathname === "/join" || pathname === "/onboarding") {
-    return true;
-  }
-  if (pathname === "/forgot-password" || pathname === "/reset-password") {
-    return true;
-  }
-  if (pathname.startsWith("/signup/") || pathname.startsWith("/auth/")) {
-    return true;
-  }
-  if (pathname.endsWith("/print")) {
-    return true;
-  }
-  return false;
-}
+import { hideAppChrome } from "@/lib/public-path";
 
 export function AppChrome({
   children,
   orgSwitcher,
+  signedIn = false,
 }: {
   children: ReactNode;
   orgSwitcher: ReactNode;
+  signedIn?: boolean;
 }) {
   const pathname = usePathname();
-  if (hideAppChrome(pathname)) {
+  if (hideAppChrome(pathname, signedIn)) {
     return <>{children}</>;
   }
   return (

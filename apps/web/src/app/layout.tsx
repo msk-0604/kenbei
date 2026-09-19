@@ -43,11 +43,13 @@ async function OrgSwitcherSlot() {
   return <OrgSwitcher currentId={workspace.organizationId} organizations={workspace.organizations} />;
 }
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const workspace = await getWorkspace();
   return (
     <html lang="ja">
       <body className="min-h-dvh bg-[var(--kb-paper)] text-[var(--kb-ink)] antialiased">
         <AppChrome
+          signedIn={Boolean(workspace)}
           orgSwitcher={
             <Suspense fallback={<div className="h-10 w-16" />}>
               <OrgSwitcherSlot />

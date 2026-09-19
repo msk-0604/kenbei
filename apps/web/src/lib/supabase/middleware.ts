@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getPublicEnv } from "@/lib/env";
+import { isAnonymousPublicPath } from "@/lib/public-path";
 import type { CookieToSet } from "@/lib/supabase/cookies";
 
 function withRequestId(request: NextRequest): { request: NextRequest; requestId: string; requestHeaders: Headers } {
@@ -46,15 +47,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPublic =
-    path === "/login" ||
-    path === "/signup" ||
-    path === "/join" ||
-    path === "/forgot-password" ||
-    path === "/reset-password" ||
-    path.startsWith("/signup/") ||
-    path.startsWith("/auth/") ||
-    path.startsWith("/api/");
+  const isPublic = isAnonymousPublicPath(path);
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
