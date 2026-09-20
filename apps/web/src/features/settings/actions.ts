@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { SYSTEM_ROLE_CODES, type SystemRoleCode } from "@kensapo/domain";
-import { can, requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { getAppUrl } from "@/lib/env";
 import { assertSeatAvailable } from "@/lib/entitlement";
 import { formString } from "@/lib/form";
@@ -21,6 +21,10 @@ export async function updateCompanySettingsAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "org.manage") && !can(workspace, "member.manage")) {
     return { error: "設定を変更する権限がありません。" };
   }
@@ -74,6 +78,10 @@ export async function createInviteAction(
   formData: FormData,
 ): Promise<{ error: string } | { url: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "member.manage")) {
     return { error: "メンバーを招待する権限がありません。" };
   }
@@ -192,6 +200,10 @@ export async function setMembershipStatusAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "member.manage")) {
     return { error: "メンバーを変更する権限がありません。" };
   }

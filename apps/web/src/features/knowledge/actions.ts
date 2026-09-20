@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { MAX_DOCUMENT_BYTES } from "@kensapo/domain";
-import { can, requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { formString } from "@/lib/form";
 import { documentStoragePath } from "@/lib/storage-paths";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -12,6 +12,10 @@ export async function uploadDocumentAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "knowledge.write") && !can(workspace, "import.manage") && !can(workspace, "project.update")) {
     return { error: "資料を登録する権限がありません。" };
   }

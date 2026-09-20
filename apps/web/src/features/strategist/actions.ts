@@ -4,7 +4,7 @@ import { createProposedTasksAction } from "@/features/site-ops/actions";
 import { createTodayReportDraftAction } from "@/features/reports/actions";
 import { proposePhotoAssistAction } from "@/features/photos/actions";
 import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
-import { requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, requireWorkspace } from "@/lib/authz-guard";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { runStrategistAgent, type ChatMessage } from "@/features/strategist/agent-run";
 import type { StrategistProposal } from "@/features/strategist/tools";
@@ -71,6 +71,10 @@ export async function sendStrategistMessageAction(
   formData: FormData,
 ): Promise<StrategistChatState> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return { turns: prev?.turns ?? [], proposals: prev?.proposals ?? [], error: locked.error };
+  }
   const limit = await consumeRateLimit(`strategist:${workspace.userId}`, 20, 60_000);
   if (!limit.allowed) {
     return {

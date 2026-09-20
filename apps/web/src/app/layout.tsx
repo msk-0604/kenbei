@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
+import { hasPermission } from "@kensapo/authz";
 import { AppChrome } from "@/components/app-chrome";
 import { OrgSwitcher } from "@/features/org/org-switcher";
+import { TrialStatusBanner } from "@/features/billing/trial-status-banner";
+import { getEntitlement } from "@/lib/entitlement";
 import { getWorkspace } from "@/lib/session";
 import "./globals.css";
 
@@ -43,6 +46,21 @@ async function OrgSwitcherSlot() {
   return <OrgSwitcher currentId={workspace.organizationId} organizations={workspace.organizations} />;
 }
 
+async function TrialBannerSlot() {
+  const workspace = await getWorkspace();
+  if (!workspace?.organizationId) {
+    return null;
+  }
+  const entitlement = await getEntitlement(workspace.organizationId);
+  return (
+    <TrialStatusBanner
+      access={entitlement.access}
+      daysRemaining={entitlement.trialDaysLeft}
+      canManageBilling={hasPermission(workspace.permissions, "org.manage")}
+    />
+  );
+}
+
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const workspace = await getWorkspace();
   return (
@@ -53,6 +71,11 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           orgSwitcher={
             <Suspense fallback={<div className="h-10 w-16" />}>
               <OrgSwitcherSlot />
+            </Suspense>
+          }
+          trialBanner={
+            <Suspense fallback={null}>
+              <TrialBannerSlot />
             </Suspense>
           }
         >

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { PROJECT_STATUSES, SYSTEM_ROLE_CODES, type SystemRoleCode } from "@kensapo/domain";
-import { can, requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { formOptionalDate, formString } from "@/lib/form";
 import { notifyWorkspaceMembers } from "@/lib/notifications";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -65,6 +65,10 @@ export async function createProjectAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "project.create")) {
     return { error: "案件を作成する権限がありません。" };
   }
@@ -139,6 +143,10 @@ export async function updateProjectAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "project.update")) {
     return { error: "案件を更新する権限がありません。" };
   }
@@ -235,6 +243,10 @@ export async function assignMemberAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "project.update") && !can(workspace, "member.manage")) {
     return { error: "割り当てる権限がありません。" };
   }

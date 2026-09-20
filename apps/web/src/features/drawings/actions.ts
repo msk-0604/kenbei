@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { isDrawingKind, MAX_DOCUMENT_BYTES, nextDrawingVersion } from "@kensapo/domain";
-import { can, requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { formString } from "@/lib/form";
 import { drawingStoragePath } from "@/lib/storage-paths";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -12,6 +12,10 @@ export async function uploadProjectDrawingAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "project.update") && !can(workspace, "import.manage")) {
     return { error: "図面を登録する権限がありません。" };
   }

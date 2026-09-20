@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { draftDailyReportTemplate } from "@kensapo/ai";
-import { can, requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { tokyoTodayIso } from "@/lib/dates";
 import { formNumber, formString } from "@/lib/form";
 import { getAiService } from "@/lib/engines";
@@ -13,6 +13,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function createTodayReportDraftAction(projectId: string): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "capture.confirm") && !can(workspace, "project.update")) {
     return { error: "日報を作る権限がありません。" };
   }
@@ -194,6 +198,10 @@ export async function saveReportAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "capture.confirm") && !can(workspace, "project.update")) {
     return { error: "日報を保存する権限がありません。" };
   }
@@ -252,6 +260,10 @@ export async function saveReportAction(
 
 export async function confirmReportAction(reportId: string): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "capture.confirm") && !can(workspace, "project.update")) {
     return { error: "日報を確定する権限がありません。" };
   }

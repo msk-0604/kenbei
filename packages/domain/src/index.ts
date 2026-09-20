@@ -74,6 +74,18 @@ export {
 } from "./billing";
 export type { BillingPlanCode, BillingPlanDefinition } from "./billing";
 export {
+  BILLING_ACCESS_KINDS,
+  PAID_INACTIVE_WRITE_MESSAGE,
+  TRIAL_EXPIRED_WRITE_MESSAGE,
+  canOpenBillingPortal,
+  canStartCheckout,
+  classifyBillingAccess,
+  trialDaysRemaining,
+  workspaceWriteBlockMessage,
+  workspaceWritesAllowed,
+} from "./billing-access";
+export type { BillingAccessInput, BillingAccessKind } from "./billing-access";
+export {
   BLACKBOARD_FIELD_LABELS,
   emptyBlackboard,
   todayBlackboardDate,

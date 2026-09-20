@@ -1,12 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { can, requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { tokyoTodayIso } from "@/lib/dates";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function startSiteAction(projectId: string): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "capture.create")) {
     return { error: "現場開始の権限がありません。" };
   }
@@ -53,6 +57,10 @@ export async function startSiteAction(projectId: string): Promise<{ error: strin
 
 export async function endSiteAction(projectId: string): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "capture.create")) {
     return { error: "現場終了の権限がありません。" };
   }

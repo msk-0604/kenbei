@@ -40,6 +40,7 @@ export default async function SettingsPage() {
             planCode={entitlement.planCode}
             status={entitlement.status}
             cancelAtPeriodEnd={entitlement.cancelAtPeriodEnd}
+            access={entitlement.access}
             variant="settings"
           />
         </div>

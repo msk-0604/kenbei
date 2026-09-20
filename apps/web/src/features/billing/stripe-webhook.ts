@@ -85,6 +85,7 @@ export async function applyStripeWebhookBusiness(
         stripe_customer_id: customer ?? null,
         stripe_subscription_id: subscription ?? null,
         status: "active",
+        trial_ends_at: null,
         ...(planCode ? { plan_code: planCode } : {}),
       });
     }
@@ -103,7 +104,7 @@ export async function applyStripeWebhookBusiness(
     const orgId = typeof org === "string" ? org : org?.organization_id;
     if (orgId) {
       const mapped =
-        event.type === "customer.subscription.deleted"
+        event.type === "customer.subscription.deleted" || status === "canceled" || status === "cancelled"
           ? "canceled"
           : status === "past_due" || status === "unpaid" || status === "active" || status === "trialing"
             ? status
@@ -120,9 +121,7 @@ export async function applyStripeWebhookBusiness(
           ? new Date(Number(obj.current_period_end) * 1000).toISOString()
           : null,
       };
-      if (mapped === "canceled") {
-        patch.plan_code = "free";
-      } else if (planCode) {
+      if (planCode && mapped !== "canceled") {
         patch.plan_code = planCode;
       }
       await admin.from("organization_billing").update(patch).eq("organization_id", orgId);

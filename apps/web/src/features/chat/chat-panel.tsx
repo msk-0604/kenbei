@@ -14,12 +14,14 @@ export function ProjectChatPanel({
   userId,
   initial,
   members,
+  writeLocked = false,
 }: {
   projectId: string;
   organizationId: string;
   userId: string;
   initial: ChatMessage[];
   members: ChatMember[];
+  writeLocked?: boolean;
 }) {
   const [rows, setRows] = useState<Row[]>(initial.map((item) => ({ ...item, status: "sent" })));
   const [body, setBody] = useState("");
@@ -92,6 +94,9 @@ export function ProjectChatPanel({
   }, [members, organizationId, projectId, supabase]);
 
   async function send(retry?: Row) {
+    if (writeLocked) {
+      return;
+    }
     const text = retry?.body ?? body.trim();
     if (!text && !retry) {
       return;
@@ -184,6 +189,9 @@ export function ProjectChatPanel({
   }
 
   async function attach(kind: "file" | "photo", fileList: FileList | null) {
+    if (writeLocked) {
+      return;
+    }
     const file = fileList?.[0];
     if (!file) {
       return;
@@ -215,6 +223,7 @@ export function ProjectChatPanel({
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-zinc-500">@名前 でメンションできます。この現場のメンバーだけが読めます。</p>
+      {writeLocked ? <p className="text-sm text-zinc-600">無料体験終了後はメッセージを追加できません。</p> : null}
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       <div className="flex flex-col gap-2">
         <textarea
@@ -222,9 +231,10 @@ export function ProjectChatPanel({
           onChange={(event) => setBody(event.target.value)}
           placeholder="メッセージ（@山田 など）"
           className="min-h-20 rounded-xl border border-zinc-200 px-4 py-3"
+          disabled={writeLocked}
         />
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="rounded-2xl bg-zinc-900 px-4 py-2 text-white" onClick={() => void send()}>
+          <button type="button" className="rounded-2xl bg-zinc-900 px-4 py-2 text-white" disabled={writeLocked} onClick={() => void send()}>
             送信
           </button>
           <label className="rounded-2xl bg-white px-4 py-2 ring-1 ring-zinc-200">

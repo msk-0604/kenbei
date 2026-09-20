@@ -8,7 +8,7 @@ import {
   type JsonValue,
 } from "@kensapo/domain";
 import { getAiService, getConstructionGraph } from "@/lib/engines";
-import { can, requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { tokyoTodayIso } from "@/lib/dates";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { AI_TIMEOUT_USER_MESSAGE, isAiTimeoutError } from "@kensapo/ai";
@@ -37,6 +37,10 @@ function asJsonValue(value: unknown): JsonValue {
 
 export async function submitVoiceCaptureAction(formData: FormData): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "capture.create")) {
     return { error: "報告する権限がありません。" };
   }
@@ -182,6 +186,10 @@ async function loadField(fieldId: string) {
 
 export async function confirmFieldAction(formData: FormData): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "capture.confirm")) {
     return { error: "確定する権限がありません。" };
   }
@@ -260,6 +268,10 @@ function toRecord(row: {
 
 export async function finishCaptureAction(captureId: string): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "capture.confirm")) {
     return { error: "確定する権限がありません。" };
   }

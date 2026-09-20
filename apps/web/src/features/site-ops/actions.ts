@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { can, requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { formOptionalDate, formString } from "@/lib/form";
 import { notifyWorkspaceMembers, listMemberProfileIdsWithPermission, profileIdForMembership } from "@/lib/notifications";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -11,6 +11,10 @@ export async function createTaskAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "project.update") && !can(workspace, "capture.create")) {
     return { error: "タスクを作る権限がありません。" };
   }
@@ -64,6 +68,10 @@ export async function createTaskAction(
 
 export async function updateTaskStatusAction(taskId: string, status: string, projectId: string): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "project.update") && !can(workspace, "capture.create")) {
     return { error: "更新する権限がありません。" };
   }
@@ -113,6 +121,10 @@ export async function createProcessAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "project.update")) {
     return { error: "工程を登録する権限がありません。" };
   }
@@ -145,6 +157,10 @@ export async function updateProcessAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "project.update")) {
     return { error: "工程を更新する権限がありません。" };
   }
@@ -178,6 +194,10 @@ export async function createProposedTasksAction(
   formData: FormData,
 ): Promise<{ error: string } | { created: number } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "project.update") && !can(workspace, "capture.create")) {
     return { error: "タスクを作る権限がありません。" };
   }

@@ -30,7 +30,9 @@ import { GanttChart } from "@/features/gantt/gantt-chart";
 import { SimilarProjectsPanel } from "@/features/similar/panel";
 import { similarProjectsFor } from "@/features/similar/queries";
 import { StrategistForm } from "@/features/strategist/form";
+import { workspaceWritesAllowed } from "@kensapo/domain";
 import { can, requireWorkspace } from "@/lib/authz-guard";
+import { getEntitlement } from "@/lib/entitlement";
 
 export const dynamic = "force-dynamic";
 
@@ -72,11 +74,14 @@ export default async function ProjectDetailPage({
   const canPhoto = can(workspace, "photo.create");
   const statusLabel = PROJECT_STATUS_LABELS[project.status as keyof typeof PROJECT_STATUS_LABELS] ?? project.status;
 
+  const needAssignments = tab === "overview" || tab === "members";
+  const needMembers = tab === "tasks" || tab === "members";
+  const needSimilar = tab === "overview";
   const [assignments, members, processes, similar] = await Promise.all([
-    listAssignments(id),
-    listOrgMembers(),
+    needAssignments ? listAssignments(id) : Promise.resolve([]),
+    needMembers ? listOrgMembers() : Promise.resolve([]),
     listProjectProcesses(id),
-    similarProjectsFor(workspace.organizationId, id),
+    needSimilar ? similarProjectsFor(workspace.organizationId, id) : Promise.resolve(null),
   ]);
   const manager =
     assignments.find((row) => row.roleInProject === "supervisor" || row.roleInProject === "manager") ??
@@ -274,9 +279,10 @@ async function ChatTab({
   organizationId: string;
   userId: string;
 }) {
-  const [messages, members] = await Promise.all([
+  const [messages, members, entitlement] = await Promise.all([
     listProjectMessages(projectId),
     listProjectChatMembers(projectId),
+    getEntitlement(organizationId),
   ]);
   return (
     <div className="mt-6 flex flex-col gap-6">
@@ -290,6 +296,7 @@ async function ChatTab({
         userId={userId}
         initial={messages}
         members={members}
+        writeLocked={!workspaceWritesAllowed(entitlement.access)}
       />
     </div>
   );

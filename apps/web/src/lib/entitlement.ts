@@ -1,6 +1,13 @@
 import "server-only";
 
-import { billingPlanByCode, persistableBillingPlanCode, seatLimitError } from "@kensapo/domain";
+import {
+  billingPlanByCode,
+  classifyBillingAccess,
+  persistableBillingPlanCode,
+  seatLimitError,
+  trialDaysRemaining,
+  type BillingAccessKind,
+} from "@kensapo/domain";
 import { readServerEnv } from "@/lib/server-env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Workspace } from "@/lib/session";
@@ -13,13 +20,16 @@ export type Entitlement = {
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
   stripeCustomerId: string | null;
+  trialEndsAt: string | null;
+  access: BillingAccessKind;
+  trialDaysLeft: number | null;
 };
 
 export async function getEntitlement(organizationId: string): Promise<Entitlement> {
   const supabase = await createServerSupabaseClient();
   const billing = await supabase
     .from("organization_billing")
-    .select("plan_code, status, cancel_at_period_end, current_period_end, stripe_customer_id")
+    .select("plan_code, status, cancel_at_period_end, current_period_end, stripe_customer_id, trial_ends_at")
     .eq("organization_id", organizationId)
     .maybeSingle();
   const row = billing.data as {
@@ -28,16 +38,27 @@ export async function getEntitlement(organizationId: string): Promise<Entitlemen
     cancel_at_period_end: boolean;
     current_period_end: string | null;
     stripe_customer_id: string | null;
+    trial_ends_at: string | null;
   } | null;
   const catalog = billingPlanByCode(row?.plan_code);
+  const status = row?.status ?? "active";
+  const trialEndsAt = row?.trial_ends_at ?? null;
+  const access = classifyBillingAccess({
+    planCode: row?.plan_code,
+    status,
+    trialEndsAt,
+  });
   return {
     planCode: catalog.code,
     planName: catalog.name,
     maxMembers: catalog.maxMembers,
-    status: row?.status ?? "active",
+    status,
     cancelAtPeriodEnd: row?.cancel_at_period_end ?? false,
     currentPeriodEnd: row?.current_period_end ?? null,
     stripeCustomerId: row?.stripe_customer_id ?? null,
+    trialEndsAt,
+    access,
+    trialDaysLeft: access === "trial_active" ? trialDaysRemaining(trialEndsAt) : null,
   };
 }
 

@@ -6,7 +6,7 @@ import {
   MAX_PHOTOS_PER_BATCH,
 } from "@kensapo/domain";
 import type { PhotoClassification } from "@kensapo/ai";
-import { can, requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { formString } from "@/lib/form";
 import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
 import { getAiService } from "@/lib/engines";
@@ -27,6 +27,10 @@ export async function registerPhotosAction(input: {
   items: RegisteredPhotoItem[];
 }): Promise<{ error: string } | { ids: string[] }> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "photo.create")) {
     return { error: "写真を登録する権限がありません。" };
   }
@@ -155,6 +159,10 @@ export async function updatePhotoAction(
   formData: FormData,
 ): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "photo.create")) {
     return { error: "写真を更新する権限がありません。" };
   }
@@ -194,6 +202,10 @@ export async function updatePhotoAction(
 
 export async function acceptPhotoProposalAction(photoId: string): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "photo.create")) {
     return { error: "確認する権限がありません。" };
   }
@@ -235,6 +247,10 @@ export async function acceptPhotoProposalAction(photoId: string): Promise<{ erro
 
 export async function acceptAllProposedPhotosAction(): Promise<{ error: string } | { count: number }> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "photo.create")) {
     return { error: "確認する権限がありません。" };
   }
@@ -281,6 +297,10 @@ export async function acceptAllProposedPhotosAction(): Promise<{ error: string }
 
 export async function proposePhotoAssistAction(photoId: string): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
   if (!can(workspace, "photo.create")) {
     return { error: "写真を更新する権限がありません。" };
   }
