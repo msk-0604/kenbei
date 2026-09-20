@@ -14,6 +14,7 @@ import { AppLink } from "@/components/app-nav";
 import { EmptyGuide } from "@/components/empty-guide";
 import { KenbeiFlow } from "@/features/product/kenbei-flow";
 import { PRODUCT_LEAD, PRODUCT_SUPPORT } from "@/features/product/workflow";
+import { emptyWorkspaceCreateProjectHref } from "@/features/projects/routes";
 
 const ROLE_LABEL: Record<string, string> = {
   owner: "代表",
@@ -46,6 +47,7 @@ export function TodayView({
   const canCapture = can(workspace, "capture.create");
   const first = projects[0];
   const photoHref = first ? `/photos/upload?projectId=${first.projectId}` : "/photos/upload";
+  const createProjectHref = emptyWorkspaceCreateProjectHref(can(workspace, "project.create"));
 
   return (
     <div className="flex flex-col gap-6">
@@ -70,9 +72,7 @@ export function TodayView({
         <EmptyGuide
           title="まだ現場がありません"
           body="最初の現場を登録すると、写真・タスク・日報をひとつにまとめられます。"
-          action={
-            can(workspace, "project.create") ? <AppLink href="/projects">現場を作成</AppLink> : undefined
-          }
+          action={createProjectHref ? <AppLink href={createProjectHref}>現場を作成</AppLink> : undefined}
         />
       )}
 

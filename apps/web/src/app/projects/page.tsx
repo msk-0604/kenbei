@@ -16,6 +16,12 @@ export default async function ProjectsPage() {
   return (
     <AppShell>
       <h1 className="text-3xl font-semibold tracking-tight">現場</h1>
+      {canCreate ? (
+        <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
+          <h2 className="mb-3 text-base font-medium">現場を作成</h2>
+          <CreateProjectForm />
+        </section>
+      ) : null}
       {projects.length === 0 ? (
         <div className="mt-6">
           <EmptyGuide
@@ -24,12 +30,6 @@ export default async function ProjectsPage() {
             action={canCreate ? undefined : <p className="text-sm text-zinc-500">現場の作成権限がありません。</p>}
           />
         </div>
-      ) : null}
-      {canCreate ? (
-        <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
-          <h2 className="mb-3 text-base font-medium">現場を作成</h2>
-          <CreateProjectForm />
-        </section>
       ) : null}
       <ul className="mt-6 flex flex-col gap-3">
         {projects.map((project) => (

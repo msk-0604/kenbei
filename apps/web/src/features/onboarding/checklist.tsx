@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { OnboardingFlags } from "@kensapo/domain";
+import { CREATE_PROJECT_PATH } from "@/features/projects/routes";
 
 const ITEMS: {
   key: keyof OnboardingFlags | "hasReport";
@@ -7,7 +8,7 @@ const ITEMS: {
   note?: string;
   href: string;
 }[] = [
-  { key: "hasProject", label: "最初の現場", href: "/projects" },
+  { key: "hasProject", label: "最初の現場", href: CREATE_PROJECT_PATH },
   { key: "hasPhoto", label: "最初の写真", href: "/photos/upload" },
   { key: "hasTask", label: "最初のタスク", href: "/projects" },
   { key: "hasReport", label: "最初の日報", href: "/reports" },

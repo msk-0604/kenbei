@@ -8,6 +8,7 @@ import { listTodayProjects } from "@/features/today/queries";
 import { CreateTodayReportButton } from "@/features/reports/forms";
 import { loadOpsBriefFacts } from "@/features/strategist/facts";
 import { requireWorkspace } from "@/lib/authz-guard";
+import { CREATE_PROJECT_PATH } from "@/features/projects/routes";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ export default async function ReportsPage() {
               first ? (
                 <CreateTodayReportButton projectId={first.projectId} />
               ) : (
-                <AppLink href="/projects">現場を作成</AppLink>
+                <AppLink href={CREATE_PROJECT_PATH}>現場を作成</AppLink>
               )
             }
           />

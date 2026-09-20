@@ -7,6 +7,7 @@ import { ProjectPicker } from "@/features/photos/project-picker";
 import { listTodayProjects } from "@/features/today/queries";
 import { listProjects } from "@/features/projects/queries";
 import { can, requireWorkspace } from "@/lib/authz-guard";
+import { CREATE_PROJECT_PATH } from "@/features/projects/routes";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,7 @@ export default async function PhotoUploadPage({
             title="先に現場を登録"
             body="写真は現場に紐づけます。現場名を登録してから撮りましょう。"
             action={
-              can(workspace, "project.create") ? <AppLink href="/projects">現場を作成</AppLink> : undefined
+              can(workspace, "project.create") ? <AppLink href={CREATE_PROJECT_PATH}>現場を作成</AppLink> : undefined
             }
           />
         )}
