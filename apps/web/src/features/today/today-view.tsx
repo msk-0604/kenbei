@@ -6,6 +6,7 @@ import { formatTokyoDate } from "@/lib/dates";
 import { SiteButtons } from "@/features/today/site-buttons";
 import { CompleteTaskButton } from "@/features/today/complete-task-button";
 import { CreateTodayReportButton } from "@/features/reports/forms";
+import { CreateTaskForm } from "@/features/site-ops/forms";
 import type { TodayBoardProject, TodayOps } from "@/features/today/queries";
 import type { TodayFocusTask } from "@/features/today/focus-tasks";
 import { OnboardingChecklist } from "@/features/onboarding/checklist";
@@ -45,6 +46,7 @@ export function TodayView({
   focusTasks: TodayFocusTask[];
 }) {
   const canCapture = can(workspace, "capture.create");
+  const canTask = can(workspace, "project.update") || can(workspace, "capture.create");
   const first = projects[0];
   const photoHref = first ? `/photos/upload?projectId=${first.projectId}` : "/photos/upload";
   const createProjectHref = emptyWorkspaceCreateProjectHref(can(workspace, "project.create"));
@@ -96,7 +98,7 @@ export function TodayView({
                     {task.dueOn ? ` / ${task.dueOn}` : ""}
                     {` / ${TASK_STATUS_LABELS[task.status as keyof typeof TASK_STATUS_LABELS] ?? task.status}`}
                   </p>
-                  {can(workspace, "project.update") || can(workspace, "capture.create") ? (
+                  {canTask ? (
                     <div className="mt-3">
                       <CompleteTaskButton taskId={task.id} projectId={task.projectId} />
                     </div>
@@ -117,6 +119,12 @@ export function TodayView({
             </div>
           </>
         )}
+        {canTask && first ? (
+          <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-[var(--kb-line)]">
+            <p className="mb-3 text-sm font-medium">残作業を追加</p>
+            <CreateTaskForm projectId={first.projectId} />
+          </div>
+        ) : null}
       </section>
 
       <OnboardingChecklist

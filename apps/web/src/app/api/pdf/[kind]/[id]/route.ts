@@ -3,7 +3,8 @@ import { getReport } from "@/features/reports/queries";
 import { getWorkspace } from "@/lib/session";
 import { getProject } from "@/features/projects/queries";
 import { listProjectProcesses, listProjectTasks, overallProgress } from "@/features/site-ops/queries";
-import { buildPdf, pdfFailed } from "@/lib/pdf-document";
+import { buildPdf, pdfAttachmentHeaders, pdfFailed } from "@/lib/pdf-document";
+import { dailyReportPdfLines } from "@/features/reports/pdf-lines";
 
 export async function GET(
   _request: Request,
@@ -19,20 +20,12 @@ export async function GET(
     if (!report) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
-    const pdf = await buildPdf(`日報 ${report.workOn}`, [
-      report.projectName,
-      report.body,
-      report.progressNote ?? "",
-      report.tomorrowPlan ?? "",
-    ]);
+    const pdf = await buildPdf(`日報 ${report.workOn}`, dailyReportPdfLines(report));
     if (pdfFailed(pdf)) {
       return NextResponse.json({ error: pdf.error }, { status: 422 });
     }
     return new NextResponse(Buffer.from(pdf), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="report-${report.workOn}.pdf"`,
-      },
+      headers: pdfAttachmentHeaders(`report-${report.workOn}.pdf`),
     });
   }
   if (kind === "project") {
@@ -50,10 +43,7 @@ export async function GET(
       return NextResponse.json({ error: pdf.error }, { status: 422 });
     }
     return new NextResponse(Buffer.from(pdf), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="project-${id.slice(0, 8)}.pdf"`,
-      },
+      headers: pdfAttachmentHeaders(`project-${id.slice(0, 8)}.pdf`),
     });
   }
   return NextResponse.json({ error: "not found" }, { status: 404 });

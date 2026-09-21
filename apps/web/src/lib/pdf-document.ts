@@ -10,6 +10,18 @@ export function pdfFailed(value: Uint8Array | { error: string }): value is { err
   return !(value instanceof Uint8Array) && "error" in value;
 }
 
+export function sanitizePdfFilename(filename: string): string {
+  const trimmed = filename.trim() || "document.pdf";
+  return trimmed.replace(/[^\w.\-]+/g, "_").slice(0, 120);
+}
+
+export function pdfAttachmentHeaders(filename: string): Record<string, string> {
+  return {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `attachment; filename="${sanitizePdfFilename(filename)}"`,
+  };
+}
+
 export function needsJapaneseFont(text: string): boolean {
   return /[^\x00-\x7F]/.test(text);
 }

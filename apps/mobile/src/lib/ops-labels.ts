@@ -23,7 +23,7 @@ export const REPORT_STATUS_LABELS: Record<string, string> = {
   confirmed: "確定",
 };
 
-export const WEATHER_OPTIONS = ["晴れ", "曇り", "雨", "雪"] as const;
+export const WEATHER_OPTIONS = ["晴れ", "くもり", "雨", "雪"] as const;
 
 export const TASK_STATUSES = ["todo", "in_progress", "review", "done"] as const;
 export const PRIORITIES = ["low", "normal", "high"] as const;

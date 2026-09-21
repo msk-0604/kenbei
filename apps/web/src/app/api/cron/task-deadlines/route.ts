@@ -10,6 +10,7 @@ import {
 import { tokyoTodayIso } from "@/lib/dates";
 import { readServerEnv } from "@/lib/server-env";
 import { logServerInfo, logServerWarn } from "@/lib/server-log";
+import { isCronAuthorized } from "@/features/cron/authorize";
 import { sendExpoPushToMember } from "@/lib/push";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
@@ -31,10 +32,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const secret = readServerEnv("CRON_SECRET");
-  const bearer = request.headers.get("authorization");
-  const headerSecret = request.headers.get("x-cron-secret");
-  const authorized = Boolean(secret) && (bearer === `Bearer ${secret}` || headerSecret === secret);
-  if (!authorized) {
+  if (!isCronAuthorized(request.headers, secret)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const admin = createAdminSupabaseClient();

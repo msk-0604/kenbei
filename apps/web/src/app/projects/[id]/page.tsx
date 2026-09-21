@@ -316,11 +316,11 @@ async function TasksTab({
         <h2 className="mb-3 text-base font-medium">タスクを軍師に聞く</h2>
         <StrategistForm projectId={projectId} />
       </section>
-      <TaskList tasks={tasks} />
       <section className="rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
         <h2 className="mb-3 text-base font-medium">タスクを追加</h2>
         <CreateTaskForm projectId={projectId} members={members} />
       </section>
+      <TaskList tasks={tasks} />
     </div>
   );
 }

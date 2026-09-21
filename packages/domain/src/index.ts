@@ -56,6 +56,23 @@ export {
 } from "./ops";
 export type { ParsedSiteSearch, DrawingKind } from "./ops";
 export {
+  REPORT_SAFETY_NOTE_PRESET,
+  REPORT_SAFETY_PRESETS,
+  REPORT_WEATHER_OPTIONS,
+  REPORT_WORK_FALLBACKS,
+  appendReportLine,
+  formatSafetyNotes,
+  isKnownWeather,
+  openTaskTitles,
+  parseSafetyNotes,
+  weatherLineForPdf,
+  weatherTextForStorage,
+  workCandidatesFromTasks,
+  TASK_QUICK_PRESETS,
+  dueOnForChip,
+} from "./report-quick";
+export type { ReportWeatherValue } from "./report-quick";
+export {
   NOTIFICATION_KINDS,
   canDeliverPushToken,
   parseKenbeiRoute,

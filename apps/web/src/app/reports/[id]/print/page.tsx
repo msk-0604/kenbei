@@ -1,3 +1,4 @@
+import { weatherLineForPdf } from "@kensapo/domain";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPrintCompany, getReport } from "@/features/reports/queries";
@@ -57,7 +58,7 @@ export default async function ReportPrintPage({
         <img src={hero.url} alt="" className="mt-4 h-48 w-full object-cover" />
       ) : null}
       <section className="mt-6 grid grid-cols-2 gap-4 text-sm">
-        <p>天候: {report.weather ?? "—"}</p>
+        <p>{weatherLineForPdf(report.weather) ?? "天候: —"}</p>
         <p>作業人数: {report.workerCount ?? "—"}</p>
         <p>作業箇所: {report.workLocation ?? "—"}</p>
         <p>協力会社: {report.partnerCompaniesText ?? "—"}</p>

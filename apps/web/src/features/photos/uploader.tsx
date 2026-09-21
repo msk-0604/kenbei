@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+type SelectedPhoto = {
+  id: string;
+  file: File;
+  previewUrl: string;
+};
+
+function revokePreview(url: string) {
+  URL.revokeObjectURL(url);
+}
 import {
   BLACKBOARD_FIELD_LABELS,
   blackboardToComment,
@@ -58,6 +68,9 @@ export function PhotoUploader({
   const [pendingCount, setPendingCount] = useState(0);
   const [online, setOnline] = useState(true);
   const [useBlackboard, setUseBlackboard] = useState(true);
+  const [selected, setSelected] = useState<SelectedPhoto[]>([]);
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
   const [board, setBoard] = useState<ConstructionBlackboard>(
     emptyBlackboard({ projectName: projectName ?? "", companyName: companyName ?? "" }),
   );
@@ -93,6 +106,14 @@ export function PhotoUploader({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId, projectId]);
+
+  useEffect(() => {
+    return () => {
+      for (const item of selectedRef.current) {
+        revokePreview(item.previewUrl);
+      }
+    };
+  }, []);
 
   async function persistBoard(next: ConstructionBlackboard) {
     setBoard(next);
@@ -163,11 +184,56 @@ export function PhotoUploader({
     }
   }
 
-  async function onFiles(fileList: FileList | null) {
+  function addFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) {
       return;
     }
-    const files = [...fileList].slice(0, MAX_PHOTOS_PER_BATCH);
+    const incoming = [...fileList];
+    const rejected = incoming.some((file) => !isAllowedImageType(file.type));
+    if (rejected) {
+      setError("JPEG / PNG / WebP のみです。");
+    } else {
+      setError(null);
+    }
+    setSelected((current) => {
+      const room = MAX_PHOTOS_PER_BATCH - current.length;
+      const added = incoming
+        .filter((file) => isAllowedImageType(file.type))
+        .slice(0, Math.max(0, room))
+        .map((file) => ({
+          id: crypto.randomUUID(),
+          file,
+          previewUrl: URL.createObjectURL(file),
+        }));
+      return [...current, ...added];
+    });
+    setSaved(false);
+    setSavedPhotoId(null);
+  }
+
+  function removeSelected(id: string) {
+    setSelected((current) => {
+      const target = current.find((item) => item.id === id);
+      if (target) {
+        revokePreview(target.previewUrl);
+      }
+      return current.filter((item) => item.id !== id);
+    });
+  }
+
+  function clearSelected() {
+    setSelected((current) => {
+      for (const item of current) {
+        revokePreview(item.previewUrl);
+      }
+      return [];
+    });
+  }
+
+  async function onFiles(files: File[]) {
+    if (files.length === 0) {
+      return;
+    }
     setBusy(true);
     setError(null);
     setDone(0);
@@ -177,9 +243,6 @@ export function PhotoUploader({
       await saveBlackboardDraft(organizationId, projectId, board);
       const prepared: QueuedPhoto[] = [];
       for (const [index, original] of files.entries()) {
-        if (!isAllowedImageType(original.type)) {
-          throw new Error("JPEG / PNG / WebP のみです。");
-        }
         setProgress(`${index + 1} / ${files.length} 枚を準備中`);
         const compressed = await compressImageFile(original);
         const burned = useBlackboard
@@ -207,12 +270,14 @@ export function PhotoUploader({
         setProgress(
           `${prepared.length}枚を端末に保存しました（黒板${useBlackboard ? "付き" : "なし"}）。電波が戻ると送ります。`,
         );
+        clearSelected();
         return;
       }
       const photoId = await uploadPrepared(prepared);
       setProgress(`${prepared.length}枚を保存しました`);
       setSavedPhotoId(photoId);
       setSaved(true);
+      clearSelected();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "アップロードに失敗しました");
       setProgress("送れなかった写真は端末に残します");
@@ -297,9 +362,9 @@ export function PhotoUploader({
       </section>
 
       <label className="kb-tap flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--kb-line)] bg-white px-4 text-center">
-        <span className="text-lg font-medium">写真を選ぶ / 撮る</span>
+        <span className="text-lg font-medium">{selected.length > 0 ? "写真を追加する" : "写真を選ぶ / 撮る"}</span>
         <span className="mt-1 text-sm text-zinc-500">
-          アルバムから選ぶか、カメラで撮れます。複数枚OKです。
+          アルバムから選ぶか、カメラで撮れます。間違えた写真は右上の×で外せます。
         </span>
         <input
           type="file"
@@ -308,11 +373,41 @@ export function PhotoUploader({
           className="sr-only"
           disabled={busy}
           onChange={(event) => {
-            void onFiles(event.target.files);
+            addFiles(event.target.files);
             event.target.value = "";
           }}
         />
       </label>
+      {selected.length > 0 ? (
+        <section className="rounded-3xl bg-white p-4 ring-1 ring-[var(--kb-line)]">
+          <p className="text-sm font-medium text-zinc-600">{selected.length}枚を選択中</p>
+          <ul className="mt-3 grid grid-cols-3 gap-2">
+            {selected.map((item) => (
+              <li key={item.id} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={item.previewUrl} alt="" className="h-28 w-full rounded-2xl object-cover" />
+                <button
+                  type="button"
+                  disabled={busy}
+                  aria-label="この写真を外す"
+                  onClick={() => removeSelected(item.id)}
+                  className="absolute right-1.5 top-1.5 inline-flex size-8 items-center justify-center rounded-full bg-black/70 text-lg leading-none text-white shadow-sm disabled:opacity-40"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void onFiles(selected.map((item) => item.file))}
+            className="kb-tap mt-4 min-h-12 w-full rounded-2xl bg-[var(--kb-ink)] font-medium text-white disabled:opacity-60"
+          >
+            {busy ? "保存中…" : "この写真を保存"}
+          </button>
+        </section>
+      ) : null}
       {busy || progress ? (
         <p className="text-sm text-zinc-600">
           {progress}

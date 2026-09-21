@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TASK_STATUS_LABELS, PROCESS_STATUS_LABELS, PRIORITY_LABELS } from "@kensapo/domain";
+import { TASK_STATUS_LABELS, PROCESS_STATUS_LABELS, PRIORITY_LABELS, TASK_QUICK_PRESETS, dueOnForChip } from "@kensapo/domain";
 import {
   createProcessAction,
   createTaskAction,
@@ -11,38 +11,124 @@ import {
 } from "@/features/site-ops/actions";
 import type { ProcessRecord, TaskRecord } from "@/features/site-ops/queries";
 import type { OrgMemberOption } from "@/features/projects/queries";
+import { tokyoTodayIso } from "@/lib/dates";
 
 export function CreateTaskForm({
   projectId,
-  members,
+  members = [],
+  projects,
 }: {
-  projectId: string;
-  members: OrgMemberOption[];
+  projectId?: string;
+  members?: OrgMemberOption[];
+  projects?: { id: string; name: string }[];
 }) {
   const [state, action, pending] = useActionState(createTaskAction, null);
+  const today = tokyoTodayIso();
+  const [title, setTitle] = useState("");
+  const [dueChip, setDueChip] = useState<"today" | "tomorrow" | "none">("today");
+  const [more, setMore] = useState(false);
+  const dueOn = dueOnForChip(dueChip, today);
+  const resolvedProjectId = projectId ?? projects?.[0]?.id ?? "";
+
+  if (!resolvedProjectId) {
+    return <p className="text-sm text-zinc-500">現場があると、ここでタスクを追加できます。</p>;
+  }
+
   return (
     <form action={action} className="flex flex-col gap-3">
-      <input type="hidden" name="projectId" value={projectId} />
-      <input name="title" required placeholder="タスク名" className="rounded-xl border border-zinc-200 px-4" />
-      <textarea name="description" placeholder="説明" className="min-h-20 rounded-xl border border-zinc-200 px-4 py-3" />
-      <select name="assigneeMembershipId" className="rounded-xl border border-zinc-200 px-3">
-        <option value="">担当者</option>
-        {members.map((member) => (
-          <option key={member.membershipId} value={member.membershipId}>
-            {member.displayName}
-          </option>
+      {projectId ? <input type="hidden" name="projectId" value={projectId} /> : null}
+      <input type="hidden" name="dueOn" value={dueOn} />
+      {projects && !projectId ? (
+        <label className="text-sm font-medium">
+          現場
+          <select
+            name="projectId"
+            defaultValue={resolvedProjectId}
+            className="mt-1 w-full rounded-xl border border-zinc-200 px-3 text-base"
+          >
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      <div className="flex flex-col gap-2">
+        {TASK_QUICK_PRESETS.map((preset) => (
+          <button
+            key={preset}
+            type="button"
+            onClick={() => setTitle(preset)}
+            className={`kb-tap min-h-12 rounded-2xl px-4 text-left text-base ring-1 ${
+              title === preset
+                ? "bg-[var(--kb-ink)] text-white ring-[var(--kb-ink)]"
+                : "bg-white text-[var(--kb-ink)] ring-[var(--kb-line)]"
+            }`}
+          >
+            {preset}
+          </button>
         ))}
-      </select>
-      <input type="date" name="dueOn" className="rounded-xl border border-zinc-200 px-3" />
-      <select name="priority" defaultValue="normal" className="rounded-xl border border-zinc-200 px-3">
-        {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
-          <option key={value} value={value}>
+      </div>
+      <input
+        name="title"
+        required
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        placeholder="またはタスク名を入力"
+        className="min-h-12 rounded-xl border border-zinc-200 px-4 text-base"
+      />
+      <div className="grid grid-cols-3 gap-2">
+        {(
+          [
+            ["today", "今日"],
+            ["tomorrow", "明日"],
+            ["none", "期限なし"],
+          ] as const
+        ).map(([chip, label]) => (
+          <button
+            key={chip}
+            type="button"
+            onClick={() => setDueChip(chip)}
+            className={`kb-tap min-h-12 rounded-2xl text-sm font-medium ring-1 ${
+              dueChip === chip
+                ? "bg-[var(--kb-ink)] text-white ring-[var(--kb-ink)]"
+                : "bg-white text-[var(--kb-ink)] ring-[var(--kb-line)]"
+            }`}
+          >
             {label}
-          </option>
+          </button>
         ))}
-      </select>
+      </div>
+      <button
+        type="button"
+        onClick={() => setMore((open) => !open)}
+        className="kb-tap min-h-12 rounded-2xl bg-[#f3eee6] px-4 text-sm font-medium text-zinc-700"
+      >
+        {more ? "詳細を閉じる" : "担当・説明（任意）"}
+      </button>
+      <div className={more ? "flex flex-col gap-3" : "hidden"}>
+        <textarea name="description" placeholder="説明" className="min-h-20 rounded-xl border border-zinc-200 px-4 py-3" />
+        {members.length > 0 ? (
+          <select name="assigneeMembershipId" className="rounded-xl border border-zinc-200 px-3">
+            <option value="">担当者</option>
+            {members.map((member) => (
+              <option key={member.membershipId} value={member.membershipId}>
+                {member.displayName}
+              </option>
+            ))}
+          </select>
+        ) : null}
+        <select name="priority" defaultValue="normal" className="rounded-xl border border-zinc-200 px-3">
+          {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </div>
       {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
-      <button type="submit" disabled={pending} className="rounded-2xl bg-zinc-900 font-medium text-white">
+      <button type="submit" disabled={pending} className="kb-tap min-h-12 rounded-2xl bg-[var(--kb-ink)] font-medium text-white">
         {pending ? "追加中…" : "タスクを追加"}
       </button>
     </form>
