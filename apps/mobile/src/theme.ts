@@ -12,7 +12,7 @@ export const colors = {
 export const brand = {
   name: "KENBEI",
   reading: "ケンベイ",
-  tagline: "現場に、軍師を。",
+  tagline: "現場に、AI軍師を。",
 } as const;
 
 export const PROJECT_STATUS_LABELS: Record<string, string> = {

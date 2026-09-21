@@ -30,6 +30,9 @@ export default async function AccountPage() {
         {ROLE_MAP[workspace.roleCode] ?? workspace.roleName}
       </p>
       <nav className="mt-8 flex flex-col gap-3">
+        <Link href="/strategist" className="kb-tap rounded-2xl bg-white px-4 py-3 ring-1 ring-[var(--kb-line)]">
+          AI軍師
+        </Link>
         <Link href="/settings" className="kb-tap rounded-2xl bg-white px-4 py-3 ring-1 ring-[var(--kb-line)]">
           設定
         </Link>
@@ -37,7 +40,7 @@ export default async function AccountPage() {
           会社の導入
         </Link>
         <Link href="/settings/data" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
-          データエクスポート
+          データを保存
         </Link>
         <Link href="/confirm" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
           確認待ち {notifications.length > 0 ? `（${notifications.length}）` : ""}

@@ -98,7 +98,7 @@ export default async function SettingsPage() {
       ) : null}
       <nav className="mt-8 flex flex-col gap-3">
         <a href="/settings/data" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
-          データエクスポート
+          データを保存
         </a>
       </nav>
     </AppShell>

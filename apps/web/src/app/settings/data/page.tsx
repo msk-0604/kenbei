@@ -11,7 +11,7 @@ async function ExportButton({ enabled }: { enabled: boolean }) {
   return (
     <form action={requestExportAction}>
       <button type="submit" disabled={!enabled} className="rounded-2xl bg-zinc-900 px-4 py-2 font-medium text-white disabled:opacity-50">
-        エクスポートを開始
+        データを保存する
       </button>
     </form>
   );
@@ -71,8 +71,8 @@ export default async function DataExportPage({
       <p className="text-sm text-zinc-500">
         <a href="/settings">設定</a>
       </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">データエクスポート</h1>
-      <p className="mt-2 text-zinc-600">この会社のデータだけを JSON / CSV 入り ZIP で受け取れます。他社データは混ざりません。</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">データを保存</h1>
+      <p className="mt-2 text-zinc-600">KENBEIに登録した写真・現場・日報などのデータを、まとめて保存できます。</p>
       {!isServiceRoleConfigured() ? (
         <p className="mt-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-950">
           サーバーに SUPABASE_SERVICE_ROLE_KEY が無いため、エクスポートは実行できません。
@@ -90,7 +90,7 @@ export default async function DataExportPage({
             {job.error_message ? <p className="text-sm text-red-600">{job.error_message}</p> : null}
             {job.url ? (
               <a href={job.url} className="mt-2 inline-flex text-sm underline">
-                ZIPをダウンロード（期限付き）
+                保存したデータを受け取る（期限付き）
               </a>
             ) : null}
           </li>

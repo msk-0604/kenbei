@@ -160,7 +160,7 @@ export function TodayView({
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">今日注意すべきこと</h2>
             <Link href="/strategist" className="text-sm font-medium text-[var(--kb-amber)]">
-              AIに相談
+              AI軍師
             </Link>
           </div>
           <ul className="mt-3 flex flex-col gap-2 text-sm">

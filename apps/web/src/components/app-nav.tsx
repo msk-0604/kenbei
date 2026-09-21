@@ -20,7 +20,7 @@ export const DESKTOP_NAV = [
   { href: "/photos", label: "写真", icon: "photo" },
   { href: "/reports", label: "日報", icon: "report" },
   { href: "/confirm", label: "確認", icon: "check" },
-  { href: "/strategist", label: "軍師", icon: "ai" },
+  { href: "/strategist", label: "AI軍師", icon: "ai" },
   { href: "/knowledge", label: "資料", icon: "docs" },
   { href: "/settings", label: "設定", icon: "org" },
   { href: "/account", label: "自分", icon: "me" },
@@ -231,15 +231,28 @@ export function AppNav({ orgSwitcher }: { orgSwitcher: ReactNode }) {
         <Link href="/" prefetch className="inline-flex shrink-0 items-center" aria-label="KENBEI">
           <img src="/logo-k.png" alt="KENBEI" width={28} height={28} className="h-7 w-7 object-contain" />
         </Link>
-        <Link
-          href="/settings"
-          prefetch
-          className={`kb-tap inline-flex min-h-10 items-center rounded-full px-3 text-sm font-medium ${
-            isActivePath(pathname, "/settings") ? "bg-[var(--kb-ink)] text-white" : "bg-white text-zinc-700 ring-1 ring-[var(--kb-line)]"
-          }`}
-        >
-          設定
-        </Link>
+        <div className="flex min-w-0 items-center justify-end gap-2">
+          <Link
+            href="/strategist"
+            prefetch
+            className={`kb-tap inline-flex min-h-10 items-center rounded-full px-3 text-sm font-medium ${
+              isActivePath(pathname, "/strategist")
+                ? "bg-[var(--kb-ink)] text-white"
+                : "bg-white text-zinc-700 ring-1 ring-[var(--kb-line)]"
+            }`}
+          >
+            AI軍師
+          </Link>
+          <Link
+            href="/settings"
+            prefetch
+            className={`kb-tap inline-flex min-h-10 items-center rounded-full px-3 text-sm font-medium ${
+              isActivePath(pathname, "/settings") ? "bg-[var(--kb-ink)] text-white" : "bg-white text-zinc-700 ring-1 ring-[var(--kb-line)]"
+            }`}
+          >
+            設定
+          </Link>
+        </div>
       </header>
       <header className="mb-8 hidden items-center justify-between gap-4 md:flex">
         <Link href="/" prefetch className="inline-flex shrink-0 items-center" aria-label="KENBEI">
