@@ -82,6 +82,7 @@ export type { KenbeiRoute, DrawingVersionPlan } from "./notify";
 export {
   BILLING_PLAN_CODES,
   DEFAULT_BILLING_PLANS,
+  BUSINESS_SEAT_CONSULT_MESSAGE,
   billingPlanByCode,
   isBillingPlanCode,
   normalizeBillingPlanCode,

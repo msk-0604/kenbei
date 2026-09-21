@@ -109,11 +109,12 @@ describe("seat limit", () => {
 
   it("matches official KENBEI seats and prices", () => {
     expect(seatLimitError("free", 3)).toBeNull();
-    expect(seatLimitError("free", 4)).toMatch(/STANDARD/);
-    expect(seatLimitError("standard", 30)).toBeNull();
-    expect(seatLimitError("pro", 31)).toMatch(/BUSINESS/);
-    expect(seatLimitError("business", 50)).toBeNull();
-    expect(seatLimitError("business", 51)).toMatch(/要相談/);
+    expect(seatLimitError("free", 4)).toBeNull();
+    expect(seatLimitError("free", 50)).toBeNull();
+    expect(seatLimitError("free", 51)).toMatch(/51名以上/);
+    expect(seatLimitError("standard", 50)).toBeNull();
+    expect(seatLimitError("pro", 51)).toMatch(/BUSINESS/);
+    expect(seatLimitError("business", 80)).toBeNull();
     expect(seatLimitError("enterprise", 80)).toBeNull();
   });
 });

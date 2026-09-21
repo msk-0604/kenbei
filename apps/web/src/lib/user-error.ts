@@ -13,11 +13,8 @@ export function toUserActionError(raw: string | null | undefined, action: string
   if (TECHNICAL.test(text) || !HAS_JP.test(text)) {
     return fallback;
   }
-  if (text.includes("もう一度") || text.includes("してください") || text.includes("権限")) {
-    return text;
-  }
   if (text.length > 120) {
     return fallback;
   }
-  return `${text}${text.endsWith("。") ? "" : "。"}${next}`;
+  return text.endsWith("。") ? text : `${text}。`;
 }

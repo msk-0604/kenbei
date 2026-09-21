@@ -3,11 +3,11 @@ import { billingPlanByCode, normalizeBillingPlanCode, type BillingAccessKind } f
 export function seatRangeLabel(planCode: string): string {
   switch (normalizeBillingPlanCode(planCode)) {
     case "free":
-      return "1〜3名";
+      return "14日間無料体験";
     case "standard":
-      return "4〜30名まで";
+      return "会社ひとつ分";
     case "business":
-      return "31〜50名";
+      return "51名以上";
     default:
       return "51名以上";
   }
@@ -15,7 +15,7 @@ export function seatRangeLabel(planCode: string): string {
 
 export function monthlyPriceLabel(planCode: string): string {
   const plan = billingPlanByCode(planCode);
-  if (plan.code === "enterprise" || plan.maxMembers == null) {
+  if (plan.code === "enterprise") {
     return "お問い合わせ";
   }
   if (plan.monthlyPriceJpy === 0) {
@@ -59,7 +59,7 @@ export function standardScopeLine(): string {
 }
 
 export function standardFlatNote(): string {
-  return "10名でも20名でも、30名まで月額は39,800円です。";
+  return "人数が変わっても、月額は39,800円です。";
 }
 
 export function trialPlanLabel(): string {

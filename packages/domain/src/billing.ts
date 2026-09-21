@@ -14,11 +14,13 @@ export type BillingPlanDefinition = {
 };
 
 export const DEFAULT_BILLING_PLANS: readonly BillingPlanDefinition[] = [
-  { code: "free", name: "FREE", maxMembers: 3, monthlyPriceJpy: 0 },
-  { code: "standard", name: "STANDARD", maxMembers: 30, monthlyPriceJpy: 39_800 },
-  { code: "business", name: "BUSINESS", maxMembers: 50, monthlyPriceJpy: 65_000 },
+  { code: "free", name: "FREE", maxMembers: 50, monthlyPriceJpy: 0 },
+  { code: "standard", name: "STANDARD", maxMembers: 50, monthlyPriceJpy: 39_800 },
+  { code: "business", name: "BUSINESS", maxMembers: null, monthlyPriceJpy: 65_000 },
   { code: "enterprise", name: "ENTERPRISE", maxMembers: null, monthlyPriceJpy: 0 },
 ] as const;
+
+export const BUSINESS_SEAT_CONSULT_MESSAGE = "51名以上は BUSINESS です。お問い合わせください。";
 
 export function isBillingPlanCode(value: string): value is BillingPlanCode {
   return (BILLING_PLAN_CODES as readonly string[]).includes(value);
@@ -53,7 +55,7 @@ export function billingPlanByCode(code: string | null | undefined): BillingPlanD
   if (found) {
     return found;
   }
-  return { code: "free", name: "FREE", maxMembers: 3, monthlyPriceJpy: 0 };
+  return { code: "free", name: "FREE", maxMembers: 50, monthlyPriceJpy: 0 };
 }
 
 export function planAllowsMemberCount(
@@ -68,14 +70,11 @@ export function planAllowsMemberCount(
 
 export function seatLimitError(planCode: string | null | undefined, nextMemberCount: number): string | null {
   const plan = billingPlanByCode(planCode);
-  if (nextMemberCount >= 51 && plan.code !== "enterprise") {
-    return "51名以上は要相談です。自動ではアップグレードできません。";
+  if (plan.code === "business" || plan.code === "enterprise") {
+    return null;
   }
-  if (!planAllowsMemberCount(plan, nextMemberCount)) {
-    if (nextMemberCount <= 30) {
-      return "4名以上は STANDARD（月額39,800円）が必要です。";
-    }
-    return "31名以上は BUSINESS（月額65,000円）が必要です。";
+  if (nextMemberCount >= 51) {
+    return BUSINESS_SEAT_CONSULT_MESSAGE;
   }
   return null;
 }
