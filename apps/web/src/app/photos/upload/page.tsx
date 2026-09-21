@@ -26,10 +26,9 @@ export default async function PhotoUploadPage({
   return (
     <AppShell>
       <p className="text-sm text-zinc-500">
-        <Link href="/photos">写真</Link>
+        <Link href="/">今日</Link>
       </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">写真を追加</h1>
-      <p className="mt-2 text-base text-zinc-600">現場を選んで、写真を選ぶだけです。</p>
+      <h1 className="mt-2 text-[1.75rem] font-semibold tracking-tight">写真を追加</h1>
       <div className="mt-6">
         {projects.length > 0 ? <ProjectPicker projectId={projectId} projects={projects} /> : null}
       </div>

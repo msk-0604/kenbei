@@ -1,13 +1,15 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import {
   isAllowedImageType,
   MAX_PHOTOS_PER_BATCH,
 } from "@kensapo/domain";
-import type { PhotoClassification } from "@kensapo/ai";
+import { classifyPhotoHeuristic, type PhotoClassification } from "@kensapo/ai";
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { formString } from "@/lib/form";
+import { isUniqueConstraintError } from "@/features/photos/upload-safety";
 import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
 import { getAiService } from "@/lib/engines";
 import { listMemberProfileIdsWithPermission, notifyWorkspaceMembers } from "@/lib/notifications";
@@ -57,7 +59,6 @@ export async function registerPhotosAction(input: {
     return { error: "この現場を開けません。" };
   }
 
-  const ai = getAiService();
   const ids: string[] = [];
   let proposedAny = false;
 
@@ -68,37 +69,7 @@ export async function registerPhotosAction(input: {
     if (!item.storagePath.startsWith(`${workspace.organizationId}/projects/${input.projectId}/`)) {
       return { error: "保存先が不正です。" };
     }
-    let imageBase64: string | undefined;
-    const downloaded = await supabase.storage.from("org-files").download(item.storagePath);
-    if (downloaded.data) {
-      const bytes = new Uint8Array(await downloaded.data.arrayBuffer());
-      if (bytes.byteLength > 0 && bytes.byteLength <= 2_500_000) {
-        imageBase64 = Buffer.from(bytes).toString("base64");
-      }
-    }
-    const classified = await ai
-      .classifyPhoto({
-        storagePath: item.storagePath,
-        fileName: item.originalFilename,
-        mimeType: item.mimeType,
-        imageBase64,
-        context: {
-          organizationId: workspace.organizationId,
-          projectId: input.projectId,
-          workOn: item.takenAt.slice(0, 10),
-          knownWorkerNames: [],
-          knownMaterialCodes: [],
-          knownLocationHints: [],
-          currentProcessNames: [],
-        },
-      })
-      .catch(
-        (): PhotoClassification => ({
-          categoryKey: "other",
-          tags: [],
-          confidence: 0,
-        }),
-      );
+    const classified = classifyPhotoHeuristic(item.originalFilename);
     const proposed = classified.confidence >= 0.5;
     const { error } = await supabase.from("photos").insert({
       id: item.id,
@@ -120,11 +91,15 @@ export async function registerPhotosAction(input: {
       proposed_tags: classified.tags,
       classification_status: proposed ? "proposed" : "none",
       classification_confidence: classified.confidence,
-      classification_source: imageBase64 ? "vision" : "filename",
+      classification_source: "filename",
       category_key: classified.categoryKey,
       comment: item.comment ?? null,
     });
     if (error) {
+      if (isUniqueConstraintError(error)) {
+        ids.push(item.id);
+        continue;
+      }
       return { error: toUserActionError(error.message, "写真を保存") };
     }
     ids.push(item.id);
@@ -152,7 +127,79 @@ export async function registerPhotosAction(input: {
   revalidatePath("/photos");
   revalidatePath("/confirm");
   revalidatePath(`/projects/${input.projectId}`);
+  after(async () => {
+    await refinePhotoClassification({
+      organizationId: workspace.organizationId,
+      projectId: input.projectId,
+      items: input.items.filter((item) => ids.includes(item.id)),
+    });
+  });
   return { ids };
+}
+
+async function refinePhotoClassification(input: {
+  organizationId: string;
+  projectId: string;
+  items: RegisteredPhotoItem[];
+}): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  const ai = getAiService();
+  for (const item of input.items) {
+    try {
+      let imageBase64: string | undefined;
+      const downloaded = await supabase.storage.from("org-files").download(item.storagePath);
+      if (downloaded.data) {
+        const bytes = new Uint8Array(await downloaded.data.arrayBuffer());
+        if (bytes.byteLength > 0 && bytes.byteLength <= 2_500_000) {
+          imageBase64 = Buffer.from(bytes).toString("base64");
+        }
+      }
+      if (!imageBase64) {
+        continue;
+      }
+      const classified: PhotoClassification = await ai.classifyPhoto({
+        storagePath: item.storagePath,
+        fileName: item.originalFilename,
+        mimeType: item.mimeType,
+        imageBase64,
+        context: {
+          organizationId: input.organizationId,
+          projectId: input.projectId,
+          workOn: item.takenAt.slice(0, 10),
+          knownWorkerNames: [],
+          knownMaterialCodes: [],
+          knownLocationHints: [],
+          currentProcessNames: [],
+        },
+      });
+      if (classified.confidence < 0.5) {
+        continue;
+      }
+      await supabase
+        .from("photos")
+        .update({
+          work_type_key: classified.workType ?? null,
+          location_spot: classified.locationSpot ?? null,
+          location_text: [classified.floor, classified.locationSpot, classified.area].filter(Boolean).join(" ") || null,
+          floor: classified.floor ?? null,
+          area: classified.area ?? null,
+          tags: classified.tags,
+          proposed_work_type_key: classified.workType ?? null,
+          proposed_location_spot: classified.locationSpot ?? null,
+          proposed_description: classified.description ?? null,
+          proposed_tags: classified.tags,
+          classification_status: "proposed",
+          classification_confidence: classified.confidence,
+          classification_source: "vision",
+          category_key: classified.categoryKey,
+        })
+        .eq("id", item.id)
+        .eq("organization_id", input.organizationId)
+        .eq("project_id", input.projectId);
+    } catch {
+      // Photo is already saved. Classification can be filled in later.
+    }
+  }
 }
 
 export async function updatePhotoAction(

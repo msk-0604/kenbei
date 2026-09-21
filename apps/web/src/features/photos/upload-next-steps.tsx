@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { CreateTodayReportButton } from "@/features/reports/forms";
 import { AppLink } from "@/components/app-nav";
+import { TODAY_TASK_LABEL } from "@/features/today/today-cta";
 
 export function PhotoUploadNextSteps({
   projectId,
@@ -13,19 +12,19 @@ export function PhotoUploadNextSteps({
   canReport: boolean;
   photoId?: string | null;
 }) {
-  const taskHref = photoId ? `/photos/${photoId}` : `/projects/${projectId}?tab=photos`;
+  const taskHref = photoId ? `/photos/${photoId}` : `/#today-add-task`;
   return (
-    <div className="kb-enter mb-6 flex flex-col gap-3 rounded-3xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
-      <p className="font-medium text-emerald-950">✓ 写真を保存しました</p>
-      <p className="text-sm text-emerald-900">次は作業の追加か、日報です。</p>
-      <AppLink href={taskHref}>{photoId ? "この写真からタスクを追加" : "写真からタスクを追加"}</AppLink>
-      {canReport ? <CreateTodayReportButton projectId={projectId} variant="secondary" /> : null}
-      <Link
-        href={`/projects/${projectId}?tab=photos`}
-        className="kb-tap inline-flex min-h-12 items-center justify-center rounded-2xl px-4 text-sm font-medium text-zinc-600"
-      >
-        写真一覧を見る
-      </Link>
+    <div className="kb-enter flex flex-col gap-2">
+      <p className="font-medium">✓ 写真を保存しました</p>
+      <AppLink href="/">今日へ戻る</AppLink>
+      <AppLink href={taskHref} variant="secondary">
+        {TODAY_TASK_LABEL}
+      </AppLink>
+      {canReport ? (
+        <AppLink href={`/projects/${projectId}?tab=reports`} variant="ghost">
+          日報へ
+        </AppLink>
+      ) : null}
     </div>
   );
 }

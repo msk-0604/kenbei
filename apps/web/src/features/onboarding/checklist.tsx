@@ -10,7 +10,7 @@ const ITEMS: {
 }[] = [
   { key: "hasProject", label: "最初の現場", href: CREATE_PROJECT_PATH },
   { key: "hasPhoto", label: "最初の写真", href: "/photos/upload" },
-  { key: "hasTask", label: "最初のタスク", href: "/projects" },
+  { key: "hasTask", label: "最初の作業", href: "/#today-add-task" },
   { key: "hasReport", label: "最初の日報", href: "/reports" },
   {
     key: "hasInviteOrMember",
@@ -47,14 +47,14 @@ export function OnboardingChecklist({
       <p className="mt-1 text-sm leading-6 text-zinc-500">
         {experienceReady
           ? "現場の写真・残作業・進捗・日報を、メンバーと同じ場所で共有できます。"
-          : "現場 → 写真 → タスク → 日報 → チーム の順です。"}
+          : "現場 → 写真 → 作業 → 日報 → チーム の順です。"}
       </p>
       <ul className="mt-4 flex flex-col gap-2">
         {visible.map((item, index) => {
           const done = doneOf(item.key);
           const href =
-            item.key === "hasTask" && firstProjectId
-              ? `/projects/${firstProjectId}?tab=tasks`
+            item.key === "hasTask"
+              ? "/#today-add-task"
               : item.key === "hasPhoto"
                 ? firstProjectId
                   ? `/photos/upload?projectId=${firstProjectId}`

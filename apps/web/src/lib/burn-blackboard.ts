@@ -1,5 +1,6 @@
 import type { ConstructionBlackboard } from "@kensapo/domain";
 import { BLACKBOARD_FIELD_LABELS } from "@kensapo/domain";
+import { decodeOrientedImageBitmap } from "@/lib/compress-image";
 
 function wrapText(
   ctx: CanvasRenderingContext2D,
@@ -34,7 +35,7 @@ export async function burnBlackboardOntoImage(
   source: Blob,
   board: ConstructionBlackboard,
 ): Promise<Blob> {
-  const bitmap = await createImageBitmap(source);
+  const bitmap = await decodeOrientedImageBitmap(source);
   const canvas = document.createElement("canvas");
   canvas.width = bitmap.width;
   canvas.height = bitmap.height;
