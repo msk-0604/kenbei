@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { createInviteAction, setMembershipStatusAction, updateCompanySettingsAction } from "@/features/settings/actions";
+import { ActionNotice, FormSuccessNotice } from "@/components/action-notice";
+import { toUserActionError } from "@/lib/user-error";
 
 export function CompanySettingsForm({
   companyDisplayName,
@@ -31,7 +33,11 @@ export function CompanySettingsForm({
         会社ロゴ（日報印刷に使います）
         <input type="file" name="logo" accept="image/png,image/jpeg,image/webp" className="mt-1 block w-full text-sm" />
       </label>
-      {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+      {state?.error ? (
+        <p className="text-sm text-red-600">{toUserActionError(state.error, "設定を保存")}</p>
+      ) : (
+        <FormSuccessNotice pending={pending} error={state?.error} message="✓ 保存しました" />
+      )}
       <button type="submit" disabled={pending} className="rounded-2xl bg-[var(--kb-ink)] font-medium text-white">
         {pending ? "保存中…" : "設定を保存"}
       </button>
@@ -54,20 +60,23 @@ export function InviteMemberForm() {
           className="rounded-xl border border-zinc-200 px-4"
         />
         <select name="roleCode" defaultValue="supervisor" className="rounded-xl border border-zinc-200 px-3">
-          <option value="supervisor">現場監督（MANAGER）</option>
-          <option value="manager">管理者（ADMIN）</option>
+          <option value="supervisor">現場管理者</option>
+          <option value="manager">管理者</option>
           <option value="worker">メンバー</option>
           <option value="office">事務</option>
           <option value="executive">経営</option>
         </select>
-        {state && "error" in state && state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+        {state && "error" in state && state.error ? (
+          <p className="text-sm text-red-600">{toUserActionError(state.error, "招待リンクを作成")}</p>
+        ) : null}
         <button type="submit" disabled={pending} className="rounded-2xl bg-[var(--kb-ink)] font-medium text-white">
           {pending ? "作成中…" : "招待リンクを作る"}
         </button>
       </form>
       {url ? (
         <div className="rounded-2xl bg-zinc-50 p-4 text-sm">
-          <p className="font-medium">招待リンク</p>
+          <ActionNotice>✓ 招待リンクを作成しました</ActionNotice>
+          <p className="mt-2 font-medium">招待リンク</p>
           <p className="mt-2 break-all text-zinc-600">{url}</p>
           <button
             type="button"

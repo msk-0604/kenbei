@@ -16,12 +16,18 @@ import { confirmReportAction, createTodayReportDraftAction, saveReportAction } f
 import type { DailyReportRecord } from "@/features/reports/queries";
 import type { PhotoRecord } from "@/features/photos/queries";
 
+import { FormSuccessNotice } from "@/components/action-notice";
+import { TODAY_REPORT_LABEL } from "@/features/today/today-cta";
+import { toUserActionError } from "@/lib/user-error";
+
 export function CreateTodayReportButton({
   projectId,
   variant = "primary",
+  label = TODAY_REPORT_LABEL,
 }: {
   projectId: string;
   variant?: "primary" | "secondary";
+  label?: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -37,15 +43,16 @@ export function CreateTodayReportButton({
         className={`kb-tap min-h-12 w-full rounded-2xl font-medium disabled:opacity-60 ${look}`}
         onClick={() => {
           setPending(true);
+          setError(null);
           void createTodayReportDraftAction(projectId).then((result) => {
             if (result?.error) {
-              setError(result.error);
+              setError(toUserActionError(result.error, "日報を作成"));
               setPending(false);
             }
           });
         }}
       >
-        {pending ? "下書き作成中…" : "今日の日報を作成"}
+        {pending ? "日報を作成中…" : label}
       </button>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>
@@ -55,24 +62,31 @@ export function CreateTodayReportButton({
 export function ConfirmReportButton({ reportId, disabled }: { reportId: string; disabled: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [success, setSuccess] = useState(false);
   return (
     <div className="flex flex-col gap-2">
       <button
         type="button"
-        disabled={disabled || pending}
+        disabled={disabled || pending || success}
         className="rounded-2xl bg-[var(--kb-ink)] font-medium text-white disabled:opacity-40 kb-tap min-h-12"
         onClick={() => {
           setPending(true);
+          setError(null);
           void confirmReportAction(reportId).then((result) => {
-            setPending(false);
-            setError(result?.error ?? null);
-            if (!result?.error) {
-              window.location.reload();
+            if (result?.error) {
+              setPending(false);
+              setError(toUserActionError(result.error, "日報を確定"));
+              return;
             }
+            setPending(false);
+            setSuccess(true);
+            window.setTimeout(() => {
+              window.location.reload();
+            }, 700);
           });
         }}
       >
-        {pending ? "確定中…" : "確定する"}
+        {pending ? "確定中…" : success ? "✓ 日報を確定しました" : "日報を確定してPDFを作る"}
       </button>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
     </div>
@@ -342,9 +356,13 @@ export function ReportEditor({
           </label>
         </div>
 
-      {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+      {state?.error ? (
+        <p className="text-sm text-red-600">{toUserActionError(state.error, "日報を保存")}</p>
+      ) : (
+        <FormSuccessNotice pending={pending} error={state?.error} message="✓ 日報を保存しました" />
+      )}
       <button type="submit" disabled={pending} className="kb-tap min-h-12 rounded-2xl bg-[var(--kb-ink)] font-medium text-white disabled:opacity-60">
-        {pending ? "保存中…" : "下書きを保存"}
+        {pending ? "保存中…" : "日報を保存"}
       </button>
     </form>
   );

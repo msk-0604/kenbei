@@ -22,7 +22,7 @@ export default async function NewProjectPage() {
         <Link href="/projects">現場</Link>
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">現場を作成</h1>
-      <p className="mt-2 text-sm leading-6 text-zinc-600">現場名を登録すると、写真・タスク・日報をまとめられます。</p>
+      <p className="mt-2 text-sm leading-6 text-zinc-600">現場名だけで作れます。住所などはあとから入力できます。</p>
       <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
         <CreateProjectForm />
       </section>

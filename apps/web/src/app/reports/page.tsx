@@ -49,7 +49,7 @@ export default async function ReportsPage() {
         <div className="mt-6">
           <EmptyGuide
             title="まだ日報がありません"
-            body="今日の写真や進捗をもとに日報を作成できます。"
+            body="今日の作業と写真から、日報を作れます。"
             action={
               first ? (
                 <CreateTodayReportButton projectId={first.projectId} />

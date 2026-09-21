@@ -41,7 +41,7 @@ export default async function ReportDetailPage({
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">{report.workOn}</h1>
       <p className="mt-2 text-sm text-zinc-500">
-        {report.authorName ?? "記入者未設定"} / {isDraft ? "下書き" : "確定"}
+        {report.authorName ?? "記入者未設定"} / {isDraft ? "保存済み" : "確定"}
         {report.draftSource === "auto" ? " / 自動生成" : ""}
       </p>
       {isDraft ? (
@@ -76,7 +76,7 @@ export default async function ReportDetailPage({
             PDF / 印刷
           </Link>
         ) : (
-          <p className="text-sm text-zinc-500">確定すると印刷できます。</p>
+          <p className="text-sm text-zinc-500">日報を確定するとPDFを作れます。</p>
         )}
       </div>
     </AppShell>

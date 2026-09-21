@@ -54,7 +54,7 @@ export async function signInAction(
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     if (error.code === "email_not_confirmed" || /not confirmed/i.test(error.message)) {
-      return { error: "メールが未確認です。届いた確認メールのリンクを開いてから、もう一度サインインしてください。" };
+      return { error: "メールが未確認です。届いた確認メールのリンクを開いてから、もう一度ログインしてください。" };
     }
     return { error: "メールアドレスまたはパスワードが正しくありません。" };
   }

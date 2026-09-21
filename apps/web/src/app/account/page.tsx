@@ -7,13 +7,13 @@ import { requireWorkspace } from "@/lib/authz-guard";
 export const dynamic = "force-dynamic";
 
 const ROLE_MAP: Record<string, string> = {
-  owner: "OWNER",
-  executive: "ADMIN",
-  manager: "ADMIN",
-  supervisor: "MANAGER",
-  worker: "MEMBER",
-  office: "ADMIN",
-  partner: "協力会社（将来）",
+  owner: "代表",
+  executive: "管理者",
+  manager: "管理者",
+  supervisor: "現場管理者",
+  worker: "メンバー",
+  office: "事務",
+  partner: "協力会社",
   guest: "ゲスト",
 };
 
@@ -27,7 +27,7 @@ export default async function AccountPage() {
       <p className="mt-3 text-base text-zinc-600">{workspace.displayName}</p>
       <p className="text-base text-zinc-600">{workspace.organizationName}</p>
       <p className="mt-1 text-sm text-zinc-500">
-        {ROLE_MAP[workspace.roleCode] ?? workspace.roleName} / {workspace.roleName}
+        {ROLE_MAP[workspace.roleCode] ?? workspace.roleName}
       </p>
       <nav className="mt-8 flex flex-col gap-3">
         <Link href="/settings" className="kb-tap rounded-2xl bg-white px-4 py-3 ring-1 ring-[var(--kb-line)]">

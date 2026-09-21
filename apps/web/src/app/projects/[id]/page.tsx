@@ -317,7 +317,7 @@ async function TasksTab({
         <StrategistForm projectId={projectId} />
       </section>
       <section className="rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
-        <h2 className="mb-3 text-base font-medium">タスクを追加</h2>
+        <h2 className="mb-3 text-base font-medium">今日の作業を追加</h2>
         <CreateTaskForm projectId={projectId} members={members} />
       </section>
       <TaskList tasks={tasks} />

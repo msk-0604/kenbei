@@ -25,7 +25,11 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ created?: string }>;
+}) {
   const workspace = await getWorkspace();
   if (!workspace) {
     return <MarketingLandingPage />;
@@ -34,6 +38,7 @@ export default async function HomePage() {
     redirect("/onboarding");
   }
 
+  const params = await searchParams;
   const [{ projects, ops, pendingCaptureId, focusTasks }, onboarding, signals] = await Promise.all([
     loadTodayBoard(workspace),
     loadOnboardingFlags(workspace),
@@ -54,6 +59,7 @@ export default async function HomePage() {
           reason: String(item.evidence.reason ?? ""),
         }))}
         focusTasks={focusTasks}
+        createdProject={params.created === "project"}
       />
     </AppShell>
   );

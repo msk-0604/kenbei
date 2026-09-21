@@ -35,7 +35,7 @@ export function SignInForm({ nextPath }: { nextPath?: string }) {
         disabled={pending}
         className="rounded-2xl bg-[var(--kb-ink)] px-4 text-base font-medium text-white disabled:opacity-60"
       >
-        {pending ? "サインイン中…" : "サインイン"}
+        {pending ? "ログイン中…" : "ログイン"}
       </button>
     </form>
   );

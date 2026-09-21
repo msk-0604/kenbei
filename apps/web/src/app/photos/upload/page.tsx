@@ -28,7 +28,7 @@ export default async function PhotoUploadPage({
       <p className="text-sm text-zinc-500">
         <Link href="/photos">写真</Link>
       </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">写真を上げる</h1>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">写真を追加</h1>
       <p className="mt-2 text-base text-zinc-600">現場を選んで、写真を選ぶだけです。</p>
       <div className="mt-6">
         {projects.length > 0 ? <ProjectPicker projectId={projectId} projects={projects} /> : null}

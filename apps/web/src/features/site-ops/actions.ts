@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { formOptionalDate, formString } from "@/lib/form";
+import { toUserActionError } from "@/lib/user-error";
 import { notifyWorkspaceMembers, listMemberProfileIdsWithPermission, profileIdForMembership } from "@/lib/notifications";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -42,7 +43,7 @@ export async function createTaskAction(
     .select("id")
     .maybeSingle();
   if (error || !data) {
-    return { error: error?.message ?? "タスクを作成できませんでした。" };
+    return { error: toUserActionError(error?.message, "作業を追加") };
   }
   if (assigneeMembershipId) {
     const profileId = await profileIdForMembership(supabase, workspace.organizationId, assigneeMembershipId);
@@ -88,7 +89,7 @@ export async function updateTaskStatusAction(taskId: string, status: string, pro
     .eq("id", taskId)
     .eq("organization_id", workspace.organizationId);
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "タスクを更新") };
   }
   const row = current.data as
     | { title: string; status: string; assignee_membership_id: string | null }

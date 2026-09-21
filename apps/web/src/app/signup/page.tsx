@@ -29,7 +29,7 @@ export default async function SignUpPage({
           href={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login"}
           className="font-medium text-zinc-900 underline"
         >
-          サインイン
+          ログイン
         </Link>
       </p>
     </AuthShell>

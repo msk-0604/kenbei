@@ -7,6 +7,7 @@ import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-g
 import { getAppUrl } from "@/lib/env";
 import { assertSeatAvailable } from "@/lib/entitlement";
 import { formString } from "@/lib/form";
+import { toUserActionError } from "@/lib/user-error";
 import { listMemberProfileIdsWithPermission, notifyWorkspaceMembers } from "@/lib/notifications";
 import type { Workspace } from "@/lib/session";
 import { logoStoragePath } from "@/lib/storage-paths";
@@ -45,7 +46,7 @@ export async function updateCompanySettingsAction(
       upsert: true,
     });
     if (upload.error) {
-      return { error: upload.error.message };
+      return { error: toUserActionError(upload.error.message, "設定を保存") };
     }
     logoPath = path;
   }
@@ -60,7 +61,7 @@ export async function updateCompanySettingsAction(
     .update(payload)
     .eq("organization_id", workspace.organizationId);
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "設定を保存") };
   }
   if (displayName && can(workspace, "org.manage")) {
     await supabase
@@ -128,7 +129,7 @@ export async function createInviteAction(
     if (message.includes("KENBEI_SEAT_LIMIT")) {
       return { error: "座席数が上限です。プランを変更するか、無効な席を整理してください。" };
     }
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "招待リンクを作成") };
   }
   revalidatePath("/settings");
   return { url: `${getAppUrl()}/join?token=${token}` };

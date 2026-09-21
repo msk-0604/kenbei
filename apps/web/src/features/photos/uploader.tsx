@@ -34,6 +34,7 @@ import { extensionForMime, photoStoragePath } from "@/lib/storage-paths";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { registerPhotosAction } from "@/features/photos/actions";
 import { PhotoUploadNextSteps } from "@/features/photos/upload-next-steps";
+import { toUserActionError } from "@/lib/user-error";
 
 type FieldKey = keyof ConstructionBlackboard;
 
@@ -239,6 +240,7 @@ export function PhotoUploader({
     setDone(0);
     setSaved(false);
     setSavedPhotoId(null);
+    setProgress("アップロード中…");
     try {
       await saveBlackboardDraft(organizationId, projectId, board);
       const prepared: QueuedPhoto[] = [];
@@ -279,7 +281,7 @@ export function PhotoUploader({
       setSaved(true);
       clearSelected();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "アップロードに失敗しました");
+      setError(toUserActionError(caught instanceof Error ? caught.message : null, "写真を保存"));
       setProgress("送れなかった写真は端末に残します");
     } finally {
       setBusy(false);
@@ -404,7 +406,7 @@ export function PhotoUploader({
             onClick={() => void onFiles(selected.map((item) => item.file))}
             className="kb-tap mt-4 min-h-12 w-full rounded-2xl bg-[var(--kb-ink)] font-medium text-white disabled:opacity-60"
           >
-            {busy ? "保存中…" : "この写真を保存"}
+            {busy ? "アップロード中…" : "この写真を保存"}
           </button>
         </section>
       ) : null}

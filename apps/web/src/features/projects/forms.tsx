@@ -1,12 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { SYSTEM_ROLE_CODES } from "@kensapo/domain";
 import { assignMemberAction, createProjectAction, updateProjectAction } from "@/features/projects/actions";
 import type { AssignmentRow, OrgMemberOption } from "@/features/projects/queries";
+import { FormSuccessNotice } from "@/components/action-notice";
+import { toUserActionError } from "@/lib/user-error";
 
 export function CreateProjectForm() {
   const [state, action, pending] = useActionState(createProjectAction, null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   return (
     <form action={action} className="flex flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm font-medium">
@@ -15,44 +18,56 @@ export function CreateProjectForm() {
           name="name"
           required
           autoComplete="off"
-          enterKeyHint="next"
+          enterKeyHint="done"
           placeholder="例: ○○マンション改修"
-          className="rounded-xl border border-zinc-200 bg-white px-4 text-base"
+          className="min-h-12 rounded-xl border border-zinc-200 bg-white px-4 text-base"
         />
       </label>
-      <input
-        name="customerName"
-        placeholder="顧客名"
-        className="rounded-xl border border-zinc-200 bg-white px-4 text-base"
-      />
-      <input
-        name="address"
-        placeholder="住所"
-        className="rounded-xl border border-zinc-200 bg-white px-4 text-base"
-      />
-      <input
-        name="workSummary"
-        placeholder="工事内容"
-        className="rounded-xl border border-zinc-200 bg-white px-4 text-base"
-      />
-      <div className="grid grid-cols-2 gap-3">
-        <label className="text-sm text-zinc-600">
-          工期開始
-          <input type="date" name="plannedStartOn" className="mt-1 w-full rounded-xl border border-zinc-200 px-3" />
-        </label>
-        <label className="text-sm text-zinc-600">
-          工期終了
-          <input type="date" name="plannedEndOn" className="mt-1 w-full rounded-xl border border-zinc-200 px-3" />
-        </label>
+      <button
+        type="button"
+        onClick={() => setDetailsOpen((open) => !open)}
+        className="kb-tap min-h-12 rounded-2xl bg-[#f3eee6] px-4 text-sm font-medium text-zinc-700"
+      >
+        {detailsOpen ? "詳細を閉じる" : "詳細を入力（任意）"}
+      </button>
+      <div className={detailsOpen ? "flex flex-col gap-3" : "hidden"}>
+        <input
+          name="customerName"
+          placeholder="顧客名"
+          className="min-h-12 rounded-xl border border-zinc-200 bg-white px-4 text-base"
+        />
+        <input
+          name="address"
+          placeholder="住所"
+          className="min-h-12 rounded-xl border border-zinc-200 bg-white px-4 text-base"
+        />
+        <input
+          name="workSummary"
+          placeholder="工事内容"
+          className="min-h-12 rounded-xl border border-zinc-200 bg-white px-4 text-base"
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <label className="text-sm text-zinc-600">
+            工期開始
+            <input type="date" name="plannedStartOn" className="mt-1 w-full min-h-12 rounded-xl border border-zinc-200 px-3" />
+          </label>
+          <label className="text-sm text-zinc-600">
+            工期終了
+            <input type="date" name="plannedEndOn" className="mt-1 w-full min-h-12 rounded-xl border border-zinc-200 px-3" />
+          </label>
+        </div>
+        <select name="status" defaultValue="active" className="min-h-12 rounded-xl border border-zinc-200 bg-white px-3 text-base">
+          <option value="draft">準備中</option>
+          <option value="active">施工中</option>
+          <option value="on_hold">一時停止</option>
+          <option value="completed">完了</option>
+        </select>
       </div>
-      <select name="status" defaultValue="active" className="rounded-xl border border-zinc-200 bg-white px-3 text-base">
-        <option value="draft">準備中</option>
-        <option value="active">施工中</option>
-        <option value="on_hold">一時停止</option>
-        <option value="completed">完了</option>
-      </select>
-      {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
-      <button type="submit" disabled={pending} className="rounded-2xl bg-zinc-900 font-medium text-white">
+      {!detailsOpen ? <input type="hidden" name="status" value="active" /> : null}
+      {state?.error ? (
+        <p className="text-sm text-red-600">{toUserActionError(state.error, "現場を作成")}</p>
+      ) : null}
+      <button type="submit" disabled={pending} className="kb-tap min-h-12 rounded-2xl bg-zinc-900 font-medium text-white">
         {pending ? "作成中…" : "現場を作成"}
       </button>
     </form>
@@ -136,7 +151,9 @@ export function EditProjectForm({
         <option value="on_hold">一時停止</option>
         <option value="completed">完了</option>
       </select>
-      {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+      {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : (
+        <FormSuccessNotice pending={pending} error={state?.error} message="✓ 保存しました" />
+      )}
       <button type="submit" disabled={pending} className="rounded-2xl border border-zinc-200 bg-white font-medium">
         {pending ? "保存中…" : "保存"}
       </button>

@@ -24,7 +24,7 @@ export default async function TasksPage() {
       <p className="mt-2 text-sm text-zinc-500">未完了だけを出しています。完了は1回です。</p>
       {canCreate ? (
         <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
-          <h2 className="mb-3 text-base font-medium">残作業を追加</h2>
+          <h2 className="mb-3 text-base font-medium">今日の作業を追加</h2>
           {projects.length > 0 ? (
             <CreateTaskForm projects={projects} />
           ) : (
@@ -60,9 +60,11 @@ export default async function TasksPage() {
       </ul>
       {tasks.length === 0 ? (
         <EmptyGuide
-          title="未完了のタスクはありません"
-          body="写真から残作業を登録すると、Todayでまとめて確認できます。"
-          action={<AppLink href="/photos">写真を見る</AppLink>}
+          title="今日の作業はまだありません"
+          body="上の欄から今日の作業を追加できます。"
+          action={
+            projects.length > 0 ? undefined : <AppLink href={CREATE_PROJECT_PATH}>最初の現場を作る</AppLink>
+          }
         />
       ) : null}
     </AppShell>

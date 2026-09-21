@@ -12,6 +12,7 @@ import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-lim
 import { getAiService } from "@/lib/engines";
 import { listMemberProfileIdsWithPermission, notifyWorkspaceMembers } from "@/lib/notifications";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { toUserActionError } from "@/lib/user-error";
 
 export type RegisteredPhotoItem = {
   id: string;
@@ -124,7 +125,7 @@ export async function registerPhotosAction(input: {
       comment: item.comment ?? null,
     });
     if (error) {
-      return { error: error.message };
+      return { error: toUserActionError(error.message, "写真を保存") };
     }
     ids.push(item.id);
     if (proposed) {

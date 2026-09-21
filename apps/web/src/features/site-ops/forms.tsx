@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TASK_STATUS_LABELS, PROCESS_STATUS_LABELS, PRIORITY_LABELS, TASK_QUICK_PRESETS, dueOnForChip } from "@kensapo/domain";
 import {
@@ -12,6 +12,15 @@ import {
 import type { ProcessRecord, TaskRecord } from "@/features/site-ops/queries";
 import type { OrgMemberOption } from "@/features/projects/queries";
 import { tokyoTodayIso } from "@/lib/dates";
+import { FormSuccessNotice } from "@/components/action-notice";
+import { TODAY_TASK_LABEL } from "@/features/today/today-cta";
+import {
+  taskStatusActionLabel,
+  taskStatusButtonView,
+  taskStatusSuccessMessage,
+} from "@/features/site-ops/task-status-ui";
+import { toUserActionError } from "@/lib/user-error";
+
 
 export function CreateTaskForm({
   projectId,
@@ -127,9 +136,13 @@ export function CreateTaskForm({
           ))}
         </select>
       </div>
-      {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+      {state?.error ? (
+        <p className="text-sm text-red-600">{toUserActionError(state.error, "作業を追加")}</p>
+      ) : (
+        <FormSuccessNotice pending={pending} error={state?.error} message="✓ 作業を追加しました" />
+      )}
       <button type="submit" disabled={pending} className="kb-tap min-h-12 rounded-2xl bg-[var(--kb-ink)] font-medium text-white">
-        {pending ? "追加中…" : "タスクを追加"}
+        {pending ? "追加中…" : TODAY_TASK_LABEL}
       </button>
     </form>
   );
@@ -137,54 +150,90 @@ export function CreateTaskForm({
 
 export function TaskList({ tasks }: { tasks: TaskRecord[] }) {
   if (tasks.length === 0) {
-    return <p className="text-sm text-zinc-500">未完了のタスクはありません。</p>;
+    return <p className="text-sm text-zinc-500">今日の作業はまだありません。下の欄から追加できます。</p>;
   }
   return (
     <ul className="flex flex-col gap-2">
       {tasks.map((task) => (
-        <li
-          key={task.id}
-          className={`rounded-2xl px-4 py-3 ring-1 ${task.overdue ? "bg-red-50 ring-red-200" : "bg-white ring-zinc-100"}`}
-        >
-          <p className="font-medium">{task.title}</p>
-          <p className="mt-1 text-sm text-zinc-500">
-            {TASK_STATUS_LABELS[task.status as keyof typeof TASK_STATUS_LABELS] ?? task.status}
-            {task.assigneeName ? ` / ${task.assigneeName}` : ""}
-            {task.dueOn ? ` / ${task.dueOn}` : ""}
-            {task.overdue ? " / 期限超過" : ""}
-          </p>
-          <TaskStatusButtons task={task} />
-        </li>
+        <TaskStatusCard key={task.id} task={task} />
       ))}
     </ul>
   );
 }
 
-function TaskStatusButtons({ task }: { task: TaskRecord }) {
+function TaskStatusCard({ task }: { task: TaskRecord }) {
   const router = useRouter();
+  const [status, setStatus] = useState(task.status);
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pendingStatus) {
+      setStatus(task.status);
+    }
+  }, [task.status, pendingStatus]);
+
+  function applyStatus(next: string) {
+    if (pendingStatus || next === status) {
+      return;
+    }
+    const previous = status;
+    setStatus(next);
+    setPendingStatus(next);
+    setError(null);
+    setSuccess(null);
+    void updateTaskStatusAction(task.id, next, task.projectId).then((result) => {
+      setPendingStatus(null);
+      if (result?.error) {
+        setStatus(previous);
+        setError(toUserActionError(result.error, "タスクを更新"));
+        return;
+      }
+      setSuccess(taskStatusSuccessMessage(next));
+      window.setTimeout(() => {
+        router.refresh();
+      }, 700);
+    });
+  }
+
   return (
-    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {Object.entries(TASK_STATUS_LABELS).map(([status, label]) => (
-        <button
-          key={status}
-          type="button"
-          disabled={task.status === status}
-          className="rounded-xl border border-zinc-200 bg-white text-sm disabled:opacity-40"
-          onClick={() => {
-            void updateTaskStatusAction(task.id, status, task.projectId).then((result) => {
-              setError(result?.error ?? null);
-              if (!result?.error) {
-                router.refresh();
-              }
-            });
-          }}
-        >
-          {label}
-        </button>
-      ))}
-      {error ? <p className="col-span-full text-sm text-red-600">{error}</p> : null}
-    </div>
+    <li
+      className={`rounded-2xl px-4 py-3 ring-1 ${task.overdue && status !== "done" ? "bg-red-50 ring-red-200" : "bg-white ring-zinc-100"}`}
+    >
+      <p className="font-medium">{task.title}</p>
+      <p className="mt-1 text-sm text-zinc-500">
+        {TASK_STATUS_LABELS[status as keyof typeof TASK_STATUS_LABELS] ?? status}
+        {pendingStatus ? " / 更新中…" : ""}
+        {task.assigneeName ? ` / ${task.assigneeName}` : ""}
+        {task.dueOn ? ` / ${task.dueOn}` : ""}
+        {task.overdue && status !== "done" ? " / 期限超過" : ""}
+      </p>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {Object.entries(TASK_STATUS_LABELS).map(([value, label]) => {
+          const { selected, updating, disabled } = taskStatusButtonView(status, pendingStatus, value);
+          return (
+            <button
+              key={value}
+              type="button"
+              disabled={disabled}
+              aria-pressed={selected}
+              aria-busy={updating}
+              className={`kb-tap min-h-12 rounded-xl px-2 text-sm font-medium ring-1 disabled:opacity-70 ${
+                selected
+                  ? "bg-[var(--kb-ink)] text-white ring-[var(--kb-ink)]"
+                  : "border-0 bg-white text-[var(--kb-ink)] ring-[var(--kb-line)]"
+              }`}
+              onClick={() => applyStatus(value)}
+            >
+              {updating ? "更新中…" : taskStatusActionLabel(value, label)}
+            </button>
+          );
+        })}
+        {success ? <p className="col-span-full text-sm font-medium text-emerald-800">{success}</p> : null}
+        {error ? <p className="col-span-full text-sm text-red-600">{error}</p> : null}
+      </div>
+    </li>
   );
 }
 

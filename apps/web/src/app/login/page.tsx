@@ -23,7 +23,7 @@ export default async function LoginPage({
   }
 
   return (
-    <AuthShell title="サインイン" description="現場の記録から、今日の事務まで。写真・タスク・日報をつなげます。">
+    <AuthShell title="ログイン" description="現場の記録から、今日の事務まで。写真・作業・日報をつなげます。">
       <SignInForm nextPath={nextPath} />
       <p className="mt-4 text-sm text-zinc-600">
         <Link href="/forgot-password" className="underline">

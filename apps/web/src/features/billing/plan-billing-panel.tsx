@@ -132,7 +132,7 @@ export function PlanBillingPanel({
         </p>
       ) : (
         <p className="mt-4 text-sm text-zinc-500">
-          ダウングレードや支払い方法の変更は、カスタマーポータルから行います。カードはCheckout時に登録します。
+          ダウングレードや支払い方法の変更は、「契約内容を確認・変更」から行います。カードはお支払い手続きのときに登録します。
         </p>
       )}
     </section>

@@ -56,7 +56,7 @@ export default async function SettingsPage() {
       <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
         <h2 className="mb-3 text-base font-medium">メンバー招待</h2>
         <p className="mb-4 text-sm text-zinc-500">
-          招待リンクを送り、同じメールでサインアップ／サインインしてもらいます。
+          招待リンクを送り、同じメールでアカウント作成／ログインしてもらいます。
         </p>
         <InviteMemberForm />
         <ul className="mt-6 flex flex-col gap-2">

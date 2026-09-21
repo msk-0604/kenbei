@@ -8,7 +8,7 @@ export default function ForgotPasswordPage() {
       <ForgotPasswordForm />
       <p className="mt-6 text-sm text-zinc-600">
         <Link href="/login" className="underline">
-          サインインへ戻る
+          ログインへ戻る
         </Link>
       </p>
     </AuthShell>

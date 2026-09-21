@@ -50,7 +50,7 @@ export default async function BillingPage({
       ) : null}
       {canceled ? (
         <p className="mt-4 rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700 ring-1 ring-zinc-200">
-          Checkout をキャンセルしました。
+          手続きをキャンセルしました。
         </p>
       ) : null}
       <div className="mt-6">
@@ -65,11 +65,11 @@ export default async function BillingPage({
       {canOpenBillingPortal(true, entitlement.stripeCustomerId) ? (
         <form action={openBillingPortalAction} className="mt-4">
           <button type="submit" className="rounded-2xl bg-white px-4 py-2 ring-1 ring-zinc-200">
-            カスタマーポータル（ダウングレード含む）
+            契約内容を確認・変更
           </button>
         </form>
       ) : (
-        <p className="mt-4 text-sm text-zinc-500">カード登録はSTANDARDまたはBUSINESSのCheckout時に行います。</p>
+        <p className="mt-4 text-sm text-zinc-500">カード登録はSTANDARDまたはBUSINESSのお支払い手続きのときに行います。</p>
       )}
       <section className="mt-8 rounded-3xl bg-amber-50 p-5 ring-1 ring-amber-200">
         <h2 className="font-medium">解約の前に</h2>

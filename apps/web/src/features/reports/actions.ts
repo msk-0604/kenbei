@@ -6,6 +6,7 @@ import { draftDailyReportTemplate } from "@kensapo/ai";
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { tokyoTodayIso } from "@/lib/dates";
 import { formNumber, formString } from "@/lib/form";
+import { toUserActionError } from "@/lib/user-error";
 import { getAiService } from "@/lib/engines";
 import { similarProjectsFor } from "@/features/similar/queries";
 import { notifyWorkspaceMembers, listMemberProfileIdsWithPermission } from "@/lib/notifications";
@@ -132,7 +133,7 @@ export async function createTodayReportDraftAction(projectId: string): Promise<{
       })
       .eq("id", reportId);
     if (error) {
-      return { error: error.message };
+      return { error: toUserActionError(error.message, "日報を作成") };
     }
   } else {
     const inserted = await supabase
@@ -155,7 +156,7 @@ export async function createTodayReportDraftAction(projectId: string): Promise<{
       .select("id")
       .maybeSingle();
     if (inserted.error || !inserted.data) {
-      return { error: inserted.error?.message ?? "日報を作成できませんでした。" };
+      return { error: toUserActionError(inserted.error?.message, "日報を作成") };
     }
     reportId = (inserted.data as { id: string }).id;
   }
@@ -231,7 +232,7 @@ export async function saveReportAction(
     .eq("organization_id", workspace.organizationId)
     .eq("status", "draft");
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "日報を保存") };
   }
   const current = await supabase
     .from("daily_reports")
@@ -280,7 +281,7 @@ export async function confirmReportAction(reportId: string): Promise<{ error: st
     .eq("organization_id", workspace.organizationId)
     .eq("status", "draft");
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "日報を確定") };
   }
   const current = await supabase
     .from("daily_reports")

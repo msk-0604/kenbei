@@ -19,7 +19,7 @@ export default async function JoinPage({
     return (
       <AuthShell title="招待リンクが必要です" description="会社の管理者から送られたリンクを開いてください。">
         <Link href="/login" className="font-medium underline">
-          サインイン
+          ログイン
         </Link>
       </AuthShell>
     );
@@ -27,12 +27,12 @@ export default async function JoinPage({
 
   if (!workspace) {
     return (
-      <AuthShell title="招待を受け取る" description="同じメールアドレスでサインインすると、会社に参加できます。">
+      <AuthShell title="招待を受け取る" description="同じメールアドレスでログインすると、会社に参加できます。">
         <Link
           href={`/login?next=${encodeURIComponent(`/join?token=${token}`)}`}
           className="flex items-center justify-center rounded-2xl bg-[var(--kb-ink)] font-medium text-white"
         >
-          サインインして参加
+          ログインして参加
         </Link>
         <p className="mt-4 text-sm text-zinc-600">
           アカウントがない場合は{" "}

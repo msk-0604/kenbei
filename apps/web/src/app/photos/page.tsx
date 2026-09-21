@@ -42,7 +42,7 @@ export default async function PhotosPage({
     <AppShell>
       <div className="flex items-end justify-between gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">写真</h1>
-        <Link href="/photos/upload" className="kb-tap rounded-2xl bg-[var(--kb-ink)] px-4 font-medium text-white">
+        <Link href="/photos/upload" className="kb-tap inline-flex min-h-12 items-center rounded-2xl bg-[var(--kb-ink)] px-4 font-medium text-white">
           写真を追加
         </Link>
       </div>
@@ -97,7 +97,7 @@ export default async function PhotosPage({
             <EmptyGuide
               title="まだ写真がありません"
               body="現場写真を登録すると、タスクや日報につなげられます。"
-              action={<AppLink href="/photos/upload">写真を上げる</AppLink>}
+              action={<AppLink href="/photos/upload">写真を追加</AppLink>}
             />
           </div>
         )

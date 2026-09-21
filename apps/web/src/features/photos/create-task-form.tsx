@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createTaskAction } from "@/features/site-ops/actions";
+import { toUserActionError } from "@/lib/user-error";
 
 function titleFromPhoto(input: {
   proposedDescription: string | null;
@@ -50,7 +51,7 @@ export function PhotoCreateTaskForm({
       <p className="mt-1 text-sm text-zinc-500">{projectName ?? "この現場"}の未完了として残します。</p>
       {created ? (
         <div className="mt-4 flex flex-col gap-3 text-sm">
-          <p className="text-emerald-800">タスクを追加しました。この写真は下からいつでも戻せます。</p>
+          <p className="text-emerald-800">✓ 作業を追加しました。この写真は下からいつでも戻せます。</p>
           <Link href={`/projects/${projectId}?tab=tasks`} className="inline-flex min-h-12 items-center font-medium underline">
             現場のタスクを見る
           </Link>
@@ -69,7 +70,7 @@ export function PhotoCreateTaskForm({
             void createTaskAction(null, formData).then((result) => {
               setPending(false);
               if (result?.error) {
-                setError(result.error);
+                setError(toUserActionError(result.error, "作業を追加"));
                 return;
               }
               setCreated(true);
@@ -105,7 +106,7 @@ export function PhotoCreateTaskForm({
           </label>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <button type="submit" disabled={pending} className="min-h-12 rounded-2xl bg-zinc-900 font-medium text-white">
-            {pending ? "追加中…" : "タスクを追加"}
+            {pending ? "追加中…" : "今日の作業を追加"}
           </button>
         </form>
       )}

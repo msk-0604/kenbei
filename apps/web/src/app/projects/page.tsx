@@ -26,7 +26,7 @@ export default async function ProjectsPage() {
         <div className="mt-6">
           <EmptyGuide
             title="まだ現場がありません"
-            body="最初の現場を登録して、写真・タスク・日報をまとめましょう。"
+            body="上の欄に現場名を入れて、最初の現場を作りましょう。"
             action={canCreate ? undefined : <p className="text-sm text-zinc-500">現場の作成権限がありません。</p>}
           />
         </div>

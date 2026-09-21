@@ -283,7 +283,7 @@ export function StrategistForm({
                       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-zinc-400 [animation-delay:150ms]" />
                       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-zinc-400 [animation-delay:300ms]" />
                     </span>
-                    現場データを調べています…
+                    AIが回答を作成中…
                   </span>
                 </div>
               </div>
@@ -321,7 +321,7 @@ export function StrategistForm({
             disabled={pending}
             className="h-12 shrink-0 rounded-2xl bg-[var(--kb-ink)] px-5 text-sm font-medium text-white disabled:opacity-40"
           >
-            {pending ? "送信中" : "送信"}
+            {pending ? "回答を作成中…" : "送信"}
           </button>
         </div>
         {!empty ? (

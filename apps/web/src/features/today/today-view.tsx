@@ -13,9 +13,18 @@ import { OnboardingChecklist } from "@/features/onboarding/checklist";
 import type { OnboardingFlags } from "@kensapo/domain";
 import { AppLink } from "@/components/app-nav";
 import { EmptyGuide } from "@/components/empty-guide";
+import { ActionNotice } from "@/components/action-notice";
 import { KenbeiFlow } from "@/features/product/kenbei-flow";
-import { PRODUCT_LEAD, PRODUCT_SUPPORT } from "@/features/product/workflow";
+import { PRODUCT_SUPPORT } from "@/features/product/workflow";
 import { emptyWorkspaceCreateProjectHref } from "@/features/projects/routes";
+import {
+  TODAY_PHOTO_LABEL,
+  TODAY_REPORT_LABEL,
+  TODAY_TASK_ANCHOR,
+  TODAY_TASK_LABEL,
+  todayPhotoHref,
+  todayTaskHref,
+} from "@/features/today/today-cta";
 
 const ROLE_LABEL: Record<string, string> = {
   owner: "代表",
@@ -36,6 +45,7 @@ export function TodayView({
   onboarding,
   signals,
   focusTasks,
+  createdProject = false,
 }: {
   workspace: Workspace;
   projects: TodayBoardProject[];
@@ -44,11 +54,12 @@ export function TodayView({
   onboarding: OnboardingFlags & { complete: boolean; firstProjectId?: string | null; hasReport?: boolean };
   signals: { id: string; title: string; reason: string }[];
   focusTasks: TodayFocusTask[];
+  createdProject?: boolean;
 }) {
   const canCapture = can(workspace, "capture.create");
   const canTask = can(workspace, "project.update") || can(workspace, "capture.create");
   const first = projects[0];
-  const photoHref = first ? `/photos/upload?projectId=${first.projectId}` : "/photos/upload";
+  const photoHref = todayPhotoHref(first?.projectId);
   const createProjectHref = emptyWorkspaceCreateProjectHref(can(workspace, "project.create"));
 
   return (
@@ -56,30 +67,41 @@ export function TodayView({
       <header>
         <p className="text-sm text-zinc-500">{formatTokyoDate()}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">今日やること</h1>
-        {first ? <p className="mt-2 text-base text-zinc-600">{PRODUCT_LEAD}</p> : null}
+        <p className="mt-2 text-base text-zinc-600">
+          未完了 {ops.openTaskCount}件
+          {ops.draftReportCount > 0 ? ` / 日報の途中 ${ops.draftReportCount}件` : ""}
+          {first && !projects.some((project) => project.reportStatus === "confirmed")
+            ? " / 今日の日報はまだです"
+            : first
+              ? " / 日報あり"
+              : ""}
+        </p>
       </header>
 
+      {createdProject ? <ActionNotice>✓ 現場を作成しました。次は写真を追加してください。</ActionNotice> : null}
+
       {first ? (
-        <>
-          <div className="rounded-3xl bg-[var(--kb-card)] p-4 ring-1 ring-[var(--kb-line)]">
-            <KenbeiFlow compare />
-            <p className="mt-3 text-sm leading-6 text-zinc-600">{PRODUCT_SUPPORT}</p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <AppLink href={photoHref}>写真を上げる</AppLink>
-            <CreateTodayReportButton projectId={first.projectId} />
-          </div>
-        </>
+        <div className="grid gap-3">
+          <AppLink href={photoHref} className="w-full">
+            {TODAY_PHOTO_LABEL}
+          </AppLink>
+          {canTask ? (
+            <AppLink href={todayTaskHref()} variant="secondary" className="w-full">
+              {TODAY_TASK_LABEL}
+            </AppLink>
+          ) : null}
+          <CreateTodayReportButton projectId={first.projectId} label={TODAY_REPORT_LABEL} />
+        </div>
       ) : (
         <EmptyGuide
           title="まだ現場がありません"
-          body="最初の現場を登録すると、写真・タスク・日報をひとつにまとめられます。"
-          action={createProjectHref ? <AppLink href={createProjectHref}>現場を作成</AppLink> : undefined}
+          body="まず現場を1件作りましょう。"
+          action={createProjectHref ? <AppLink href={createProjectHref}>最初の現場を作る</AppLink> : undefined}
         />
       )}
 
       <section className="rounded-3xl bg-[var(--kb-card)] p-5 ring-1 ring-[var(--kb-line)]">
-        <h2 className="text-lg font-semibold tracking-tight">今日のタスク</h2>
+        <h2 className="text-lg font-semibold tracking-tight">今日の作業</h2>
         {focusTasks.length > 0 ? (
           <>
             <p className="mt-1 text-sm text-zinc-500">期限超過と、今日中の仕事です。</p>
@@ -109,19 +131,19 @@ export function TodayView({
           </>
         ) : (
           <>
-            <p className="mt-2 text-sm leading-6 text-zinc-600">
-              今日のタスクはありません。現場写真から残作業をタスクにすると、ここでまとめて確認できます。
-            </p>
-            <div className="mt-4">
-              <AppLink href={first ? photoHref : "/photos"} variant="secondary">
-                {first ? "写真を上げる" : "写真を見る"}
-              </AppLink>
-            </div>
+            <p className="mt-2 text-sm leading-6 text-zinc-600">今日の作業はまだありません。</p>
+            {first && canTask ? (
+              <div className="mt-4">
+                <AppLink href={todayTaskHref()} variant="secondary">
+                  {TODAY_TASK_LABEL}
+                </AppLink>
+              </div>
+            ) : null}
           </>
         )}
         {canTask && first ? (
-          <div className="mt-4 rounded-2xl bg-white p-4 ring-1 ring-[var(--kb-line)]">
-            <p className="mb-3 text-sm font-medium">残作業を追加</p>
+          <div id={TODAY_TASK_ANCHOR} className="mt-4 scroll-mt-24 rounded-2xl bg-white p-4 ring-1 ring-[var(--kb-line)]">
+            <p className="mb-3 text-sm font-medium">{TODAY_TASK_LABEL}</p>
             <CreateTaskForm projectId={first.projectId} />
           </div>
         ) : null}
@@ -156,7 +178,7 @@ export function TodayView({
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">今日注意すべきこと</h2>
             <Link href="/strategist" className="text-sm font-medium text-[var(--kb-amber)]">
-              軍師に聞く
+              AIに相談
             </Link>
           </div>
           <ul className="mt-3 flex flex-col gap-2 text-sm">
@@ -171,7 +193,7 @@ export function TodayView({
       ) : null}
 
       <p className="text-sm text-zinc-500">
-        写真 {ops.photoCount}枚 / 未完了 {ops.openTaskCount}件 / 日報下書き {ops.draftReportCount}件
+        写真 {ops.photoCount}枚 / 未完了 {ops.openTaskCount}件 / 日報の途中 {ops.draftReportCount}件
         {ops.confirmCount > 0 ? ` / 確認待ち ${ops.confirmCount}` : ""}
       </p>
 
@@ -210,7 +232,7 @@ export function TodayView({
               {project.reportStatus === "confirmed"
                 ? "確定済"
                 : project.reportStatus === "draft"
-                  ? "下書き"
+                  ? "保存済み"
                   : "未作成"}
               {project.overdueTaskCount > 0 ? ` / 期限超過 ${project.overdueTaskCount}` : ""}
             </p>
@@ -224,7 +246,7 @@ export function TodayView({
           ) : null}
           <div className="grid grid-cols-2 gap-3">
             <AppLink href={`/photos/upload?projectId=${project.projectId}`} variant="secondary">
-              写真
+              {TODAY_PHOTO_LABEL}
             </AppLink>
             {project.reportId ? (
               <AppLink href={`/reports/${project.reportId}`} variant="secondary">
@@ -246,6 +268,13 @@ export function TodayView({
           </div>
         </section>
       ))}
+
+      {first ? (
+        <div className="rounded-3xl bg-[var(--kb-card)] p-4 ring-1 ring-[var(--kb-line)]">
+          <KenbeiFlow compare />
+          <p className="mt-3 text-sm leading-6 text-zinc-600">{PRODUCT_SUPPORT}</p>
+        </div>
+      ) : null}
     </div>
   );
 }

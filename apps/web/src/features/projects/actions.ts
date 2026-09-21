@@ -6,6 +6,8 @@ import { PROJECT_STATUSES, SYSTEM_ROLE_CODES, type SystemRoleCode } from "@kensa
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { formOptionalDate, formString } from "@/lib/form";
 import { notifyWorkspaceMembers } from "@/lib/notifications";
+import { toUserActionError } from "@/lib/user-error";
+import { PROJECT_CREATED_PATH } from "@/features/projects/routes";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -101,7 +103,7 @@ export async function createProjectAction(
     .select("id")
     .maybeSingle();
   if (inserted.error || !inserted.data) {
-    return { error: inserted.error?.message ?? "案件を作成できませんでした。" };
+    return { error: toUserActionError(inserted.error?.message, "現場を作成") };
   }
   const project = inserted.data as { id: string };
   if (address) {
@@ -116,7 +118,7 @@ export async function createProjectAction(
       })
     ).error;
     if (siteError) {
-      return { error: siteError.message };
+      return { error: toUserActionError(siteError.message, "現場を作成") };
     }
   }
   const assignError = (
@@ -131,11 +133,11 @@ export async function createProjectAction(
     })
   ).error;
   if (assignError) {
-    return { error: assignError.message };
+    return { error: toUserActionError(assignError.message, "現場を作成") };
   }
   revalidatePath("/");
   revalidatePath("/projects");
-  redirect(`/projects/${project.id}`);
+  redirect(PROJECT_CREATED_PATH);
 }
 
 export async function updateProjectAction(
@@ -178,7 +180,7 @@ export async function updateProjectAction(
     .eq("id", projectId)
     .eq("organization_id", workspace.organizationId);
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "現場を保存") };
   }
   if (address) {
     const existing = await supabase
