@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import { isKenbeiProductionRuntime } from "@/lib/app-url";
+import { getAppUrl } from "@/lib/env";
+import { resolveAuthNext } from "@/lib/invite-next-path";
+import { readJoinNextCookie } from "@/lib/invite-next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -8,7 +12,7 @@ export async function GET(request: Request) {
     const supabase = await createServerSupabaseClient();
     await supabase.auth.exchangeCodeForSession(code);
   }
-  const next = url.searchParams.get("next");
-  const path = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
-  return NextResponse.redirect(new URL(path, url.origin));
+  const path = resolveAuthNext(url.searchParams.get("next"), await readJoinNextCookie()) || "/";
+  const origin = isKenbeiProductionRuntime() ? getAppUrl() : url.origin;
+  return NextResponse.redirect(new URL(path, origin));
 }

@@ -19,10 +19,11 @@ describe("new link invite insert", () => {
         token: "tok",
         invitedBy: "user-1",
         expiresAt: "2026-10-01T00:00:00.000Z",
+        email: "example@company.jp",
       }),
     ).toEqual({
       organization_id: "org-from-session",
-      email: null,
+      email: "example@company.jp",
       role_id: "role-from-server",
       token: "tok",
       invited_by: "user-1",

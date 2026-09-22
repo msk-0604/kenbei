@@ -5,8 +5,13 @@ import { redirect } from "next/navigation";
 import {
   alreadyInCompanyMessage,
   canMutateMembershipInOrganization,
+  canResendInvite,
   inviteCancelUpdate,
+  inviteDuplicateEmailMessage,
+  inviteEmailMismatchMessage,
+  inviteJoinPath,
   isInviteRoleCode,
+  normalizeInviteEmail,
 } from "@kensapo/domain";
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { getWorkspace } from "@/lib/session";
@@ -18,6 +23,7 @@ import { listMemberProfileIdsWithPermission, notifyWorkspaceMembers } from "@/li
 import type { Workspace } from "@/lib/session";
 import { logoStoragePath } from "@/lib/storage-paths";
 import { newInviteInsertFields } from "@/features/settings/invite-insert";
+import { sendStoredInviteEmail } from "@/features/settings/invite-mail";
 import { firstInvitePreview } from "@/features/settings/invite-preview";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -79,9 +85,9 @@ export async function updateCompanySettingsAction(
 }
 
 export async function createInviteAction(
-  _prev: { error: string } | { url: string } | null,
+  _prev: { error: string } | { url: string; email: string; mailed: boolean } | null,
   formData: FormData,
-): Promise<{ error: string } | { url: string } | null> {
+): Promise<{ error: string } | { url: string; email: string; mailed: boolean } | null> {
   const workspace = await requireWorkspace();
   const locked = await assertOrganizationWritable(workspace.organizationId);
   if (locked) {
@@ -94,6 +100,10 @@ export async function createInviteAction(
   if (seat) {
     return seat;
   }
+  const email = normalizeInviteEmail(formString(formData, "email"));
+  if (!email) {
+    return { error: "メールアドレスを入力してください。" };
+  }
   const roleCode = formString(formData, "roleCode") || "worker";
   if (!isInviteRoleCode(roleCode)) {
     return { error: "権限を選んでください。" };
@@ -101,12 +111,12 @@ export async function createInviteAction(
   const supabase = await createServerSupabaseClient();
   const role = await supabase
     .from("roles")
-    .select("id")
+    .select("id, code")
     .eq("code", roleCode)
     .is("organization_id", null)
     .is("deleted_at", null)
     .maybeSingle();
-  const roleRow = role.data as { id: string } | null;
+  const roleRow = role.data as { id: string; code: string } | null;
   if (!roleRow) {
     return { error: "権限が見つかりません。" };
   }
@@ -120,6 +130,7 @@ export async function createInviteAction(
       token,
       invitedBy: workspace.userId,
       expiresAt: expires.toISOString(),
+      email,
     }),
   );
   if (error) {
@@ -130,10 +141,78 @@ export async function createInviteAction(
     if (message.includes("KENBEI_INVITE_ROLE") || message.includes("KENBEI_OWNER_GRANT")) {
       return { error: "この権限では招待できません。" };
     }
-    return { error: toUserActionError(error.message, "招待リンクを作成") };
+    if (message.includes("organization_invitations_pending_email_uidx") || message.includes("duplicate key")) {
+      return { error: inviteDuplicateEmailMessage() };
+    }
+    return { error: toUserActionError(error.message, "招待メールを送る") };
   }
+  const mailed = await sendStoredInviteEmail({
+    email,
+    companyName: workspace.organizationName,
+    roleCode: roleRow.code,
+    token,
+  });
   revalidatePath("/settings");
-  return { url: `${getAppUrl()}/join?token=${token}` };
+  return {
+    url: `${getAppUrl()}${inviteJoinPath(token)}`,
+    email,
+    mailed: mailed.ok,
+  };
+}
+
+export async function resendInviteAction(
+  _prev: { error: string } | { mailed: true } | { mailed: false } | null,
+  formData: FormData,
+): Promise<{ error: string } | { mailed: true } | { mailed: false } | null> {
+  const workspace = await requireWorkspace();
+  if (!can(workspace, "member.manage")) {
+    return { error: "招待を再送する権限がありません。" };
+  }
+  const inviteId = formString(formData, "inviteId");
+  if (!/^[0-9a-f-]{36}$/i.test(inviteId)) {
+    return { error: "招待が見つかりません。" };
+  }
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("organization_invitations")
+    .select("id, organization_id, email, token, accepted_at, deleted_at, roles(code)")
+    .eq("id", inviteId)
+    .eq("organization_id", workspace.organizationId)
+    .is("accepted_at", null)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) {
+    return { error: toUserActionError(error.message, "招待メールを再送") };
+  }
+  const row = data as {
+    organization_id: string;
+    email: string | null;
+    token: string;
+    accepted_at: string | null;
+    deleted_at: string | null;
+    roles: { code: string } | { code: string }[] | null;
+  } | null;
+  if (!row) {
+    return { error: "この招待は再送できません。" };
+  }
+  const allowed = canResendInvite({
+    sessionOrganizationId: workspace.organizationId,
+    inviteOrganizationId: row.organization_id,
+    accepted: Boolean(row.accepted_at),
+    alreadyDeleted: Boolean(row.deleted_at),
+    email: row.email,
+  });
+  if (!allowed.ok) {
+    return { error: allowed.reason === "other_org" ? "招待を再送する権限がありません。" : "この招待は再送できません。" };
+  }
+  const role = Array.isArray(row.roles) ? row.roles[0] : row.roles;
+  const mailed = await sendStoredInviteEmail({
+    email: normalizeInviteEmail(row.email) ?? "",
+    companyName: workspace.organizationName,
+    roleCode: role?.code || "worker",
+    token: row.token,
+  });
+  return mailed.ok ? { mailed: true } : { mailed: false };
 }
 
 export async function cancelInviteAction(
@@ -191,7 +270,7 @@ export async function acceptInviteAction(
       return { error: alreadyInCompanyMessage(workspace?.organizationName || "今の会社") };
     }
     if (message.includes("invite email mismatch")) {
-      return { error: "この招待リンクは、別のメールアドレス向けです。" };
+      return { error: inviteEmailMismatchMessage() };
     }
     if (message.includes("invite not found or expired")) {
       return { error: "招待リンクが無効か、すでに使われています。" };

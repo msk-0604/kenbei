@@ -7,10 +7,18 @@ import {
   inviteCancelUpdate,
   canAcceptInvite,
   extraInvitePreviewKeys,
+  inviteDuplicateEmailMessage,
   inviteEmailMatches,
+  inviteEmailMismatchMessage,
+  inviteJoinPath,
+  inviteMailFailedMessage,
   inviteRequiresEmailMatch,
   inviteRoleLabel,
   isInviteRoleCode,
+  isSafeInviteNextPath,
+  normalizeInviteEmail,
+  safeAuthNextPath,
+  canResendInvite,
 } from "./invite";
 
 describe("link invite rules", () => {
@@ -133,6 +141,7 @@ describe("link invite rules", () => {
         company_name: "A建設",
         role_label: "現場管理者",
         invite_state: "ok",
+        email_state: "anon",
         organization_id: "secret",
         role_id: "secret",
         email: "secret",
@@ -188,5 +197,94 @@ describe("link invite rules", () => {
         inviteOrganizationId: "org-a",
       }),
     ).toEqual({ ok: false, reason: "missing" });
+  });
+
+  it("11. rejects a different email on an email invite", () => {
+    expect(inviteEmailMatches("a@company.jp", "b@company.jp")).toBe(false);
+    expect(
+      canAcceptInvite({
+        tokenFound: true,
+        used: false,
+        expired: false,
+        deleted: false,
+        inviteEmail: "a@company.jp",
+        userEmail: "b@company.jp",
+        activeOrganizationIds: [],
+        inviteOrganizationId: "org-a",
+      }),
+    ).toEqual({ ok: false, reason: "email" });
+    expect(inviteEmailMismatchMessage()).toContain("別のメールアドレス");
+  });
+
+  it("12-14. rejects expired, canceled, and used invites", () => {
+    expect(
+      canAcceptInvite({
+        tokenFound: true,
+        used: false,
+        expired: true,
+        deleted: false,
+        inviteEmail: "a@company.jp",
+        userEmail: "a@company.jp",
+        activeOrganizationIds: [],
+        inviteOrganizationId: "org-a",
+      }),
+    ).toEqual({ ok: false, reason: "expired" });
+    expect(
+      canAcceptInvite({
+        tokenFound: true,
+        used: false,
+        expired: false,
+        deleted: true,
+        inviteEmail: "a@company.jp",
+        userEmail: "a@company.jp",
+        activeOrganizationIds: [],
+        inviteOrganizationId: "org-a",
+      }),
+    ).toEqual({ ok: false, reason: "missing" });
+    expect(
+      canAcceptInvite({
+        tokenFound: true,
+        used: true,
+        expired: false,
+        deleted: false,
+        inviteEmail: "a@company.jp",
+        userEmail: "a@company.jp",
+        activeOrganizationIds: [],
+        inviteOrganizationId: "org-a",
+      }),
+    ).toEqual({ ok: false, reason: "used" });
+  });
+
+  it("keeps confirmation and login return paths on the join token", () => {
+    expect(inviteJoinPath("tokentokentokentokentokentoken12")).toBe("/join?token=tokentokentokentokentokentoken12");
+    expect(isSafeInviteNextPath("/join?token=abc123abc123abc123abc123abc123ab")).toBe(true);
+    expect(isSafeInviteNextPath("https://evil.example/join?token=abc")).toBe(false);
+    expect(isSafeInviteNextPath("//evil/join?token=abc")).toBe(false);
+    expect(safeAuthNextPath("/join?token=abc123abc123abc123abc123abc123ab")).toBe(
+      "/join?token=abc123abc123abc123abc123abc123ab",
+    );
+    expect(safeAuthNextPath("https://app.kenbei.jp/join?token=x")).toBe("");
+    expect(normalizeInviteEmail(" Example@Company.JP ")).toBe("example@company.jp");
+    expect(normalizeInviteEmail("not-an-email")).toBeNull();
+    expect(inviteMailFailedMessage()).toContain("メールを送信できませんでした");
+    expect(inviteDuplicateEmailMessage()).toContain("すでに招待中");
+    expect(
+      canResendInvite({
+        sessionOrganizationId: "org-a",
+        inviteOrganizationId: "org-a",
+        accepted: false,
+        alreadyDeleted: false,
+        email: "a@company.jp",
+      }),
+    ).toEqual({ ok: true });
+    expect(
+      canResendInvite({
+        sessionOrganizationId: "org-a",
+        inviteOrganizationId: "org-b",
+        accepted: false,
+        alreadyDeleted: false,
+        email: "a@company.jp",
+      }),
+    ).toEqual({ ok: false, reason: "other_org" });
   });
 });

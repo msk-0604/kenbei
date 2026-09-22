@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthShell } from "@/components/auth-shell";
 import { SignUpForm } from "@/features/auth/sign-up-form";
+import { safeAuthNextPath } from "@kensapo/domain";
 import { isSupabaseConfigured } from "@/lib/env";
 
 export default async function SignUpPage({
@@ -9,8 +10,7 @@ export default async function SignUpPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const params = await searchParams;
-  const nextPath =
-    params.next && params.next.startsWith("/") && !params.next.startsWith("//") ? params.next : undefined;
+  const nextPath = safeAuthNextPath(params.next) || undefined;
 
   if (!isSupabaseConfigured()) {
     return (

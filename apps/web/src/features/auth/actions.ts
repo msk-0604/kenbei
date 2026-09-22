@@ -1,7 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { safeAuthNextPath } from "@kensapo/domain";
 import { getAppUrl } from "@/lib/env";
+import { writeJoinNextCookie } from "@/lib/invite-next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function formString(formData: FormData, key: string): string {
@@ -22,8 +24,8 @@ export async function signUpAction(
     return { error: "パスワードは8文字以上にしてください。" };
   }
 
-  const next = formString(formData, "next");
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "";
+  const safeNext = safeAuthNextPath(formString(formData, "next"));
+  await writeJoinNextCookie(safeNext);
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.signUp({
     email,
@@ -37,7 +39,7 @@ export async function signUpAction(
   if (error) {
     return { error: error.message };
   }
-  redirect("/signup/check-email");
+  redirect(safeNext ? `/signup/check-email?next=${encodeURIComponent(safeNext)}` : "/signup/check-email");
 }
 
 export async function signInAction(
@@ -58,8 +60,8 @@ export async function signInAction(
     }
     return { error: "メールアドレスまたはパスワードが正しくありません。" };
   }
-  const next = formString(formData, "next");
-  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/");
+  const next = safeAuthNextPath(formString(formData, "next"));
+  redirect(next || "/");
 }
 
 export async function signOutAction(): Promise<void> {

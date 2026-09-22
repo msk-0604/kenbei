@@ -1,7 +1,14 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { cancelInviteAction, createInviteAction, setMembershipStatusAction, updateCompanySettingsAction } from "@/features/settings/actions";
+import {
+  cancelInviteAction,
+  createInviteAction,
+  resendInviteAction,
+  setMembershipStatusAction,
+  updateCompanySettingsAction,
+} from "@/features/settings/actions";
+import { inviteMailFailedMessage } from "@kensapo/domain";
 import { ActionNotice, FormSuccessNotice } from "@/components/action-notice";
 import { toUserActionError } from "@/lib/user-error";
 
@@ -48,11 +55,22 @@ export function CompanySettingsForm({
 export function InviteMemberForm({ organizationName }: { organizationName: string }) {
   const [state, action, pending] = useActionState(createInviteAction, null);
   const [copied, setCopied] = useState(false);
-  const url = state && "url" in state ? state.url : null;
+  const result = state && "url" in state ? state : null;
   return (
     <div className="flex flex-col gap-4">
       <p className="text-base font-medium">{organizationName}にメンバーを招待</p>
       <form action={action} className="flex flex-col gap-3">
+        <label className="text-sm font-medium">
+          メールアドレス
+          <input
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="example@company.jp"
+            className="mt-1 w-full rounded-xl border border-zinc-200 px-4"
+          />
+        </label>
         <label className="text-sm font-medium">
           権限
           <select name="roleCode" defaultValue="worker" className="mt-1 w-full rounded-xl border border-zinc-200 px-3">
@@ -62,23 +80,27 @@ export function InviteMemberForm({ organizationName }: { organizationName: strin
           </select>
         </label>
         {state && "error" in state && state.error ? (
-          <p className="text-sm text-red-600">{toUserActionError(state.error, "招待リンクを作成")}</p>
+          <p className="text-sm text-red-600">{toUserActionError(state.error, "招待メールを送る")}</p>
         ) : null}
         <button type="submit" disabled={pending} className="rounded-2xl bg-[var(--kb-ink)] font-medium text-white">
-          {pending ? "作成中…" : "招待リンクを作る"}
+          {pending ? "送信中…" : "招待メールを送る"}
         </button>
       </form>
-      {url ? (
+      {result ? (
         <div className="rounded-2xl bg-zinc-50 p-4">
-          <ActionNotice>✓ 招待リンクを作成しました</ActionNotice>
+          {result.mailed ? (
+            <ActionNotice>{`✓ ${result.email} に招待メールを送りました`}</ActionNotice>
+          ) : (
+            <p className="text-sm leading-6 text-zinc-700">{inviteMailFailedMessage()}</p>
+          )}
           <button
             type="button"
-            className="mt-4 w-full rounded-2xl bg-[var(--kb-ink)] py-3 text-base font-medium text-white"
+            className="mt-4 w-full rounded-2xl border border-zinc-200 bg-white py-3 text-base font-medium"
             onClick={() => {
-              void navigator.clipboard.writeText(url).then(() => setCopied(true));
+              void navigator.clipboard.writeText(result.url).then(() => setCopied(true));
             }}
           >
-            {copied ? "コピーしました" : "リンクをコピー"}
+            {copied ? "コピーしました" : "招待リンクをコピー"}
           </button>
         </div>
       ) : null}
@@ -105,35 +127,78 @@ export function PendingInvitesList({
   invites,
   appUrl,
 }: {
-  invites: { id: string; roleName: string; expiresAt: string; token: string }[];
+  invites: { id: string; email: string | null; roleName: string; expiresAt: string; token: string }[];
   appUrl: string;
 }) {
   const [hiddenIds, setHiddenIds] = useState<string[]>([]);
-  const [notice, setNotice] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const visible = invites.filter((invite) => !hiddenIds.includes(invite.id));
   return (
     <div>
-      {notice ? <p className="mb-3 text-sm font-medium">✓ 招待を取り消しました</p> : null}
+      {notice ? <p className="mb-3 text-sm font-medium">{notice}</p> : null}
       {visible.length === 0 ? (
         <p className="text-sm text-zinc-500">招待中の人はいません。</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {visible.map((invite) => (
             <li key={invite.id} className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm">
-              <p className="font-medium">{invite.roleName}</p>
+              <p className="font-medium">{invite.email || "リンク招待"}</p>
+              <p className="text-zinc-500">{invite.roleName}</p>
               <p className="text-zinc-500">有効期限 {invite.expiresAt.slice(0, 10)}</p>
+              {invite.email ? <ResendInviteButton inviteId={invite.id} onNotice={setNotice} /> : null}
               <CopyInviteLinkButton url={`${appUrl}/join?token=${invite.token}`} />
               <CancelInviteButton
                 inviteId={invite.id}
                 onCanceled={() => {
                   setHiddenIds((current) => [...current, invite.id]);
-                  setNotice(true);
+                  setNotice("✓ 招待を取り消しました");
                 }}
               />
             </li>
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function ResendInviteButton({
+  inviteId,
+  onNotice,
+}: {
+  inviteId: string;
+  onNotice: (message: string) => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  return (
+    <div>
+      {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+      <button
+        type="button"
+        disabled={pending}
+        className="mt-2 block rounded-xl border border-zinc-200 bg-white px-3 text-sm font-medium"
+        onClick={() => {
+          setPending(true);
+          setError(null);
+          const form = new FormData();
+          form.set("inviteId", inviteId);
+          void resendInviteAction(null, form).then((result) => {
+            setPending(false);
+            if (result && "mailed" in result && result.mailed) {
+              onNotice("✓ 招待メールを再送しました");
+              return;
+            }
+            if (result && "mailed" in result) {
+              setError(inviteMailFailedMessage());
+              return;
+            }
+            setError(result && "error" in result ? result.error : "再送できませんでした。");
+          });
+        }}
+      >
+        {pending ? "再送中…" : "招待メールを再送"}
+      </button>
     </div>
   );
 }

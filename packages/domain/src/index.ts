@@ -124,8 +124,17 @@ export {
   alreadyInCompanyMessage,
   canCancelInvite,
   inviteCancelUpdate,
+  normalizeInviteEmail,
+  inviteJoinPath,
+  isSafeInviteNextPath,
+  safeAuthNextPath,
+  canResendInvite,
+  inviteMailFailedMessage,
+  inviteDuplicateEmailMessage,
+  inviteEmailMismatchMessage,
 } from "./invite";
-export type { InviteRoleCode, InvitePreviewState } from "./invite";
+export type { InviteRoleCode, InvitePreviewState, InviteEmailState } from "./invite";
+export { inviteEmailSubject, inviteEmailText, inviteEmailHtml, inviteJoinUrl } from "./invite-email";
 export {
   canChangeMembershipStatus,
   membershipStatusChangeError,

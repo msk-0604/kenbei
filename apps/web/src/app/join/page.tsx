@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AuthShell } from "@/components/auth-shell";
 import { AcceptInviteButton } from "@/features/settings/accept-invite-button";
 import { firstInvitePreview } from "@/features/settings/invite-preview";
-import { alreadyInCompanyMessage } from "@kensapo/domain";
+import { alreadyInCompanyMessage, inviteEmailMismatchMessage, inviteJoinPath } from "@kensapo/domain";
 import { getWorkspace, hasOrganization } from "@/lib/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -74,7 +74,17 @@ export default async function JoinPage({
     );
   }
 
-  const next = `/join?token=${token}`;
+  const next = inviteJoinPath(token);
+
+  if (row?.email_state === "mismatch") {
+    return (
+      <AuthShell title="招待を確認できません" description={inviteEmailMismatchMessage()}>
+        <Link href="/login" className="font-medium underline">
+          別のアカウントでログイン
+        </Link>
+      </AuthShell>
+    );
+  }
 
   if (!workspace) {
     return (

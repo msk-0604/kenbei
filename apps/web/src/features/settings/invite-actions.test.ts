@@ -10,10 +10,14 @@ const trial = readFileSync(
 );
 
 describe("invite action guards", () => {
-  it("lets only member managers create invites", () => {
+  it("lets only member managers create email invites", () => {
     expect(actions).toMatch(/if \(!can\(workspace, "member\.manage"\)\)/);
     expect(actions).toMatch(/isInviteRoleCode\(roleCode\)/);
+    expect(actions).toMatch(/normalizeInviteEmail/);
     expect(actions).toMatch(/newInviteInsertFields/);
+    expect(actions).toMatch(/sendStoredInviteEmail/);
+    expect(actions).toMatch(/export async function resendInviteAction/);
+    expect(actions).toMatch(/inviteDuplicateEmailMessage/);
   });
 
   it("lets only org managers update company settings", () => {

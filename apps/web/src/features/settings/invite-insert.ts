@@ -4,10 +4,11 @@ export function newInviteInsertFields(input: {
   token: string;
   invitedBy: string;
   expiresAt: string;
+  email?: string | null;
 }) {
   return {
     organization_id: input.organizationId,
-    email: null,
+    email: input.email ?? null,
     role_id: input.roleId,
     token: input.token,
     invited_by: input.invitedBy,

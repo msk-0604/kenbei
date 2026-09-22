@@ -97,6 +97,7 @@ export default async function SettingsPage() {
             appUrl={getAppUrl()}
             invites={pendingInvites.map((invite) => ({
               id: invite.id,
+              email: invite.email,
               roleName: invite.roleName,
               expiresAt: invite.expiresAt,
               token: invite.token,
