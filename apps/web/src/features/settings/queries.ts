@@ -1,6 +1,6 @@
 import "server-only";
 
-import { inviteRoleLabel } from "@kensapo/domain";
+import { memberFacingRoleLabel } from "@kensapo/domain";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { currentOrganizationId } from "@/lib/org-scope";
 
@@ -79,7 +79,7 @@ export async function listInvites(): Promise<InviteRow[]> {
     expiresAt: row.expires_at,
     acceptedAt: row.accepted_at,
     token: row.token,
-    roleName: inviteRoleLabel(one(row.roles)?.code) || one(row.roles)?.name || "",
+    roleName: memberFacingRoleLabel(one(row.roles)?.code) || one(row.roles)?.name || "",
   }));
 }
 
@@ -116,7 +116,7 @@ export async function listOrganizationMembers(): Promise<OrganizationMemberRow[]
     membershipId: row.id,
     profileId: row.profile_id,
     displayName: one(row.profiles)?.display_name ?? "メンバー",
-    roleName: inviteRoleLabel(one(row.roles)?.code) || one(row.roles)?.name || "",
+    roleName: memberFacingRoleLabel(one(row.roles)?.code) || one(row.roles)?.name || "",
     status: row.status,
   }));
 }

@@ -26,6 +26,34 @@ describe("membership disable guards", () => {
     ).toEqual({ ok: false, reason: "last_manager" });
   });
 
+  it("10. blocks disabling the last owner", () => {
+    expect(
+      canChangeMembershipStatus({
+        actorProfileId: "manager",
+        targetProfileId: "owner",
+        nextStatus: "disabled",
+        targetHasOrgManage: true,
+        remainingOtherOrgManagers: 0,
+        targetIsOwner: true,
+        remainingOtherOwners: 0,
+      }),
+    ).toEqual({ ok: false, reason: "last_owner" });
+  });
+
+  it("rejects status changes in another organization", () => {
+    expect(
+      canChangeMembershipStatus({
+        actorProfileId: "admin",
+        targetProfileId: "other",
+        nextStatus: "disabled",
+        targetHasOrgManage: false,
+        remainingOtherOrgManagers: 1,
+        actorOrganizationId: "org-a",
+        targetOrganizationId: "org-b",
+      }),
+    ).toEqual({ ok: false, reason: "cross_org" });
+  });
+
   it("allows disabling a worker and re-enabling", () => {
     expect(
       canChangeMembershipStatus({

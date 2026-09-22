@@ -130,11 +130,22 @@ export {
   canChangeMembershipStatus,
   membershipStatusChangeError,
 } from "./membership-status";
+export {
+  canChangeMembershipRole,
+  evaluateMembershipRoleWrite,
+  canCreateInviteWithRole,
+  canMutateMembershipInOrganization,
+  activeMembershipCount,
+  pendingInviteCount,
+  accountAdminLinks,
+  memberFacingRoleLabel,
+} from "./membership-role";
 export type {
   MembershipLifecycleStatus,
   MembershipStatusChangeInput,
   MembershipStatusChangeResult,
 } from "./membership-status";
+export type { MembershipRoleWriteInput, MembershipRoleWriteResult } from "./membership-role";
 export {
   OPS_SIGNAL_TYPES,
   assertSameOrganization,

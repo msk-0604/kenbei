@@ -16,6 +16,11 @@ describe("invite action guards", () => {
     expect(actions).toMatch(/newInviteInsertFields/);
   });
 
+  it("lets only org managers update company settings", () => {
+    expect(actions).toMatch(/if \(!can\(workspace, "org\.manage"\)\) \{\s*return \{ error: "設定を変更する権限がありません。"/s);
+    expect(actions).not.toMatch(/org\.manage"\) && !can\(workspace, "member\.manage"\)/);
+  });
+
   it("cancels pending invites only in the session company", () => {
     expect(actions).toMatch(/export async function cancelInviteAction/);
     expect(actions).toMatch(/招待を取り消す権限がありません/);

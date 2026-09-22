@@ -7,6 +7,17 @@ import { useSession } from "../lib/session";
 import { supabase } from "../lib/supabase";
 import type { AccountStackParamList } from "../navigation";
 
+const ROLE_LABELS: Record<string, string> = {
+  owner: "代表",
+  executive: "管理者",
+  manager: "管理者",
+  supervisor: "現場管理者",
+  worker: "一般メンバー",
+  office: "事務",
+  partner: "協力会社",
+  guest: "ゲスト",
+};
+
 function PlanLine() {
   const { workspace } = useSession();
   const [plan, setPlan] = useState("FREE");
@@ -44,6 +55,7 @@ export function AccountScreen() {
   if (!workspace) {
     return null;
   }
+  const canManageBilling = workspace.permissions.includes("org.manage");
 
   return (
     <View style={styles.container}>
@@ -59,8 +71,10 @@ export function AccountScreen() {
       <Text style={styles.label}>会社</Text>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{workspace.organizationName || "未所属"}</Text>
-      <Text style={styles.muted}>{workspace.roleName || workspace.roleCode || "ロールなし"}</Text>
-      <PlanLine />
+      <Text style={styles.muted}>
+        {ROLE_LABELS[workspace.roleCode] || workspace.roleName || workspace.roleCode || "ロールなし"}
+      </Text>
+      {canManageBilling ? <PlanLine /> : null}
       {workspace.organizations.length > 1
         ? workspace.organizations.map((item) => (
             <Pressable

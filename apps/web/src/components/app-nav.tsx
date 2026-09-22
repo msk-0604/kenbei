@@ -223,8 +223,15 @@ function MobileItem({
   );
 }
 
-export function AppNav({ orgSwitcher }: { orgSwitcher: ReactNode }) {
+export function AppNav({
+  orgSwitcher,
+  canOpenSettings = false,
+}: {
+  orgSwitcher: ReactNode;
+  canOpenSettings?: boolean;
+}) {
   const pathname = usePathname();
+  const desktopNav = DESKTOP_NAV.filter((item) => item.href !== "/settings" || canOpenSettings);
   return (
     <>
       <header className="mb-6 flex items-center justify-between gap-3 md:hidden">
@@ -243,15 +250,17 @@ export function AppNav({ orgSwitcher }: { orgSwitcher: ReactNode }) {
           >
             AI軍師
           </Link>
-          <Link
-            href="/settings"
-            prefetch
-            className={`kb-tap inline-flex min-h-10 items-center rounded-full px-3 text-sm font-medium ${
-              isActivePath(pathname, "/settings") ? "bg-[var(--kb-ink)] text-white" : "bg-white text-zinc-700 ring-1 ring-[var(--kb-line)]"
-            }`}
-          >
-            設定
-          </Link>
+          {canOpenSettings ? (
+            <Link
+              href="/settings"
+              prefetch
+              className={`kb-tap inline-flex min-h-10 items-center rounded-full px-3 text-sm font-medium ${
+                isActivePath(pathname, "/settings") ? "bg-[var(--kb-ink)] text-white" : "bg-white text-zinc-700 ring-1 ring-[var(--kb-line)]"
+              }`}
+            >
+              設定
+            </Link>
+          ) : null}
         </div>
       </header>
       <header className="mb-8 hidden items-center justify-between gap-4 md:flex">
@@ -259,7 +268,7 @@ export function AppNav({ orgSwitcher }: { orgSwitcher: ReactNode }) {
           <img src="/logo-k.png" alt="KENBEI" width={28} height={28} className="h-7 w-7 object-contain" />
         </Link>
         <nav className="flex flex-1 flex-wrap items-center justify-center gap-1 rounded-full bg-white p-1 ring-1 ring-[var(--kb-line)]">
-          {DESKTOP_NAV.map((item) => (
+          {desktopNav.map((item) => (
             <DesktopItem
               key={item.href}
               href={item.href}

@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { alreadyInCompanyMessage, inviteCancelUpdate, isInviteRoleCode } from "@kensapo/domain";
+import {
+  alreadyInCompanyMessage,
+  canMutateMembershipInOrganization,
+  inviteCancelUpdate,
+  isInviteRoleCode,
+} from "@kensapo/domain";
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { getWorkspace } from "@/lib/session";
 import { getAppUrl } from "@/lib/env";
@@ -25,7 +30,7 @@ export async function updateCompanySettingsAction(
   if (locked) {
     return locked;
   }
-  if (!can(workspace, "org.manage") && !can(workspace, "member.manage")) {
+  if (!can(workspace, "org.manage")) {
     return { error: "設定を変更する権限がありません。" };
   }
   const displayName = formString(formData, "companyDisplayName");
@@ -121,6 +126,9 @@ export async function createInviteAction(
     const message = error.message ?? "";
     if (message.includes("KENBEI_SEAT_LIMIT")) {
       return { error: "座席数が上限です。プランを変更するか、無効な席を整理してください。" };
+    }
+    if (message.includes("KENBEI_INVITE_ROLE") || message.includes("KENBEI_OWNER_GRANT")) {
+      return { error: "この権限では招待できません。" };
     }
     return { error: toUserActionError(error.message, "招待リンクを作成") };
   }
@@ -261,6 +269,16 @@ export async function setMembershipStatusAction(
     }
   }
   const supabase = await createServerSupabaseClient();
+  const target = await supabase
+    .from("memberships")
+    .select("organization_id")
+    .eq("id", membershipId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  const targetOrgId = (target.data as { organization_id: string } | null)?.organization_id;
+  if (!targetOrgId || !canMutateMembershipInOrganization(workspace.organizationId, targetOrgId)) {
+    return { error: "メンバーを変更する権限がありません。" };
+  }
   const { error } = await supabase.rpc("set_membership_status", {
     p_membership_id: membershipId,
     p_status: nextStatus,
@@ -269,6 +287,9 @@ export async function setMembershipStatusAction(
     const message = error.message ?? "";
     if (message.includes("KENBEI_SELF_DISABLE")) {
       return { error: "自分自身は無効化できません。" };
+    }
+    if (message.includes("KENBEI_LAST_OWNER")) {
+      return { error: "最後の代表は無効化できません。" };
     }
     if (message.includes("KENBEI_LAST_MANAGER")) {
       return { error: "最後の管理者は無効化できません。" };
