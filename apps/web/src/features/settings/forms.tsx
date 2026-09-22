@@ -45,27 +45,22 @@ export function CompanySettingsForm({
   );
 }
 
-export function InviteMemberForm() {
+export function InviteMemberForm({ organizationName }: { organizationName: string }) {
   const [state, action, pending] = useActionState(createInviteAction, null);
   const [copied, setCopied] = useState(false);
   const url = state && "url" in state ? state.url : null;
   return (
     <div className="flex flex-col gap-4">
+      <p className="text-base font-medium">{organizationName}にメンバーを招待</p>
       <form action={action} className="flex flex-col gap-3">
-        <input
-          name="email"
-          type="email"
-          required
-          placeholder="member@example.com"
-          className="rounded-xl border border-zinc-200 px-4"
-        />
-        <select name="roleCode" defaultValue="supervisor" className="rounded-xl border border-zinc-200 px-3">
-          <option value="supervisor">現場管理者</option>
-          <option value="manager">管理者</option>
-          <option value="worker">メンバー</option>
-          <option value="office">事務</option>
-          <option value="executive">経営</option>
-        </select>
+        <label className="text-sm font-medium">
+          権限
+          <select name="roleCode" defaultValue="worker" className="mt-1 w-full rounded-xl border border-zinc-200 px-3">
+            <option value="worker">一般メンバー</option>
+            <option value="supervisor">現場管理者</option>
+            <option value="manager">管理者</option>
+          </select>
+        </label>
         {state && "error" in state && state.error ? (
           <p className="text-sm text-red-600">{toUserActionError(state.error, "招待リンクを作成")}</p>
         ) : null}
@@ -74,22 +69,35 @@ export function InviteMemberForm() {
         </button>
       </form>
       {url ? (
-        <div className="rounded-2xl bg-zinc-50 p-4 text-sm">
+        <div className="rounded-2xl bg-zinc-50 p-4">
           <ActionNotice>✓ 招待リンクを作成しました</ActionNotice>
-          <p className="mt-2 font-medium">招待リンク</p>
-          <p className="mt-2 break-all text-zinc-600">{url}</p>
           <button
             type="button"
-            className="mt-3 rounded-xl border border-zinc-200 bg-white px-3"
+            className="mt-4 w-full rounded-2xl bg-[var(--kb-ink)] py-3 text-base font-medium text-white"
             onClick={() => {
               void navigator.clipboard.writeText(url).then(() => setCopied(true));
             }}
           >
-            {copied ? "コピーしました" : "コピー"}
+            {copied ? "コピーしました" : "リンクをコピー"}
           </button>
         </div>
       ) : null}
     </div>
+  );
+}
+
+export function CopyInviteLinkButton({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      className="mt-2 rounded-xl border border-zinc-200 bg-white px-3 text-sm font-medium"
+      onClick={() => {
+        void navigator.clipboard.writeText(url).then(() => setCopied(true));
+      }}
+    >
+      {copied ? "コピーしました" : "リンクをコピー"}
+    </button>
   );
 }
 

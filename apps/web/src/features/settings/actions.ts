@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { SYSTEM_ROLE_CODES, type SystemRoleCode } from "@kensapo/domain";
+import { alreadyInCompanyMessage, isInviteRoleCode } from "@kensapo/domain";
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
+import { getWorkspace } from "@/lib/session";
 import { getAppUrl } from "@/lib/env";
 import { assertSeatAvailable } from "@/lib/entitlement";
 import { formString } from "@/lib/form";
@@ -11,11 +12,9 @@ import { toUserActionError } from "@/lib/user-error";
 import { listMemberProfileIdsWithPermission, notifyWorkspaceMembers } from "@/lib/notifications";
 import type { Workspace } from "@/lib/session";
 import { logoStoragePath } from "@/lib/storage-paths";
+import { newInviteInsertFields } from "@/features/settings/invite-insert";
+import { firstInvitePreview } from "@/features/settings/invite-preview";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-function isRole(value: string): value is SystemRoleCode {
-  return (SYSTEM_ROLE_CODES as readonly string[]).includes(value);
-}
 
 export async function updateCompanySettingsAction(
   _prev: { error: string } | null,
@@ -90,13 +89,9 @@ export async function createInviteAction(
   if (seat) {
     return seat;
   }
-  const email = formString(formData, "email").toLowerCase();
   const roleCode = formString(formData, "roleCode") || "worker";
-  if (!email || !email.includes("@")) {
-    return { error: "メールアドレスを入力してください。" };
-  }
-  if (!isRole(roleCode) || roleCode === "owner") {
-    return { error: "役割を選んでください。" };
+  if (!isInviteRoleCode(roleCode)) {
+    return { error: "権限を選んでください。" };
   }
   const supabase = await createServerSupabaseClient();
   const role = await supabase
@@ -108,24 +103,22 @@ export async function createInviteAction(
     .maybeSingle();
   const roleRow = role.data as { id: string } | null;
   if (!roleRow) {
-    return { error: "役割が見つかりません。" };
+    return { error: "権限が見つかりません。" };
   }
   const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
   const expires = new Date();
   expires.setDate(expires.getDate() + 14);
-  const { error } = await supabase.from("organization_invitations").insert({
-    organization_id: workspace.organizationId,
-    email,
-    role_id: roleRow.id,
-    token,
-    invited_by: workspace.userId,
-    expires_at: expires.toISOString(),
-  });
+  const { error } = await supabase.from("organization_invitations").insert(
+    newInviteInsertFields({
+      organizationId: workspace.organizationId,
+      roleId: roleRow.id,
+      token,
+      invitedBy: workspace.userId,
+      expiresAt: expires.toISOString(),
+    }),
+  );
   if (error) {
     const message = error.message ?? "";
-    if (error.code === "23505" || message.includes("organization_invitations_pending_email_uidx")) {
-      return { error: "このメールアドレスはすでに招待中です。" };
-    }
     if (message.includes("KENBEI_SEAT_LIMIT")) {
       return { error: "座席数が上限です。プランを変更するか、無効な席を整理してください。" };
     }
@@ -135,7 +128,9 @@ export async function createInviteAction(
   return { url: `${getAppUrl()}/join?token=${token}` };
 }
 
-export async function acceptInviteAction(token: string): Promise<{ error: string } | null> {
+export async function acceptInviteAction(
+  token: string,
+): Promise<{ error: string } | { joined: string } | null> {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -143,13 +138,25 @@ export async function acceptInviteAction(token: string): Promise<{ error: string
   if (!user) {
     redirect(`/login?next=${encodeURIComponent(`/join?token=${token}`)}`);
   }
+  const preview = await supabase.rpc("preview_organization_invite", { p_token: token });
+  const previewRow = firstInvitePreview(preview.data);
   const { error } = await supabase.rpc("accept_organization_invite", { p_token: token });
   if (error) {
     const message = error.message ?? "";
     if (message.includes("KENBEI_SEAT_LIMIT")) {
-      return { error: "座席数が上限のため参加できません。管理者に連絡してください。" };
+      return { error: "人数の上限のため参加できません。管理者に連絡してください。" };
     }
-    return { error: error.message };
+    if (message.includes("KENBEI_ALREADY_IN_ORG")) {
+      const workspace = await getWorkspace();
+      return { error: alreadyInCompanyMessage(workspace?.organizationName || "今の会社") };
+    }
+    if (message.includes("invite email mismatch")) {
+      return { error: "この招待リンクは、別のメールアドレス向けです。" };
+    }
+    if (message.includes("invite not found or expired")) {
+      return { error: "招待リンクが無効か、すでに使われています。" };
+    }
+    return { error: toUserActionError(error.message, "会社に参加") };
   }
   const {
     data: { user: accepted },
@@ -193,7 +200,9 @@ export async function acceptInviteAction(token: string): Promise<{ error: string
       });
     }
   }
-  redirect("/");
+  revalidatePath("/");
+  revalidatePath("/settings");
+  return { joined: previewRow?.company_name || "会社" };
 }
 
 export async function setMembershipStatusAction(

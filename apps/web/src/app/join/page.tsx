@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AuthShell } from "@/components/auth-shell";
 import { AcceptInviteButton } from "@/features/settings/accept-invite-button";
+import { firstInvitePreview } from "@/features/settings/invite-preview";
+import { alreadyInCompanyMessage } from "@kensapo/domain";
 import { getWorkspace, hasOrganization } from "@/lib/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -25,66 +27,87 @@ export default async function JoinPage({
     );
   }
 
+  const supabase = await createServerSupabaseClient();
+  const preview = await supabase.rpc("preview_organization_invite", { p_token: token });
+  const row = firstInvitePreview(preview.data);
+  const companyName = row?.company_name || "会社";
+  const roleLabel = row?.role_label;
+  const state = row?.invite_state ?? "not_found";
+
+  if (state === "not_found") {
+    return (
+      <AuthShell title="招待を確認できません" description="リンクが無効です。">
+        <Link href="/" className="font-medium underline">
+          今日へ
+        </Link>
+      </AuthShell>
+    );
+  }
+
+  if (state === "used") {
+    return (
+      <AuthShell title="この招待リンクは使われています" description={`${companyName} の招待は、すでに参加済みです。`}>
+        <Link href="/" className="font-medium underline">
+          今日へ
+        </Link>
+      </AuthShell>
+    );
+  }
+
+  if (state === "expired") {
+    return (
+      <AuthShell title="招待の期限が切れています" description={`${companyName} の管理者に、新しい招待リンクをもらってください。`}>
+        <Link href="/" className="font-medium underline">
+          今日へ
+        </Link>
+      </AuthShell>
+    );
+  }
+
+  if (workspace && hasOrganization(workspace)) {
+    return (
+      <AuthShell title="すでに会社に所属しています" description={alreadyInCompanyMessage(workspace.organizationName || "今の会社")}>
+        <Link href="/" className="font-medium underline">
+          今日へ
+        </Link>
+      </AuthShell>
+    );
+  }
+
+  const next = `/join?token=${token}`;
+
   if (!workspace) {
     return (
-      <AuthShell title="招待を受け取る" description="同じメールアドレスでログインすると、会社に参加できます。">
-        <Link
-          href={`/login?next=${encodeURIComponent(`/join?token=${token}`)}`}
-          className="flex items-center justify-center rounded-2xl bg-[var(--kb-ink)] font-medium text-white"
-        >
-          ログインして参加
-        </Link>
-        <p className="mt-4 text-sm text-zinc-600">
-          アカウントがない場合は{" "}
-          <Link href={`/signup?next=${encodeURIComponent(`/join?token=${token}`)}`} className="underline">
-            作成
-          </Link>
+      <AuthShell title={`${companyName}から招待されています`} description={roleLabel ? `権限：${roleLabel}` : "この会社に参加できます。"}>
+        <p className="text-sm leading-6 text-zinc-600">
+          この会社に参加すると、{companyName} の現場・写真・作業・日報を利用できます。
         </p>
-      </AuthShell>
-    );
-  }
-
-  const supabase = await createServerSupabaseClient();
-  const invite = await supabase
-    .from("organization_invitations")
-    .select("email, expires_at, accepted_at")
-    .eq("token", token)
-    .is("deleted_at", null)
-    .maybeSingle();
-  const row = invite.data as
-    | {
-        email: string;
-        expires_at: string;
-        accepted_at: string | null;
-      }
-    | null;
-
-  if (!row || row.accepted_at) {
-    return (
-      <AuthShell title="招待を確認できません" description="リンクが無効か、すでに参加済みです。">
-        <Link href="/" className="font-medium underline">
-          今日へ
-        </Link>
-      </AuthShell>
-    );
-  }
-
-  if (hasOrganization(workspace) && workspace.organizationName) {
-    return (
-      <AuthShell
-        title="すでに会社に所属しています"
-        description={`${workspace.organizationName} に参加中です。別会社へ移る場合は管理者に相談してください。`}
-      >
-        <Link href="/" className="font-medium underline">
-          今日へ
-        </Link>
+        <div className="mt-6 flex flex-col gap-3">
+          <Link
+            href={`/signup?next=${encodeURIComponent(next)}`}
+            className="flex items-center justify-center rounded-2xl bg-[var(--kb-ink)] font-medium text-white"
+          >
+            アカウントを作って参加
+          </Link>
+          <Link
+            href={`/login?next=${encodeURIComponent(next)}`}
+            className="flex items-center justify-center rounded-2xl border border-zinc-200 bg-white font-medium"
+          >
+            ログインして参加
+          </Link>
+        </div>
       </AuthShell>
     );
   }
 
   return (
-    <AuthShell title="会社へ参加" description={`${row.email} 宛の招待です。`}>
-      <AcceptInviteButton token={token} />
+    <AuthShell title={`${companyName}から招待されています`} description={roleLabel ? `権限：${roleLabel}` : "この会社に参加できます。"}>
+      <p className="text-sm leading-6 text-zinc-600">
+        この会社に参加すると、{companyName} の現場・写真・作業・日報を利用できます。
+      </p>
+      <div className="mt-6">
+        <AcceptInviteButton token={token} companyName={companyName} />
+      </div>
     </AuthShell>
   );
 }

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { inviteRoleLabel } from "@kensapo/domain";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { currentOrganizationId } from "@/lib/org-scope";
 
@@ -12,12 +13,14 @@ export type CompanySettings = {
 
 export async function getCompanySettings(organizationId: string): Promise<CompanySettings> {
   const supabase = await createServerSupabaseClient();
-  const org = await supabase.from("organizations").select("name").eq("id", organizationId).maybeSingle();
-  const settings = await supabase
-    .from("organization_settings")
-    .select("company_display_name, logo_storage_path")
-    .eq("organization_id", organizationId)
-    .maybeSingle();
+  const [org, settings] = await Promise.all([
+    supabase.from("organizations").select("name").eq("id", organizationId).maybeSingle(),
+    supabase
+      .from("organization_settings")
+      .select("company_display_name, logo_storage_path")
+      .eq("organization_id", organizationId)
+      .maybeSingle(),
+  ]);
   const orgRow = org.data as { name: string } | null;
   const settingsRow = settings.data as {
     company_display_name: string | null;
@@ -40,7 +43,7 @@ export async function getCompanySettings(organizationId: string): Promise<Compan
 
 export type InviteRow = {
   id: string;
-  email: string;
+  email: string | null;
   expiresAt: string;
   acceptedAt: string | null;
   roleName: string;
@@ -52,7 +55,7 @@ export async function listInvites(): Promise<InviteRow[]> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("organization_invitations")
-    .select("id, email, expires_at, accepted_at, token, roles(name)")
+    .select("id, email, expires_at, accepted_at, token, roles(code, name)")
     .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -62,11 +65,11 @@ export async function listInvites(): Promise<InviteRow[]> {
   }
   type Row = {
     id: string;
-    email: string;
+    email: string | null;
     expires_at: string;
     accepted_at: string | null;
     token: string;
-    roles: { name: string } | { name: string }[] | null;
+    roles: { code: string; name: string } | { code: string; name: string }[] | null;
   };
   const one = <T,>(value: T | T[] | null): T | null =>
     !value ? null : Array.isArray(value) ? (value[0] ?? null) : value;
@@ -76,7 +79,7 @@ export async function listInvites(): Promise<InviteRow[]> {
     expiresAt: row.expires_at,
     acceptedAt: row.accepted_at,
     token: row.token,
-    roleName: one(row.roles)?.name ?? "",
+    roleName: inviteRoleLabel(one(row.roles)?.code) || one(row.roles)?.name || "",
   }));
 }
 
@@ -93,7 +96,7 @@ export async function listOrganizationMembers(): Promise<OrganizationMemberRow[]
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("memberships")
-    .select("id, profile_id, status, profiles!profile_id(display_name), roles(name)")
+    .select("id, profile_id, status, profiles!profile_id(display_name), roles(code, name)")
     .eq("organization_id", organizationId)
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
@@ -105,7 +108,7 @@ export async function listOrganizationMembers(): Promise<OrganizationMemberRow[]
     profile_id: string;
     status: string;
     profiles: { display_name: string } | { display_name: string }[] | null;
-    roles: { name: string } | { name: string }[] | null;
+    roles: { code: string; name: string } | { code: string; name: string }[] | null;
   };
   const one = <T,>(value: T | T[] | null): T | null =>
     !value ? null : Array.isArray(value) ? (value[0] ?? null) : value;
@@ -113,7 +116,7 @@ export async function listOrganizationMembers(): Promise<OrganizationMemberRow[]
     membershipId: row.id,
     profileId: row.profile_id,
     displayName: one(row.profiles)?.display_name ?? "メンバー",
-    roleName: one(row.roles)?.name ?? "",
+    roleName: inviteRoleLabel(one(row.roles)?.code) || one(row.roles)?.name || "",
     status: row.status,
   }));
 }

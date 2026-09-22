@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { PlanBillingPanel } from "@/features/billing/plan-billing-panel";
-import { CompanySettingsForm, InviteMemberForm, MembershipStatusForm } from "@/features/settings/forms";
+import { CompanySettingsForm, CopyInviteLinkButton, InviteMemberForm, MembershipStatusForm } from "@/features/settings/forms";
 import { getCompanySettings, listInvites, listOrganizationMembers } from "@/features/settings/queries";
 import { getAppUrl } from "@/lib/env";
 import { can, requireWorkspace } from "@/lib/authz-guard";
@@ -19,14 +19,18 @@ export default async function SettingsPage() {
       </AppShell>
     );
   }
+  const canInvite = can(workspace, "member.manage");
   const [settings, invites, members, entitlement] = await Promise.all([
     getCompanySettings(workspace.organizationId),
-    listInvites(),
-    can(workspace, "member.manage") ? listOrganizationMembers() : Promise.resolve([]),
+    canInvite ? listInvites() : Promise.resolve([]),
+    canInvite ? listOrganizationMembers() : Promise.resolve([]),
     can(workspace, "org.manage")
       ? getEntitlement(workspace.organizationId)
       : Promise.resolve(null),
   ]);
+  const pendingInvites = invites.filter((invite) => !invite.acceptedAt);
+  const activeMembers = members.filter((member) => member.status === "active");
+  const stoppedMembers = members.filter((member) => member.status === "disabled");
 
   return (
     <AppShell>
@@ -53,47 +57,57 @@ export default async function SettingsPage() {
           logoUrl={settings.logoUrl}
         />
       </section>
-      <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
-        <h2 className="mb-3 text-base font-medium">メンバー招待</h2>
-        <p className="mb-4 text-sm text-zinc-500">
-          招待リンクを送り、同じメールでアカウント作成／ログインしてもらいます。
-        </p>
-        <InviteMemberForm />
-        <ul className="mt-6 flex flex-col gap-2">
-          {invites.map((invite) => (
-            <li key={invite.id} className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm">
-              <p className="font-medium">{invite.email}</p>
-              <p className="text-zinc-500">
-                {invite.roleName} / {invite.acceptedAt ? "参加済み" : `有効期限 ${invite.expiresAt.slice(0, 10)}`}
-              </p>
-              {!invite.acceptedAt ? (
-                <p className="mt-1 break-all text-xs text-zinc-400">{`${getAppUrl()}/join?token=${invite.token}`}</p>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      </section>
-      {can(workspace, "member.manage") ? (
+      {canInvite ? (
         <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
-          <h2 className="mb-3 text-base font-medium">メンバー</h2>
-          <p className="mb-4 text-sm text-zinc-500">無効化した人はログインしてもこの会社のデータにアクセスできません。</p>
+          <h2 className="mb-3 text-base font-medium">メンバー招待</h2>
+          <InviteMemberForm organizationName={settings.organizationName} />
+        </section>
+      ) : null}
+      {canInvite ? (
+        <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
+          <h2 className="mb-3 text-base font-medium">メンバー {activeMembers.length}人</h2>
           <ul className="flex flex-col gap-2">
-            {members.map((member) => (
+            {activeMembers.map((member) => (
               <li key={member.membershipId} className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm">
                 <p className="font-medium">{member.displayName}</p>
                 <p className="text-zinc-500">
-                  {member.roleName} / {member.status === "disabled" ? "無効" : "有効"}
+                  {member.roleName} / 所属中
                 </p>
                 {member.profileId === workspace.userId ? (
                   <p className="mt-1 text-xs text-zinc-400">自分自身は無効化できません。</p>
-                ) : member.status === "disabled" ? (
-                  <MembershipStatusForm membershipId={member.membershipId} nextStatus="active" label="有効にする" />
                 ) : (
                   <MembershipStatusForm membershipId={member.membershipId} nextStatus="disabled" label="無効にする" />
                 )}
               </li>
             ))}
+            {stoppedMembers.map((member) => (
+              <li key={member.membershipId} className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm">
+                <p className="font-medium">{member.displayName}</p>
+                <p className="text-zinc-500">
+                  {member.roleName} / 停止
+                </p>
+                <MembershipStatusForm membershipId={member.membershipId} nextStatus="active" label="有効にする" />
+              </li>
+            ))}
           </ul>
+        </section>
+      ) : null}
+      {canInvite ? (
+        <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
+          <h2 className="mb-3 text-base font-medium">招待中</h2>
+          {pendingInvites.length === 0 ? (
+            <p className="text-sm text-zinc-500">招待中の人はいません。</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {pendingInvites.map((invite) => (
+                <li key={invite.id} className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm">
+                  <p className="font-medium">{invite.roleName}</p>
+                  <p className="text-zinc-500">有効期限 {invite.expiresAt.slice(0, 10)}</p>
+                  <CopyInviteLinkButton url={`${getAppUrl()}/join?token=${invite.token}`} />
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       ) : null}
       <nav className="mt-8 flex flex-col gap-3">
