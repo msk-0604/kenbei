@@ -94,6 +94,28 @@ export function alreadyInCompanyMessage(currentCompanyName: string): string {
   return `現在 ${currentCompanyName} に所属しています。この会社に参加するには、今の会社からの退出が必要です。`;
 }
 
+export function canCancelInvite(input: {
+  sessionOrganizationId: string;
+  inviteOrganizationId: string;
+  accepted: boolean;
+  alreadyDeleted: boolean;
+}): { ok: true } | { ok: false; reason: "other_org" | "used" | "already_canceled" } {
+  if (input.inviteOrganizationId !== input.sessionOrganizationId) {
+    return { ok: false, reason: "other_org" };
+  }
+  if (input.accepted) {
+    return { ok: false, reason: "used" };
+  }
+  if (input.alreadyDeleted) {
+    return { ok: false, reason: "already_canceled" };
+  }
+  return { ok: true };
+}
+
+export function inviteCancelUpdate(nowIso: string): { deleted_at: string } {
+  return { deleted_at: nowIso };
+}
+
 function lowerEmail(value: string | null | undefined): string {
   return (value ?? "").trim().toLowerCase();
 }

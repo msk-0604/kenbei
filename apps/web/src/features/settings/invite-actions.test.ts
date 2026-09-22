@@ -16,6 +16,17 @@ describe("invite action guards", () => {
     expect(actions).toMatch(/newInviteInsertFields/);
   });
 
+  it("cancels pending invites only in the session company", () => {
+    expect(actions).toMatch(/export async function cancelInviteAction/);
+    expect(actions).toMatch(/招待を取り消す権限がありません/);
+    expect(actions).toMatch(/\.eq\("organization_id", workspace\.organizationId\)/);
+    expect(actions).toMatch(/inviteCancelUpdate/);
+    expect(actions).toMatch(/\.is\("accepted_at", null\)/);
+    const cancelFn = actions.slice(actions.indexOf("export async function cancelInviteAction"), actions.indexOf("export async function acceptInviteAction"));
+    expect(cancelFn).toMatch(/\.is\("deleted_at", null\)/);
+    expect(cancelFn).not.toMatch(/memberships/);
+  });
+
   it("accepts with token only", () => {
     expect(actions).toMatch(/rpc\("accept_organization_invite", \{ p_token: token \}\)/);
     expect(actions).not.toMatch(/rpc\("accept_organization_invite", \{[^}]*organization/);

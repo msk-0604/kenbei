@@ -3,6 +3,8 @@ import {
   acceptInviteRpcArgs,
   alreadyInCompanyMessage,
   blockedByOtherOrganization,
+  canCancelInvite,
+  inviteCancelUpdate,
   canAcceptInvite,
   extraInvitePreviewKeys,
   inviteEmailMatches,
@@ -142,5 +144,49 @@ describe("link invite rules", () => {
     expect(inviteRoleLabel("worker")).toBe("一般メンバー");
     expect(inviteRoleLabel("supervisor")).toBe("現場管理者");
     expect(inviteRoleLabel("manager")).toBe("管理者");
+  });
+
+  it("cancels only unused invites in the same company", () => {
+    expect(
+      canCancelInvite({
+        sessionOrganizationId: "org-a",
+        inviteOrganizationId: "org-a",
+        accepted: false,
+        alreadyDeleted: false,
+      }),
+    ).toEqual({ ok: true });
+    expect(
+      canCancelInvite({
+        sessionOrganizationId: "org-a",
+        inviteOrganizationId: "org-b",
+        accepted: false,
+        alreadyDeleted: false,
+      }),
+    ).toEqual({ ok: false, reason: "other_org" });
+    expect(
+      canCancelInvite({
+        sessionOrganizationId: "org-a",
+        inviteOrganizationId: "org-a",
+        accepted: true,
+        alreadyDeleted: false,
+      }),
+    ).toEqual({ ok: false, reason: "used" });
+    expect(inviteCancelUpdate("2026-09-22T00:00:00.000Z")).toEqual({ deleted_at: "2026-09-22T00:00:00.000Z" });
+    expect(inviteCancelUpdate("2026-09-22T00:00:00.000Z")).not.toHaveProperty("accepted_at");
+  });
+
+  it("treats a canceled invite as unusable", () => {
+    expect(
+      canAcceptInvite({
+        tokenFound: true,
+        used: false,
+        expired: false,
+        deleted: true,
+        inviteEmail: null,
+        userEmail: "tanaka@example.com",
+        activeOrganizationIds: [],
+        inviteOrganizationId: "org-a",
+      }),
+    ).toEqual({ ok: false, reason: "missing" });
   });
 });

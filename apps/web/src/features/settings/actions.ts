@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { alreadyInCompanyMessage, isInviteRoleCode } from "@kensapo/domain";
+import { alreadyInCompanyMessage, inviteCancelUpdate, isInviteRoleCode } from "@kensapo/domain";
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { getWorkspace } from "@/lib/session";
 import { getAppUrl } from "@/lib/env";
@@ -126,6 +126,38 @@ export async function createInviteAction(
   }
   revalidatePath("/settings");
   return { url: `${getAppUrl()}/join?token=${token}` };
+}
+
+export async function cancelInviteAction(
+  _prev: { error: string } | { canceled: true } | null,
+  formData: FormData,
+): Promise<{ error: string } | { canceled: true } | null> {
+  const workspace = await requireWorkspace();
+  if (!can(workspace, "member.manage")) {
+    return { error: "招待を取り消す権限がありません。" };
+  }
+  const inviteId = formString(formData, "inviteId");
+  if (!/^[0-9a-f-]{36}$/i.test(inviteId)) {
+    return { error: "招待が見つかりません。" };
+  }
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("organization_invitations")
+    .update(inviteCancelUpdate(new Date().toISOString()))
+    .eq("id", inviteId)
+    .eq("organization_id", workspace.organizationId)
+    .is("accepted_at", null)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
+  if (error) {
+    return { error: toUserActionError(error.message, "招待を取り消す") };
+  }
+  if (!data) {
+    return { error: "この招待は取り消せません。" };
+  }
+  revalidatePath("/settings");
+  return { canceled: true };
 }
 
 export async function acceptInviteAction(

@@ -122,6 +122,8 @@ export {
   extraInvitePreviewKeys,
   acceptInviteRpcArgs,
   alreadyInCompanyMessage,
+  canCancelInvite,
+  inviteCancelUpdate,
 } from "./invite";
 export type { InviteRoleCode, InvitePreviewState } from "./invite";
 export {

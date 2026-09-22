@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { createInviteAction, setMembershipStatusAction, updateCompanySettingsAction } from "@/features/settings/actions";
+import { cancelInviteAction, createInviteAction, setMembershipStatusAction, updateCompanySettingsAction } from "@/features/settings/actions";
 import { ActionNotice, FormSuccessNotice } from "@/components/action-notice";
 import { toUserActionError } from "@/lib/user-error";
 
@@ -97,6 +97,102 @@ export function CopyInviteLinkButton({ url }: { url: string }) {
       }}
     >
       {copied ? "コピーしました" : "リンクをコピー"}
+    </button>
+  );
+}
+
+export function PendingInvitesList({
+  invites,
+  appUrl,
+}: {
+  invites: { id: string; roleName: string; expiresAt: string; token: string }[];
+  appUrl: string;
+}) {
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  const [notice, setNotice] = useState(false);
+  const visible = invites.filter((invite) => !hiddenIds.includes(invite.id));
+  return (
+    <div>
+      {notice ? <p className="mb-3 text-sm font-medium">✓ 招待を取り消しました</p> : null}
+      {visible.length === 0 ? (
+        <p className="text-sm text-zinc-500">招待中の人はいません。</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {visible.map((invite) => (
+            <li key={invite.id} className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm">
+              <p className="font-medium">{invite.roleName}</p>
+              <p className="text-zinc-500">有効期限 {invite.expiresAt.slice(0, 10)}</p>
+              <CopyInviteLinkButton url={`${appUrl}/join?token=${invite.token}`} />
+              <CancelInviteButton
+                inviteId={invite.id}
+                onCanceled={() => {
+                  setHiddenIds((current) => [...current, invite.id]);
+                  setNotice(true);
+                }}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function CancelInviteButton({ inviteId, onCanceled }: { inviteId: string; onCanceled: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  if (confirming) {
+    return (
+      <div className="mt-3 rounded-2xl bg-white p-3 ring-1 ring-zinc-200">
+        <p className="text-sm leading-6 text-zinc-700">この招待リンクを無効にしますか？</p>
+        <p className="mt-1 text-sm leading-6 text-zinc-700">無効にすると、このリンクから参加できなくなります。</p>
+        {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
+        <div className="mt-3 flex flex-col gap-2">
+          <button
+            type="button"
+            disabled={pending}
+            className="rounded-xl border border-zinc-200 bg-white px-3 text-sm font-medium"
+            onClick={() => {
+              setConfirming(false);
+              setError(null);
+            }}
+          >
+            キャンセル
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            className="rounded-xl bg-[var(--kb-ink)] px-3 text-sm font-medium text-white"
+            onClick={() => {
+              setPending(true);
+              const form = new FormData();
+              form.set("inviteId", inviteId);
+              void cancelInviteAction(null, form).then((result) => {
+                if (result && "canceled" in result) {
+                  onCanceled();
+                  return;
+                }
+                setPending(false);
+                setError(result && "error" in result ? result.error : "招待を取り消せませんでした。");
+              });
+            }}
+          >
+            {pending ? "取り消し中…" : "招待を取り消す"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="mt-2 block rounded-xl border border-zinc-200 bg-white px-3 text-sm font-medium"
+      onClick={() => setConfirming(true)}
+    >
+      招待を取り消す
     </button>
   );
 }

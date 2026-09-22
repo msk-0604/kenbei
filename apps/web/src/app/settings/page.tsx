@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { PlanBillingPanel } from "@/features/billing/plan-billing-panel";
-import { CompanySettingsForm, CopyInviteLinkButton, InviteMemberForm, MembershipStatusForm } from "@/features/settings/forms";
+import { CompanySettingsForm, InviteMemberForm, MembershipStatusForm, PendingInvitesList } from "@/features/settings/forms";
 import { getCompanySettings, listInvites, listOrganizationMembers } from "@/features/settings/queries";
 import { getAppUrl } from "@/lib/env";
 import { can, requireWorkspace } from "@/lib/authz-guard";
@@ -95,19 +95,15 @@ export default async function SettingsPage() {
       {canInvite ? (
         <section className="mt-6 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
           <h2 className="mb-3 text-base font-medium">招待中</h2>
-          {pendingInvites.length === 0 ? (
-            <p className="text-sm text-zinc-500">招待中の人はいません。</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {pendingInvites.map((invite) => (
-                <li key={invite.id} className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm">
-                  <p className="font-medium">{invite.roleName}</p>
-                  <p className="text-zinc-500">有効期限 {invite.expiresAt.slice(0, 10)}</p>
-                  <CopyInviteLinkButton url={`${getAppUrl()}/join?token=${invite.token}`} />
-                </li>
-              ))}
-            </ul>
-          )}
+          <PendingInvitesList
+            appUrl={getAppUrl()}
+            invites={pendingInvites.map((invite) => ({
+              id: invite.id,
+              roleName: invite.roleName,
+              expiresAt: invite.expiresAt,
+              token: invite.token,
+            }))}
+          />
         </section>
       ) : null}
       <nav className="mt-8 flex flex-col gap-3">
