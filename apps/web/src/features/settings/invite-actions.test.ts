@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const actions = readFileSync(resolve(process.cwd(), "apps/web/src/features/settings/actions.ts"), "utf8");
+const accept = readFileSync(resolve(process.cwd(), "apps/web/src/features/settings/accept-invite.ts"), "utf8");
 const auth = readFileSync(resolve(process.cwd(), "apps/web/src/features/auth/actions.ts"), "utf8");
 const trial = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20260919120000_app_owned_14_day_trial.sql"),
@@ -37,8 +38,9 @@ describe("invite action guards", () => {
   });
 
   it("accepts with token only", () => {
-    expect(actions).toMatch(/rpc\("accept_organization_invite", \{ p_token: token \}\)/);
-    expect(actions).not.toMatch(/rpc\("accept_organization_invite", \{[^}]*organization/);
+    expect(accept).toMatch(/rpc\("accept_organization_invite", \{ p_token: token \}\)/);
+    expect(accept).not.toMatch(/rpc\("accept_organization_invite", \{[^}]*organization/);
+    expect(actions).toMatch(/acceptInviteForCurrentUser\(token\)/);
   });
 });
 

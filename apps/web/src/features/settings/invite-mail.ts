@@ -2,13 +2,17 @@ import { inviteEmailHtml, inviteEmailSubject, inviteEmailText, inviteJoinUrl } f
 import { getAppUrl } from "@/lib/env";
 import { sendKenbeiEmail } from "@/lib/mail";
 
+export function inviteMailJoinUrl(token: string): string {
+  return inviteJoinUrl(getAppUrl(), token);
+}
+
 export async function sendStoredInviteEmail(input: {
   email: string;
   companyName: string;
   roleCode: string;
   token: string;
 }): Promise<{ ok: true } | { ok: false }> {
-  const joinUrl = inviteJoinUrl(getAppUrl(), input.token);
+  const joinUrl = inviteMailJoinUrl(input.token);
   const sent = await sendKenbeiEmail({
     to: input.email,
     subject: inviteEmailSubject(input.companyName),

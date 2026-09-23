@@ -1,7 +1,13 @@
 export const INVITE_ROLE_CODES = ["worker", "supervisor", "manager"] as const;
 export type InviteRoleCode = (typeof INVITE_ROLE_CODES)[number];
 
-export const INVITE_PREVIEW_KEYS = ["company_name", "role_label", "invite_state", "email_state"] as const;
+export const INVITE_PREVIEW_KEYS = [
+  "company_name",
+  "role_label",
+  "invite_state",
+  "email_state",
+  "invited_email",
+] as const;
 export type InvitePreviewState = "ok" | "used" | "expired" | "not_found";
 export type InviteEmailState = "anon" | "open" | "match" | "mismatch";
 
@@ -92,7 +98,7 @@ export function acceptInviteRpcArgs(token: string): { p_token: string } {
 }
 
 export function alreadyInCompanyMessage(currentCompanyName: string): string {
-  return `現在 ${currentCompanyName} に所属しています。この会社に参加するには、今の会社からの退出が必要です。`;
+  return `現在 ${currentCompanyName} に所属しているため、この招待には参加できません。`;
 }
 
 export function canCancelInvite(input: {
@@ -125,16 +131,65 @@ export function normalizeInviteEmail(value: string | null | undefined): string |
   return email;
 }
 
-export function inviteJoinPath(token: string): string {
-  return `/join?token=${token}`;
+export function inviteJoinPath(token: string, proof?: string | null): string {
+  const path = `/join?token=${token}`;
+  return proof ? `${path}&proof=${proof}` : path;
+}
+
+export function inviteTokenFromNextPath(value: string | null | undefined): string {
+  const parsed = parseInviteJoinSearch(value);
+  return parsed?.token ?? "";
+}
+
+export function parseInviteJoinSearch(value: string | null | undefined): { token: string; proof: string } | null {
+  if (!isSafeInviteNextPath(value)) {
+    return null;
+  }
+  const parsed = parseJoinQuery(value ?? "");
+  return { token: parsed.token, proof: parsed.proof };
 }
 
 export function isSafeInviteNextPath(value: string | null | undefined): boolean {
   if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("://") || value.includes("\\")) {
     return false;
   }
-  const match = /^\/join\?token=([a-f0-9]{32,})$/i.exec(value);
-  return Boolean(match);
+  if (!value.startsWith("/join?")) {
+    return false;
+  }
+  const parsed = parseJoinQuery(value);
+  if (parsed.unknown || !parsed.token) {
+    return false;
+  }
+  if (!/^[a-f0-9]{32,}$/i.test(parsed.token)) {
+    return false;
+  }
+  if (parsed.proof && !/^[a-f0-9]{64}$/i.test(parsed.proof)) {
+    return false;
+  }
+  return true;
+}
+
+function parseJoinQuery(value: string): { token: string; proof: string; unknown: boolean } {
+  const query = value.slice(value.indexOf("?") + 1);
+  let token = "";
+  let proof = "";
+  let unknown = false;
+  for (const part of query.split("&")) {
+    if (!part) {
+      continue;
+    }
+    const eq = part.indexOf("=");
+    const key = eq === -1 ? part : part.slice(0, eq);
+    const raw = eq === -1 ? "" : part.slice(eq + 1);
+    if (key === "token") {
+      token = raw;
+    } else if (key === "proof") {
+      proof = raw;
+    } else {
+      unknown = true;
+    }
+  }
+  return { token, proof, unknown };
 }
 
 export function safeAuthNextPath(value: string | null | undefined): string {
@@ -172,6 +227,14 @@ export function inviteDuplicateEmailMessage(): string {
 
 export function inviteEmailMismatchMessage(): string {
   return "この招待は別のメールアドレス宛です。";
+}
+
+export function inviteAccountExistsMessage(): string {
+  return "このメールアドレスは登録済みです。ログインして参加してください。";
+}
+
+export function canSkipInviteEmailConfirmation(): boolean {
+  return false;
 }
 
 function lowerEmail(value: string | null | undefined): string {

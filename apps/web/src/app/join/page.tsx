@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { AuthShell } from "@/components/auth-shell";
 import { AcceptInviteButton } from "@/features/settings/accept-invite-button";
+import { JoinSignupForm } from "@/features/settings/join-signup-form";
+import { signOutToJoinAction } from "@/features/settings/join-actions";
 import { firstInvitePreview } from "@/features/settings/invite-preview";
-import { alreadyInCompanyMessage, inviteEmailMismatchMessage, inviteJoinPath } from "@kensapo/domain";
+import {
+  alreadyInCompanyMessage,
+  inviteEmailMismatchMessage,
+  inviteJoinPath,
+  normalizeInviteEmail,
+} from "@kensapo/domain";
 import { getWorkspace, hasOrganization } from "@/lib/session";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
@@ -33,6 +40,8 @@ export default async function JoinPage({
   const companyName = row?.company_name || "会社";
   const roleLabel = row?.role_label;
   const state = row?.invite_state ?? "not_found";
+  const invitedEmail = normalizeInviteEmail(row?.invited_email);
+  const next = inviteJoinPath(token);
 
   if (state === "not_found") {
     return (
@@ -74,14 +83,24 @@ export default async function JoinPage({
     );
   }
 
-  const next = inviteJoinPath(token);
-
   if (row?.email_state === "mismatch") {
     return (
       <AuthShell title="招待を確認できません" description={inviteEmailMismatchMessage()}>
-        <Link href="/login" className="font-medium underline">
-          別のアカウントでログイン
-        </Link>
+        {invitedEmail ? <p className="mb-4 text-sm leading-6 text-zinc-600">招待先：{invitedEmail}</p> : null}
+        <div className="flex flex-col gap-3">
+          <form action={signOutToJoinAction}>
+            <input type="hidden" name="token" value={token} />
+            <button type="submit" className="w-full rounded-2xl bg-[var(--kb-ink)] font-medium text-white">
+              招待されたメールで参加
+            </button>
+          </form>
+          <Link
+            href={`/login?next=${encodeURIComponent(next)}`}
+            className="flex items-center justify-center rounded-2xl border border-zinc-200 bg-white font-medium"
+          >
+            別のアカウントでログイン
+          </Link>
+        </div>
       </AuthShell>
     );
   }
@@ -90,22 +109,21 @@ export default async function JoinPage({
     return (
       <AuthShell title={`${companyName}から招待されています`} description={roleLabel ? `権限：${roleLabel}` : "この会社に参加できます。"}>
         <p className="text-sm leading-6 text-zinc-600">
-          この会社に参加すると、{companyName} の現場・写真・作業・日報を利用できます。
+          メールアドレスとパスワードを入力し、届いた確認メールのリンクを開くと、{companyName} に参加できます。
         </p>
-        <div className="mt-6 flex flex-col gap-3">
-          <Link
-            href={`/signup?next=${encodeURIComponent(next)}`}
-            className="flex items-center justify-center rounded-2xl bg-[var(--kb-ink)] font-medium text-white"
-          >
-            アカウントを作って参加
-          </Link>
-          <Link
-            href={`/login?next=${encodeURIComponent(next)}`}
-            className="flex items-center justify-center rounded-2xl border border-zinc-200 bg-white font-medium"
-          >
+        <div className="mt-6">
+          <JoinSignupForm
+            token={token}
+            invitedEmail={invitedEmail ?? undefined}
+            emailLocked={Boolean(invitedEmail)}
+          />
+        </div>
+        <p className="mt-6 text-sm text-zinc-600">
+          すでにアカウントがある方は{" "}
+          <Link href={`/login?next=${encodeURIComponent(next)}`} className="font-medium underline">
             ログインして参加
           </Link>
-        </div>
+        </p>
       </AuthShell>
     );
   }

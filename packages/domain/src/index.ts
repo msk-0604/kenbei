@@ -126,12 +126,16 @@ export {
   inviteCancelUpdate,
   normalizeInviteEmail,
   inviteJoinPath,
+  inviteTokenFromNextPath,
+  parseInviteJoinSearch,
   isSafeInviteNextPath,
   safeAuthNextPath,
   canResendInvite,
   inviteMailFailedMessage,
   inviteDuplicateEmailMessage,
   inviteEmailMismatchMessage,
+  inviteAccountExistsMessage,
+  canSkipInviteEmailConfirmation,
 } from "./invite";
 export type { InviteRoleCode, InvitePreviewState, InviteEmailState } from "./invite";
 export { inviteEmailSubject, inviteEmailText, inviteEmailHtml, inviteJoinUrl } from "./invite-email";

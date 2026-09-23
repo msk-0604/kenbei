@@ -7,6 +7,10 @@ const sql = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20260922150000_invite_email_preview.sql"),
   "utf8",
 );
+const invitedEmailSql = readFileSync(
+  resolve(process.cwd(), "supabase/migrations/20260922160000_invite_preview_invited_email.sql"),
+  "utf8",
+);
 const p0 = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20260922140000_protect_membership_roles.sql"),
   "utf8",
@@ -24,6 +28,8 @@ describe("email invite migration", () => {
     expect(sql).not.toMatch(/stripe/i);
     expect(p0).toMatch(/KENBEI_INVITE_ROLE/);
     expect(p0).toMatch(/r\.code IN \('worker', 'supervisor', 'manager'\)/);
+    expect(invitedEmailSql).toMatch(/invited_email/);
+    expect(invitedEmailSql).not.toMatch(/CREATE\s+POLICY/i);
   });
 
   it("15. still rejects owner invite roles", () => {

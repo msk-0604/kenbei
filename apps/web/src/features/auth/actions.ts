@@ -61,6 +61,7 @@ export async function signInAction(
     return { error: "メールアドレスまたはパスワードが正しくありません。" };
   }
   const next = safeAuthNextPath(formString(formData, "next"));
+  await writeJoinNextCookie(next);
   redirect(next || "/");
 }
 

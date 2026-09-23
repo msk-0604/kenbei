@@ -19,6 +19,8 @@ import {
   normalizeInviteEmail,
   safeAuthNextPath,
   canResendInvite,
+  canSkipInviteEmailConfirmation,
+  inviteTokenFromNextPath,
 } from "./invite";
 
 describe("link invite rules", () => {
@@ -120,6 +122,9 @@ describe("link invite rules", () => {
       }),
     ).toEqual({ ok: false, reason: "other_org" });
     expect(alreadyInCompanyMessage("Stark Lab")).toContain("Stark Lab");
+    expect(alreadyInCompanyMessage("Stark Lab")).toContain("この招待には参加できません");
+    expect(alreadyInCompanyMessage("Stark Lab")).not.toContain("退出");
+    expect(alreadyInCompanyMessage("Stark Lab")).not.toContain("削除");
   });
 
   it("does not send org or role in accept RPC args", () => {
@@ -142,6 +147,7 @@ describe("link invite rules", () => {
         role_label: "現場管理者",
         invite_state: "ok",
         email_state: "anon",
+        invited_email: "a@company.jp",
         organization_id: "secret",
         role_id: "secret",
         email: "secret",
@@ -258,6 +264,14 @@ describe("link invite rules", () => {
   it("keeps confirmation and login return paths on the join token", () => {
     expect(inviteJoinPath("tokentokentokentokentokentoken12")).toBe("/join?token=tokentokentokentokentokentoken12");
     expect(isSafeInviteNextPath("/join?token=abc123abc123abc123abc123abc123ab")).toBe(true);
+    expect(
+      isSafeInviteNextPath(
+        "/join?token=abc123abc123abc123abc123abc123ab&proof=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      ),
+    ).toBe(true);
+    expect(inviteTokenFromNextPath("/join?token=abc123abc123abc123abc123abc123ab")).toBe(
+      "abc123abc123abc123abc123abc123ab",
+    );
     expect(isSafeInviteNextPath("https://evil.example/join?token=abc")).toBe(false);
     expect(isSafeInviteNextPath("//evil/join?token=abc")).toBe(false);
     expect(safeAuthNextPath("/join?token=abc123abc123abc123abc123abc123ab")).toBe(
@@ -265,6 +279,12 @@ describe("link invite rules", () => {
     );
     expect(safeAuthNextPath("https://app.kenbei.jp/join?token=x")).toBe("");
     expect(normalizeInviteEmail(" Example@Company.JP ")).toBe("example@company.jp");
+    expect(normalizeInviteEmail(" Yamamasaki0604+Kenbei1@Gmail.com ")).toBe("yamamasaki0604+kenbei1@gmail.com");
+    expect(inviteEmailMatches("yamamasaki0604+kenbei1@gmail.com", "yamamasaki0604+kenbei1@gmail.com")).toBe(true);
+    expect(inviteEmailMatches("yamamasaki0604+kenbei1@Gmail.com", "yamamasaki0604+kenbei1@gmail.com")).toBe(true);
+    expect(inviteEmailMatches("yamamasaki0604+kenbei1@gmail.com", "yamamasaki0604@gmail.com")).toBe(false);
+    expect(inviteEmailMatches("yamamasaki0604+kenbei1@gmail.com", "yamamasaki0604+kenbei2@gmail.com")).toBe(false);
+    expect(canSkipInviteEmailConfirmation()).toBe(false);
     expect(normalizeInviteEmail("not-an-email")).toBeNull();
     expect(inviteMailFailedMessage()).toContain("メールを送信できませんでした");
     expect(inviteDuplicateEmailMessage()).toContain("すでに招待中");

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { inviteTokenFromNextPath } from "@kensapo/domain";
+import { acceptInviteForCurrentUser } from "@/features/settings/accept-invite";
 import { isKenbeiProductionRuntime } from "@/lib/app-url";
 import { getAppUrl } from "@/lib/env";
 import { resolveAuthNext } from "@/lib/invite-next-path";
@@ -14,5 +16,12 @@ export async function GET(request: Request) {
   }
   const path = resolveAuthNext(url.searchParams.get("next"), await readJoinNextCookie()) || "/";
   const origin = isKenbeiProductionRuntime() ? getAppUrl() : url.origin;
+  const token = inviteTokenFromNextPath(path);
+  if (token) {
+    const accepted = await acceptInviteForCurrentUser(token);
+    if ("joined" in accepted) {
+      return NextResponse.redirect(new URL("/", origin));
+    }
+  }
   return NextResponse.redirect(new URL(path, origin));
 }
