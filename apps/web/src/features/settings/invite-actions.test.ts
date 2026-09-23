@@ -17,6 +17,10 @@ describe("invite action guards", () => {
     expect(actions).toMatch(/normalizeInviteEmail/);
     expect(actions).toMatch(/newInviteInsertFields/);
     expect(actions).toMatch(/sendStoredInviteEmail/);
+    expect(actions).toMatch(/createInviteSignupGrant\(expires\)/);
+    expect(actions).toMatch(/createInviteSignupGrant\(new Date\(row\.expires_at\)\)/);
+    expect(actions).toMatch(/grant: grant\.secret/);
+    expect(actions).toMatch(/inviteJoinPath\(token\)/);
     expect(actions).toMatch(/export async function resendInviteAction/);
     expect(actions).toMatch(/inviteDuplicateEmailMessage/);
   });

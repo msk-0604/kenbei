@@ -5,6 +5,8 @@ export function newInviteInsertFields(input: {
   invitedBy: string;
   expiresAt: string;
   email?: string | null;
+  signupGrantHash?: string | null;
+  signupGrantExpiresAt?: string | null;
 }) {
   return {
     organization_id: input.organizationId,
@@ -13,5 +15,11 @@ export function newInviteInsertFields(input: {
     token: input.token,
     invited_by: input.invitedBy,
     expires_at: input.expiresAt,
+    ...(input.signupGrantHash && input.signupGrantExpiresAt
+      ? {
+          signup_grant_hash: input.signupGrantHash,
+          signup_grant_expires_at: input.signupGrantExpiresAt,
+        }
+      : {}),
   };
 }

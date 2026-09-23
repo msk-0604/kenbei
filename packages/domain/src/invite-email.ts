@@ -59,8 +59,8 @@ export function inviteEmailHtml(input: {
 </html>`;
 }
 
-export function inviteJoinUrl(appUrl: string, token: string, proof?: string | null): string {
-  return `${appUrl.replace(/\/$/, "")}${inviteJoinPath(token, proof)}`;
+export function inviteJoinUrl(appUrl: string, token: string, grant?: string | null): string {
+  return `${appUrl.replace(/\/$/, "")}${inviteJoinPath(token, grant)}`;
 }
 
 function plain(value: string): string {

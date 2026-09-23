@@ -136,6 +136,14 @@ export {
   inviteEmailMismatchMessage,
   inviteAccountExistsMessage,
   canSkipInviteEmailConfirmation,
+  inviteSignupGrantRedeemable,
+  isInviteSignupGrantSecret,
+  sanitizeInviteCompanyName,
+  inviteCheckEmailPath,
+  inviteJoinSignupHint,
+  inviteConfirmInboxTitle,
+  inviteConfirmInboxDescription,
+  inviteConfirmInboxSteps,
 } from "./invite";
 export type { InviteRoleCode, InvitePreviewState, InviteEmailState } from "./invite";
 export { inviteEmailSubject, inviteEmailText, inviteEmailHtml, inviteJoinUrl } from "./invite-email";

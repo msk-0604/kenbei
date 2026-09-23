@@ -8,6 +8,7 @@ import {
   alreadyInCompanyMessage,
   inviteEmailMismatchMessage,
   inviteJoinPath,
+  inviteJoinSignupHint,
   normalizeInviteEmail,
 } from "@kensapo/domain";
 import { getWorkspace, hasOrganization } from "@/lib/session";
@@ -18,10 +19,12 @@ export const dynamic = "force-dynamic";
 export default async function JoinPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; grant?: string }>;
 }) {
   const params = await searchParams;
   const token = params.token ?? "";
+  const grant = params.grant ?? "";
+  const hasGrant = /^[a-f0-9]{64}$/i.test(grant);
   const workspace = await getWorkspace();
 
   if (!token) {
@@ -90,6 +93,7 @@ export default async function JoinPage({
         <div className="flex flex-col gap-3">
           <form action={signOutToJoinAction}>
             <input type="hidden" name="token" value={token} />
+            {hasGrant ? <input type="hidden" name="grant" value={grant} /> : null}
             <button type="submit" className="w-full rounded-2xl bg-[var(--kb-ink)] font-medium text-white">
               招待されたメールで参加
             </button>
@@ -109,11 +113,12 @@ export default async function JoinPage({
     return (
       <AuthShell title={`${companyName}から招待されています`} description={roleLabel ? `権限：${roleLabel}` : "この会社に参加できます。"}>
         <p className="text-sm leading-6 text-zinc-600">
-          メールアドレスとパスワードを入力し、届いた確認メールのリンクを開くと、{companyName} に参加できます。
+          {inviteJoinSignupHint(companyName, hasGrant ? "grant" : "confirm")}
         </p>
         <div className="mt-6">
           <JoinSignupForm
             token={token}
+            grant={hasGrant ? grant : undefined}
             invitedEmail={invitedEmail ?? undefined}
             emailLocked={Boolean(invitedEmail)}
           />

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const join = readFileSync(resolve(process.cwd(), "apps/web/src/app/join/page.tsx"), "utf8");
 const joinActions = readFileSync(resolve(process.cwd(), "apps/web/src/features/settings/join-actions.ts"), "utf8");
+const checkEmail = readFileSync(resolve(process.cwd(), "apps/web/src/app/signup/check-email/page.tsx"), "utf8");
 const mail = readFileSync(resolve(process.cwd(), "apps/web/src/features/settings/invite-mail.ts"), "utf8");
 const callback = readFileSync(resolve(process.cwd(), "apps/web/src/app/auth/callback/route.ts"), "utf8");
 const forms = readFileSync(resolve(process.cwd(), "apps/web/src/features/settings/forms.tsx"), "utf8");
@@ -14,27 +15,37 @@ const sql = readFileSync(
 );
 
 describe("invite join signup flow", () => {
-  it("never skips inbox confirmation for a forwarded invite URL", () => {
+  it("skips confirmation only after a one-time emailed grant is consumed", () => {
     expect(join).toMatch(/JoinSignupForm/);
-    expect(join).toMatch(/確認メール/);
+    expect(join).toMatch(/inviteJoinSignupHint/);
+    expect(join).toMatch(/hasGrant \? "grant" : "confirm"/);
     expect(joinActions).toMatch(/export async function joinSignupAction/);
     expect(joinActions).toMatch(/auth\.signUp/);
-    expect(joinActions).toMatch(/signup\/check-email/);
-    expect(joinActions).not.toMatch(/createUser/);
-    expect(joinActions).not.toMatch(/email_confirm/);
+    expect(joinActions).toMatch(/inviteCheckEmailPath/);
+    expect(joinActions).toMatch(/resend\(/);
+    expect(joinActions).toMatch(/consume_invite_signup_grant/);
+    expect(joinActions).toMatch(/canSkipInviteEmailConfirmation\(\{ grantRedeemed/);
+    expect(joinActions).toMatch(/email_confirm: true/);
+    expect(joinActions).toMatch(/createUser/);
+    expect(joinActions).toMatch(/authUserExistsByEmail/);
+    expect(joinActions).toMatch(/releaseInviteSignupGrant/);
+    expect(joinActions).toMatch(/isMissingInviteSignupGrantRpc/);
+    expect(joinActions).toMatch(/currentEmail === email/);
     expect(joinActions).not.toMatch(/inviteEmailProofValid/);
-    expect(joinActions).not.toMatch(/canSkipInviteEmailConfirmation/);
     expect(joinActions).not.toMatch(/updateUser/);
     expect(joinActions).not.toMatch(/generateLink/);
     expect(joinActions).not.toMatch(/deleteUser/);
+    expect(checkEmail).toMatch(/inviteConfirmInboxSteps/);
+    expect(checkEmail).toMatch(/CheckEmailResend/);
   });
 
-  it("uses the same join URL for email and copied links", () => {
-    expect(mail).toMatch(/inviteJoinUrl\(getAppUrl\(\), token\)/);
+  it("puts the grant only on the emailed URL, not the copied link", () => {
+    expect(mail).toMatch(/inviteJoinUrl\(getAppUrl\(\), token, grant\)/);
     expect(mail).not.toMatch(/createInviteEmailProof/);
     expect(mail).not.toMatch(/INVITE_PROOF_SECRET/);
     expect(forms).toMatch(/招待リンクをコピー/);
     expect(forms).toMatch(/invite\.token/);
+    expect(forms).not.toMatch(/&grant=/);
   });
 
   it("auto-accepts after confirmation and does not weaken RLS", () => {

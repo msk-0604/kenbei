@@ -5,10 +5,12 @@ import { joinSignupAction } from "@/features/settings/join-actions";
 
 export function JoinSignupForm({
   token,
+  grant,
   invitedEmail,
   emailLocked,
 }: {
   token: string;
+  grant?: string;
   invitedEmail?: string;
   emailLocked: boolean;
 }) {
@@ -17,6 +19,7 @@ export function JoinSignupForm({
   return (
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="token" value={token} />
+      {grant ? <input type="hidden" name="grant" value={grant} /> : null}
       <label className="flex flex-col gap-1 text-sm font-medium">
         メールアドレス
         <input
@@ -46,7 +49,7 @@ export function JoinSignupForm({
         disabled={pending}
         className="rounded-2xl bg-[var(--kb-ink)] px-4 text-base font-medium text-white disabled:opacity-60"
       >
-        {pending ? "送信中…" : "アカウントを作成して参加"}
+        {pending ? "送信中…" : grant ? "登録" : "アカウントを作成して参加"}
       </button>
     </form>
   );

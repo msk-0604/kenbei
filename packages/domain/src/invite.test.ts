@@ -20,7 +20,15 @@ import {
   safeAuthNextPath,
   canResendInvite,
   canSkipInviteEmailConfirmation,
+  inviteSignupGrantRedeemable,
+  isInviteSignupGrantSecret,
   inviteTokenFromNextPath,
+  inviteCheckEmailPath,
+  inviteConfirmInboxDescription,
+  inviteConfirmInboxSteps,
+  inviteConfirmInboxTitle,
+  inviteJoinSignupHint,
+  sanitizeInviteCompanyName,
 } from "./invite";
 
 describe("link invite rules", () => {
@@ -285,6 +293,69 @@ describe("link invite rules", () => {
     expect(inviteEmailMatches("yamamasaki0604+kenbei1@gmail.com", "yamamasaki0604@gmail.com")).toBe(false);
     expect(inviteEmailMatches("yamamasaki0604+kenbei1@gmail.com", "yamamasaki0604+kenbei2@gmail.com")).toBe(false);
     expect(canSkipInviteEmailConfirmation()).toBe(false);
+    expect(canSkipInviteEmailConfirmation({ grantRedeemed: false })).toBe(false);
+    expect(canSkipInviteEmailConfirmation({ grantRedeemed: true })).toBe(true);
+    expect(isInviteSignupGrantSecret("a".repeat(64))).toBe(true);
+    expect(isInviteSignupGrantSecret("token-only")).toBe(false);
+    expect(
+      isSafeInviteNextPath(
+        `/join?token=abc123abc123abc123abc123abc123ab&grant=${"ab".repeat(32)}`,
+      ),
+    ).toBe(true);
+    expect(
+      inviteSignupGrantRedeemable({
+        hashMatches: true,
+        used: false,
+        grantExpired: false,
+        inviteExpired: false,
+        deleted: false,
+        accepted: false,
+        email: "a@company.jp",
+      }),
+    ).toBe(true);
+    expect(
+      inviteSignupGrantRedeemable({
+        hashMatches: true,
+        used: true,
+        grantExpired: false,
+        inviteExpired: false,
+        deleted: false,
+        accepted: false,
+        email: "a@company.jp",
+      }),
+    ).toBe(false);
+    expect(
+      inviteSignupGrantRedeemable({
+        hashMatches: false,
+        used: false,
+        grantExpired: false,
+        inviteExpired: false,
+        deleted: false,
+        accepted: false,
+        email: "a@company.jp",
+      }),
+    ).toBe(false);
+    expect(sanitizeInviteCompanyName(" Stark Lab \n")).toBe("Stark Lab");
+    expect(sanitizeInviteCompanyName("<script>x</script>")).toBe("scriptx/script");
+    expect(
+      inviteCheckEmailPath({
+        next: "/join?token=abc123abc123abc123abc123abc123ab",
+        companyName: "Stark Lab",
+        email: "a@company.jp",
+      }),
+    ).toBe(
+      "/signup/check-email?next=%2Fjoin%3Ftoken%3Dabc123abc123abc123abc123abc123ab&company=Stark%20Lab&email=a%40company.jp",
+    );
+    expect(inviteJoinSignupHint("Stark Lab")).toContain("Stark Lab の今日の画面");
+    expect(inviteJoinSignupHint("Stark Lab")).toContain("追加のログインは不要");
+    expect(inviteConfirmInboxTitle("Stark Lab")).toContain("Stark Lab");
+    expect(inviteConfirmInboxDescription({ companyName: "Stark Lab", email: "a@company.jp" })).toContain(
+      "a@company.jp",
+    );
+    expect(inviteConfirmInboxDescription({ companyName: "Stark Lab", email: "a@company.jp" })).toContain(
+      "追加のログインなし",
+    );
+    expect(inviteConfirmInboxSteps("Stark Lab")[2]).toContain("Stark Lab");
     expect(normalizeInviteEmail("not-an-email")).toBeNull();
     expect(inviteMailFailedMessage()).toContain("メールを送信できませんでした");
     expect(inviteDuplicateEmailMessage()).toContain("すでに招待中");

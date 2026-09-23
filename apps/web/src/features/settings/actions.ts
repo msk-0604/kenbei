@@ -20,6 +20,7 @@ import { logoStoragePath } from "@/lib/storage-paths";
 import { newInviteInsertFields } from "@/features/settings/invite-insert";
 import { sendStoredInviteEmail } from "@/features/settings/invite-mail";
 import { acceptInviteForCurrentUser } from "@/features/settings/accept-invite";
+import { createInviteSignupGrant } from "@/lib/invite-signup-grant";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function updateCompanySettingsAction(
@@ -118,6 +119,7 @@ export async function createInviteAction(
   const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
   const expires = new Date();
   expires.setDate(expires.getDate() + 14);
+  const grant = createInviteSignupGrant(expires);
   const { error } = await supabase.from("organization_invitations").insert(
     newInviteInsertFields({
       organizationId: workspace.organizationId,
@@ -126,6 +128,8 @@ export async function createInviteAction(
       invitedBy: workspace.userId,
       expiresAt: expires.toISOString(),
       email,
+      signupGrantHash: grant.hash,
+      signupGrantExpiresAt: grant.expiresAt.toISOString(),
     }),
   );
   if (error) {
@@ -146,6 +150,7 @@ export async function createInviteAction(
     companyName: workspace.organizationName,
     roleCode: roleRow.code,
     token,
+    grant: grant.secret,
   });
   revalidatePath("/settings");
   return {
@@ -170,7 +175,7 @@ export async function resendInviteAction(
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("organization_invitations")
-    .select("id, organization_id, email, token, accepted_at, deleted_at, roles(code)")
+    .select("id, organization_id, email, token, expires_at, accepted_at, deleted_at, roles(code)")
     .eq("id", inviteId)
     .eq("organization_id", workspace.organizationId)
     .is("accepted_at", null)
@@ -183,6 +188,7 @@ export async function resendInviteAction(
     organization_id: string;
     email: string | null;
     token: string;
+    expires_at: string;
     accepted_at: string | null;
     deleted_at: string | null;
     roles: { code: string } | { code: string }[] | null;
@@ -201,11 +207,27 @@ export async function resendInviteAction(
     return { error: allowed.reason === "other_org" ? "招待を再送する権限がありません。" : "この招待は再送できません。" };
   }
   const role = Array.isArray(row.roles) ? row.roles[0] : row.roles;
+  const grant = createInviteSignupGrant(new Date(row.expires_at));
+  const rotated = await supabase
+    .from("organization_invitations")
+    .update({
+      signup_grant_hash: grant.hash,
+      signup_grant_expires_at: grant.expiresAt.toISOString(),
+      signup_grant_used_at: null,
+    })
+    .eq("id", inviteId)
+    .eq("organization_id", workspace.organizationId)
+    .is("accepted_at", null)
+    .is("deleted_at", null);
+  if (rotated.error) {
+    return { error: toUserActionError(rotated.error.message, "招待メールを再送") };
+  }
   const mailed = await sendStoredInviteEmail({
     email: normalizeInviteEmail(row.email) ?? "",
     companyName: workspace.organizationName,
     roleCode: role?.code || "worker",
     token: row.token,
+    grant: grant.secret,
   });
   return mailed.ok ? { mailed: true } : { mailed: false };
 }

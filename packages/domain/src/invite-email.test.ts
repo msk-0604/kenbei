@@ -5,6 +5,9 @@ describe("invite email copy", () => {
   it("2-3. builds a Japanese invite with the existing join URL", () => {
     const url = inviteJoinUrl("https://app.kenbei.jp", "abc123abc123abc123abc123abc123ab");
     expect(url).toBe("https://app.kenbei.jp/join?token=abc123abc123abc123abc123abc123ab");
+    expect(inviteJoinUrl("https://app.kenbei.jp", "abc123abc123abc123abc123abc123ab", "ab".repeat(32))).toBe(
+      `https://app.kenbei.jp/join?token=abc123abc123abc123abc123abc123ab&grant=${"ab".repeat(32)}`,
+    );
     expect(inviteEmailSubject("Stark Lab")).toBe("Stark LabからKENBEIに招待されました");
     const text = inviteEmailText({
       companyName: "Stark Lab",

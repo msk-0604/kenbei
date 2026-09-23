@@ -131,9 +131,9 @@ export function normalizeInviteEmail(value: string | null | undefined): string |
   return email;
 }
 
-export function inviteJoinPath(token: string, proof?: string | null): string {
+export function inviteJoinPath(token: string, grant?: string | null): string {
   const path = `/join?token=${token}`;
-  return proof ? `${path}&proof=${proof}` : path;
+  return grant ? `${path}&grant=${grant}` : path;
 }
 
 export function inviteTokenFromNextPath(value: string | null | undefined): string {
@@ -141,12 +141,14 @@ export function inviteTokenFromNextPath(value: string | null | undefined): strin
   return parsed?.token ?? "";
 }
 
-export function parseInviteJoinSearch(value: string | null | undefined): { token: string; proof: string } | null {
+export function parseInviteJoinSearch(
+  value: string | null | undefined,
+): { token: string; grant: string; proof: string } | null {
   if (!isSafeInviteNextPath(value)) {
     return null;
   }
   const parsed = parseJoinQuery(value ?? "");
-  return { token: parsed.token, proof: parsed.proof };
+  return { token: parsed.token, grant: parsed.grant, proof: parsed.proof };
 }
 
 export function isSafeInviteNextPath(value: string | null | undefined): boolean {
@@ -163,15 +165,23 @@ export function isSafeInviteNextPath(value: string | null | undefined): boolean 
   if (!/^[a-f0-9]{32,}$/i.test(parsed.token)) {
     return false;
   }
-  if (parsed.proof && !/^[a-f0-9]{64}$/i.test(parsed.proof)) {
+  if (parsed.proof && !isInviteSignupGrantSecret(parsed.proof)) {
+    return false;
+  }
+  if (parsed.grant && !isInviteSignupGrantSecret(parsed.grant)) {
     return false;
   }
   return true;
 }
 
-function parseJoinQuery(value: string): { token: string; proof: string; unknown: boolean } {
+export function isInviteSignupGrantSecret(value: string | null | undefined): boolean {
+  return /^[a-f0-9]{64}$/i.test(value ?? "");
+}
+
+function parseJoinQuery(value: string): { token: string; grant: string; proof: string; unknown: boolean } {
   const query = value.slice(value.indexOf("?") + 1);
   let token = "";
+  let grant = "";
   let proof = "";
   let unknown = false;
   for (const part of query.split("&")) {
@@ -183,13 +193,15 @@ function parseJoinQuery(value: string): { token: string; proof: string; unknown:
     const raw = eq === -1 ? "" : part.slice(eq + 1);
     if (key === "token") {
       token = raw;
+    } else if (key === "grant") {
+      grant = raw;
     } else if (key === "proof") {
       proof = raw;
     } else {
       unknown = true;
     }
   }
-  return { token, proof, unknown };
+  return { token, grant, proof, unknown };
 }
 
 export function safeAuthNextPath(value: string | null | undefined): string {
@@ -233,8 +245,85 @@ export function inviteAccountExistsMessage(): string {
   return "このメールアドレスは登録済みです。ログインして参加してください。";
 }
 
-export function canSkipInviteEmailConfirmation(): boolean {
-  return false;
+export function canSkipInviteEmailConfirmation(input?: { grantRedeemed?: boolean }): boolean {
+  return Boolean(input?.grantRedeemed);
+}
+
+export function inviteSignupGrantRedeemable(input: {
+  hashMatches: boolean;
+  used: boolean;
+  grantExpired: boolean;
+  inviteExpired: boolean;
+  deleted: boolean;
+  accepted: boolean;
+  email: string | null | undefined;
+}): boolean {
+  return (
+    input.hashMatches &&
+    !input.used &&
+    !input.grantExpired &&
+    !input.inviteExpired &&
+    !input.deleted &&
+    !input.accepted &&
+    Boolean(normalizeInviteEmail(input.email))
+  );
+}
+
+export function sanitizeInviteCompanyName(value: string | null | undefined): string {
+  return (value ?? "").replace(/[<>\r\n]/g, "").replace(/\s+/g, " ").trim().slice(0, 80);
+}
+
+export function inviteCheckEmailPath(input: {
+  next?: string | null;
+  companyName?: string | null;
+  email?: string | null;
+}): string {
+  const parts: string[] = [];
+  const next = safeAuthNextPath(input.next);
+  if (next) {
+    parts.push(`next=${encodeURIComponent(next)}`);
+  }
+  const company = sanitizeInviteCompanyName(input.companyName);
+  if (company) {
+    parts.push(`company=${encodeURIComponent(company)}`);
+  }
+  const email = normalizeInviteEmail(input.email);
+  if (email) {
+    parts.push(`email=${encodeURIComponent(email)}`);
+  }
+  return parts.length ? `/signup/check-email?${parts.join("&")}` : "/signup/check-email";
+}
+
+export function inviteJoinSignupHint(companyName: string, mode: "confirm" | "grant" = "confirm"): string {
+  const company = sanitizeInviteCompanyName(companyName) || "会社";
+  if (mode === "grant") {
+    return `パスワードを決めて登録すると、追加の確認メールなしで ${company} の今日の画面に進みます。`;
+  }
+  return `パスワードを決めたあと、確認メールのリンクを1回開いてください。追加のログインは不要で、${company} の今日の画面に進みます。`;
+}
+
+export function inviteConfirmInboxTitle(companyName?: string | null): string {
+  const company = sanitizeInviteCompanyName(companyName);
+  return company ? `${company}に参加する前に、メールを確認` : "メールを確認してください";
+}
+
+export function inviteConfirmInboxDescription(input: {
+  companyName?: string | null;
+  email?: string | null;
+}): string {
+  const company = sanitizeInviteCompanyName(input.companyName) || "会社";
+  const email = normalizeInviteEmail(input.email);
+  const dest = email ? `${email} に確認メールを送りました。` : "確認メールを送りました。";
+  return `${dest}メール内のリンクを開くと、追加のログインなしで ${company} の今日の画面に進みます。`;
+}
+
+export function inviteConfirmInboxSteps(companyName?: string | null): string[] {
+  const company = sanitizeInviteCompanyName(companyName) || "会社";
+  return [
+    "メールアプリを開き、KENBEIからの確認メールを探す",
+    "確認リンクを開く（同じ端末でも、別の端末でもよい）",
+    `自動で ${company} に参加し、今日の画面へ進む`,
+  ];
 }
 
 function lowerEmail(value: string | null | undefined): string {
