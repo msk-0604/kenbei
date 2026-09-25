@@ -35,7 +35,7 @@ export function MarketingHeader() {
         <Link href="/login" className="kb-tap inline-flex min-h-12 items-center px-3 text-sm font-medium text-zinc-700">
           ログイン
         </Link>
-        <MarketingCta href="/signup">14日間無料で始める</MarketingCta>
+        <MarketingCta href="/signup">14日間無料で試す</MarketingCta>
       </div>
     </header>
   );
@@ -46,6 +46,12 @@ export function MarketingFooter() {
     <footer className="border-t border-[var(--kb-line)] pt-8 text-sm text-zinc-600">
       <p className="font-semibold text-[var(--kb-ink)]">KENBEI</p>
       <p className="mt-1">施工管理・現場管理Webサービス</p>
+      <p className="mt-4">
+        運営：
+        <a href="https://starklab.jp" className="font-medium underline" rel="noopener noreferrer">
+          Stark Lab（スタークラボ）
+        </a>
+      </p>
       <nav className="mt-4 flex flex-col gap-2 sm:flex-row sm:gap-5">
         <Link href="/privacy" className="underline">
           プライバシーポリシー

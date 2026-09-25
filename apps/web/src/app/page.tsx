@@ -16,11 +16,13 @@ export async function generateMetadata(): Promise<Metadata> {
     return {};
   }
   return {
-    title: "KENBEI | 施工管理・現場管理",
-    description: "現場写真・タスク・進捗・日報をひとつの流れで管理する施工管理Webサービス「KENBEI」。",
+    title: "KENBEI | 現場写真・残作業・日報を、ひとつに。",
+    description:
+      "建設会社の現場監督・施工管理者向け。現場ごとの写真、タスク、進捗をまとめて管理し、日報をPDFで出力できます。",
     openGraph: {
-      title: "KENBEI | 施工管理・現場管理",
-      description: "現場写真・タスク・進捗・日報をひとつの流れで管理する施工管理Webサービス「KENBEI」。",
+      title: "KENBEI | 現場写真・残作業・日報を、ひとつに。",
+      description:
+        "建設会社の現場監督・施工管理者向け。現場ごとの写真、タスク、進捗をまとめて管理し、日報をPDFで出力できます。",
     },
   };
 }

@@ -8,7 +8,7 @@ KENBEI は AI を前面に出しません。現場写真と日報を速くまと
 
 ## いまの状態
 
-月額55,000円で導入できる水準を目指し、次を実装済みです。
+現場写真・タスク・進捗・日報をひとつの流れにする水準を目指し、次を実装済みです。
 
 - 現場 / 写真（オフライン待ち行列つき） / 日報 / 工程 / タスク / 確認待ち / 社内資料
 - 会社設定（表示名・ロゴ）とメンバー招待
@@ -50,7 +50,7 @@ AI キーは任意です。未設定でもテンプレートとファイル名�
 詳細はルートの `.env.example` を参照。
 
 - **必須（コア）:** `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `NEXT_PUBLIC_APP_URL` / `SUPABASE_SERVICE_ROLE_KEY`
-- **課金:** FREE 1〜3名 0円 / STANDARD 4〜30名 月額39,800円 / BUSINESS 31〜50名 月額65,000円 / 51名以上は要相談。ENV は `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_STANDARD` / `STRIPE_PRICE_BUSINESS`。Webhook は `/api/stripe/webhook`
+- **課金:** 14日間無料体験（カード登録は体験開始時に不要） / STANDARD 月額39,800円・50名まで / BUSINESS 月額65,000円・人数上限なし。税込・税別はリポジトリ未記載。ENV は `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_STANDARD` / `STRIPE_PRICE_BUSINESS`。Webhook は `/api/stripe/webhook`
 - **本番URL:** `https://app.kenbei.jp`（`NEXT_PUBLIC_APP_URL` / `EXPO_PUBLIC_APP_URL`）
 - **AI:** `OPENAI_API_KEY`（軍師の自然言語）。任意 `KENBEI_AI_MODEL_DEFAULT`（未設定は gpt-4o-mini）。`GEMINI_API_KEY` / `ANTHROPIC_API_KEY` は既存キャプチャ用。
 - **日本語サーバーPDF:** `apps/web/fonts/NotoSansJP-Regular.ttf` をリポジトリに含める（TTF/OTF。Variable Font可。`.ttc` 不可）。`PDF_FONT_PATH` は不要。未配置時は文字化けPDFを出さず 422

@@ -1,149 +1,118 @@
+import Link from "next/link";
 import { KenbeiFlow } from "@/features/product/kenbei-flow";
+import {
+  HOW_TO_STEPS,
+  LANDING_FAQS,
+  LANDING_HEADLINE,
+  LANDING_LEAD,
+  TRIAL_NO_CARD_LINE,
+  landingPaidPlans,
+  memberLimitLabel,
+  monthlyYenLabel,
+} from "@/features/marketing/landing-copy";
 import { MarketingCta, MarketingFrame } from "@/features/marketing/marketing-frame";
 
-const FEATURES = [
-  { title: "現場写真", body: "現場ごとの写真をまとめて管理。" },
-  { title: "タスク・残作業", body: "現場で発生した作業を管理。" },
-  { title: "進捗管理", body: "完了・未完了を確認。" },
-  { title: "日報", body: "現場情報を日報につなげる。" },
-  { title: "PDF", body: "日報をPDFとして出力。" },
-  { title: "AI軍師", body: "現場管理を補助するAI機能。" },
-] as const;
-
-const FAQS = [
-  {
-    q: "14日間無料で使えますか？",
-    a: "14日間の無料体験をご案内しています。正式契約はアプリ内の請求設定から行います。",
-  },
-  {
-    q: "クレジットカードは必要ですか？",
-    a: "無料体験の開始時には必要ありません。",
-  },
-  {
-    q: "スマートフォンでも使えますか？",
-    a: "Webブラウザから利用できます。",
-  },
-  {
-    q: "日報をPDFにできますか？",
-    a: "作成した日報をPDFとして出力できます。",
-  },
-  {
-    q: "AIは何をしてくれますか？",
-    a: "KENBEIのAI軍師が現場管理を補助します。AIの出力は補助情報として利用してください。",
-  },
-  {
-    q: "無料体験後はどうなりますか？",
-    a: "継続して利用する場合は、STANDARDまたはBUSINESSをご契約いただきます。",
-  },
-] as const;
-
 export function MarketingLandingPage() {
+  const plans = landingPaidPlans();
+
   return (
     <MarketingFrame>
       <section className="mt-10 md:mt-16">
-        <h1 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">
-          現場の記録から、
-          <br />
-          会社の事務まで。
-        </h1>
-        <p className="mt-4 text-lg leading-7 text-zinc-700">
-          写真・残作業・進捗・日報を、
-          <br className="sm:hidden" />
-          ひとつの流れで管理。
-        </p>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-600">
-          KENBEIは、施工管理の現場で発生する写真・タスク・進捗・日報をつなげて管理する現場管理Webサービスです。
-        </p>
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <MarketingCta href="/signup">14日間無料で始める</MarketingCta>
-          <MarketingCta href="/login" variant="secondary">
-            ログイン
+        <h1 className="text-4xl font-semibold leading-tight tracking-tight md:text-5xl">{LANDING_HEADLINE}</h1>
+        <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-600 md:text-lg">{LANDING_LEAD}</p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <MarketingCta href="/signup">14日間無料で試す</MarketingCta>
+          <MarketingCta href="/contact" variant="secondary">
+            導入について相談する
           </MarketingCta>
         </div>
-        <p className="mt-3 text-sm text-zinc-500">クレジットカード不要</p>
-      </section>
-
-      <section className="mt-16 rounded-3xl bg-[var(--kb-card)] p-5 ring-1 ring-[var(--kb-line)] md:p-8">
-        <h2 className="text-2xl font-semibold tracking-tight">
-          現場で生まれた情報を、
-          <br />
-          そのまま日報まで。
-        </h2>
-        <div className="mt-5">
-          <KenbeiFlow />
-        </div>
+        <p className="mt-3 text-sm text-zinc-500">{TRIAL_NO_CARD_LINE}</p>
+        <p className="mt-4 text-sm text-zinc-600">
+          すでにご利用中の方は{" "}
+          <Link href="/login" className="font-medium underline">
+            ログイン
+          </Link>
+        </p>
       </section>
 
       <section className="mt-16">
-        <h2 className="text-2xl font-semibold tracking-tight">従来との違い</h2>
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <article className="rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
-            <p className="text-sm font-medium text-zinc-500">従来</p>
-            <ul className="mt-3 flex flex-col gap-2 text-base leading-7 text-zinc-700">
-              <li>写真がスマホ・LINEなどに分散</li>
-              <li>残作業を口頭や別ツールで管理</li>
-              <li>Excel等へ転記</li>
-              <li>日報へもう一度入力</li>
-            </ul>
-          </article>
-          <article className="rounded-3xl bg-[var(--kb-card)] p-5 ring-1 ring-[var(--kb-line)]">
-            <p className="text-sm font-medium text-[var(--kb-amber)]">KENBEI</p>
-            <div className="mt-3">
-              <KenbeiFlow />
-            </div>
-            <p className="mt-3 text-sm leading-6 text-zinc-600">写真から残作業、進捗、日報、PDFまでをつなげます。</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="mt-16">
-        <h2 className="text-2xl font-semibold tracking-tight">主要機能</h2>
-        <ul className="mt-5 grid gap-3 sm:grid-cols-2">
-          {FEATURES.map((item) => (
-            <li key={item.title} className="rounded-3xl bg-[var(--kb-card)] p-5 ring-1 ring-[var(--kb-line)]">
-              <p className="font-medium">{item.title}</p>
-              <p className="mt-2 text-sm leading-6 text-zinc-600">{item.body}</p>
+        <h2 className="text-2xl font-semibold tracking-tight">使い方</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+          写真、残作業、日報を同じ流れで扱います。画面の撮影素材は、公開できるものが揃い次第掲載します。
+        </p>
+        <ol className="mt-5 flex flex-col gap-3">
+          {HOW_TO_STEPS.map((step, index) => (
+            <li key={step.title} className="rounded-3xl bg-[var(--kb-card)] p-5 ring-1 ring-[var(--kb-line)]">
+              <p className="text-sm font-medium text-[var(--kb-amber)]">
+                {index + 1}. {step.title}
+              </p>
+              <p className="mt-2 text-base leading-7 text-zinc-700">{step.body}</p>
             </li>
           ))}
-        </ul>
+        </ol>
+        <div className="mt-5 rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
+          <p className="text-sm font-medium text-zinc-500">流れ</p>
+          <div className="mt-2">
+            <KenbeiFlow />
+          </div>
+        </div>
       </section>
 
       <section className="mt-16">
         <h2 className="text-2xl font-semibold tracking-tight">料金</h2>
-        <div className="mt-5 grid gap-4 lg:grid-cols-3">
-          <article className="rounded-3xl bg-[var(--kb-ink)] p-5 text-white">
-            <p className="text-sm font-medium text-amber-200">14日間無料体験</p>
-            <p className="mt-3 text-base leading-7 text-white/85">
-              まず14日間、KENBEIを無料でお試しいただけます。
-            </p>
-            <p className="mt-3 text-sm text-white/70">クレジットカード不要</p>
-            <div className="mt-5">
-              <MarketingCta href="/signup">14日間無料で始める</MarketingCta>
-            </div>
-          </article>
-          <article className="rounded-3xl bg-[var(--kb-card)] p-5 ring-1 ring-[var(--kb-line)]">
-            <p className="text-sm font-medium text-[var(--kb-amber)]">STANDARD</p>
-            <p className="mt-2 text-3xl font-semibold tabular-nums">月額 39,800円</p>
-            <p className="mt-3 text-sm leading-6 text-zinc-600">現場管理に必要な基本機能を利用できます。</p>
-            <div className="mt-5">
-              <MarketingCta href="/signup">14日間無料で始める</MarketingCta>
-            </div>
-          </article>
-          <article className="rounded-3xl bg-[var(--kb-card)] p-5 ring-1 ring-[var(--kb-line)]">
-            <p className="text-sm font-medium text-[var(--kb-amber)]">BUSINESS</p>
-            <p className="mt-2 text-3xl font-semibold tabular-nums">月額 65,000円</p>
-            <p className="mt-3 text-sm leading-6 text-zinc-600">より本格的な運用向け。</p>
-            <div className="mt-5">
-              <MarketingCta href="/signup">14日間無料で始める</MarketingCta>
-            </div>
-          </article>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+          比較表は、リポジトリのプラン定義で確認できた項目だけを載せています。税込・税別、保存容量、機能差、AI利用制限はここに書いていません。
+        </p>
+        <div className="mt-5 overflow-x-auto rounded-3xl bg-[var(--kb-card)] ring-1 ring-[var(--kb-line)]">
+          <table className="w-full min-w-[20rem] text-left text-sm">
+            <thead>
+              <tr className="border-b border-[var(--kb-line)]">
+                <th className="px-4 py-3 font-medium text-zinc-500">項目</th>
+                {plans.map((plan) => (
+                  <th key={plan.code} className="px-4 py-3 font-medium text-[var(--kb-ink)]">
+                    {plan.name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-[var(--kb-line)]">
+                <th className="px-4 py-3 font-medium text-zinc-500">月額</th>
+                {plans.map((plan) => (
+                  <td key={plan.code} className="px-4 py-3 tabular-nums font-semibold">
+                    {monthlyYenLabel(plan.monthlyPriceJpy)}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <th className="px-4 py-3 font-medium text-zinc-500">人数</th>
+                {plans.map((plan) => (
+                  <td key={plan.code} className="px-4 py-3">
+                    {memberLimitLabel(plan.maxMembers)}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
         </div>
+        <article className="mt-4 rounded-3xl bg-[var(--kb-ink)] p-5 text-white">
+          <p className="text-sm font-medium text-amber-200">14日間無料体験</p>
+          <p className="mt-3 text-base leading-7 text-white/85">
+            まず14日間、無料で試せます。{TRIAL_NO_CARD_LINE}
+          </p>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <MarketingCta href="/signup">14日間無料で試す</MarketingCta>
+            <MarketingCta href="/contact" variant="secondary">
+              導入について相談する
+            </MarketingCta>
+          </div>
+        </article>
       </section>
 
       <section className="mt-16">
         <h2 className="text-2xl font-semibold tracking-tight">よくある質問</h2>
         <dl className="mt-5 flex flex-col gap-3">
-          {FAQS.map((item) => (
+          {LANDING_FAQS.map((item) => (
             <div key={item.q} className="rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
               <dt className="font-medium">{item.q}</dt>
               <dd className="mt-2 text-sm leading-6 text-zinc-600">{item.a}</dd>
@@ -153,17 +122,20 @@ export function MarketingLandingPage() {
       </section>
 
       <section className="mt-16 rounded-3xl bg-[var(--kb-card)] p-6 ring-1 ring-[var(--kb-line)] md:p-8">
-        <h2 className="text-2xl font-semibold tracking-tight">
-          現場管理を、
-          <br />
-          ひとつの流れに。
-        </h2>
+        <h2 className="text-2xl font-semibold tracking-tight">14日間、無料で試せます。</h2>
+        <p className="mt-3 text-sm leading-6 text-zinc-600">{TRIAL_NO_CARD_LINE}</p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <MarketingCta href="/signup">14日間無料で始める</MarketingCta>
-          <MarketingCta href="/login" variant="secondary">
-            ログイン
+          <MarketingCta href="/signup">14日間無料で試す</MarketingCta>
+          <MarketingCta href="/contact" variant="secondary">
+            導入について相談する
           </MarketingCta>
         </div>
+        <p className="mt-4 text-sm text-zinc-600">
+          すでにご利用中の方は{" "}
+          <Link href="/login" className="font-medium underline">
+            ログイン
+          </Link>
+        </p>
       </section>
     </MarketingFrame>
   );
