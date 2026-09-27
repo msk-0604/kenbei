@@ -8,8 +8,15 @@ export const TRIAL_DAY3_AFTER_DAYS = 3;
 export const TRIAL_DAY3_WINDOW_DAYS = 2;
 export const TRIAL_ENDING_SOON_DAYS = 2;
 
+/** Trials that began before this instant are excluded from automated mail. 2026-09-28 00:00 JST. */
+export const TRIAL_EMAIL_COHORT_START = new Date("2026-09-27T15:00:00.000Z");
+
 export function trialStartAt(trialEndsAt: Date): Date {
   return new Date(trialEndsAt.getTime() - TRIAL_LENGTH_DAYS * DAY_MS);
+}
+
+export function isEligibleTrialEmailCohort(trialEndsAt: Date): boolean {
+  return trialStartAt(trialEndsAt).getTime() >= TRIAL_EMAIL_COHORT_START.getTime();
 }
 
 function inSendWindow(now: Date, windowStart: Date, windowEnd: Date): boolean {
@@ -23,6 +30,9 @@ export function dueTrialEmailKinds(input: {
   sentKinds: Iterable<string>;
 }): TrialEmailKind[] {
   if (input.status !== "trialing" || !input.trialEndsAt) {
+    return [];
+  }
+  if (!isEligibleTrialEmailCohort(input.trialEndsAt)) {
     return [];
   }
   const sent = new Set(input.sentKinds);

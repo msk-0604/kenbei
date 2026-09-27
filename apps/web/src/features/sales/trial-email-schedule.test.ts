@@ -61,6 +61,63 @@ describe("trial email schedule", () => {
     ).toEqual([]);
   });
 
+  it("never mails organizations whose trial started before 2026-09-28 JST", () => {
+    const existingEndsAt = new Date("2026-10-04T09:57:32.000Z");
+    expect(
+      dueTrialEmailKinds({
+        now: new Date("2026-09-20T09:57:32.000Z"),
+        trialEndsAt: existingEndsAt,
+        status: "trialing",
+        sentKinds: [],
+      }),
+    ).toEqual([]);
+    expect(
+      dueTrialEmailKinds({
+        now: new Date("2026-10-02T09:57:32.000Z"),
+        trialEndsAt: existingEndsAt,
+        status: "trialing",
+        sentKinds: [],
+      }),
+    ).toEqual([]);
+    const justBeforeCutoffEnds = new Date("2026-10-11T14:59:59.999Z");
+    expect(
+      dueTrialEmailKinds({
+        now: new Date("2026-09-27T14:59:59.999Z"),
+        trialEndsAt: justBeforeCutoffEnds,
+        status: "trialing",
+        sentKinds: [],
+      }),
+    ).toEqual([]);
+  });
+
+  it("mails organizations whose trial started on or after 2026-09-28 JST", () => {
+    const cohortEndsAt = new Date("2026-10-11T15:00:00.000Z");
+    expect(
+      dueTrialEmailKinds({
+        now: new Date("2026-09-27T15:00:00.000Z"),
+        trialEndsAt: cohortEndsAt,
+        status: "trialing",
+        sentKinds: [],
+      }),
+    ).toEqual(["trial_started"]);
+    expect(
+      dueTrialEmailKinds({
+        now: new Date("2026-09-30T15:00:00.000Z"),
+        trialEndsAt: cohortEndsAt,
+        status: "trialing",
+        sentKinds: ["trial_started"],
+      }),
+    ).toEqual(["trial_day3"]);
+    expect(
+      dueTrialEmailKinds({
+        now: new Date("2026-10-09T15:00:00.000Z"),
+        trialEndsAt: cohortEndsAt,
+        status: "trialing",
+        sentKinds: ["trial_started", "trial_day3"],
+      }),
+    ).toEqual(["trial_ending_soon"]);
+  });
+
   it("still schedules all three windows for a newly registered company", () => {
     const trialEndsAt = new Date("2026-10-15T00:00:00.000Z");
     expect(
