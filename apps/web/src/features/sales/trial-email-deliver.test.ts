@@ -75,6 +75,36 @@ describe("trial email delivery", () => {
     }
   });
 
+  it("skips a second cron pass after the same kind was already sent", async () => {
+    const admin = createMemoryTrialEmailAdmin();
+    let sends = 0;
+    const sendMail = async () => {
+      sends += 1;
+      return { ok: true as const };
+    };
+    const first = await deliverTrialLifecycleEmail({
+      admin,
+      organizationId: orgId,
+      kind: "trial_started",
+      recipientEmail: to,
+      enabled: true,
+      appUrl,
+      sendMail,
+    });
+    const second = await deliverTrialLifecycleEmail({
+      admin,
+      organizationId: orgId,
+      kind: "trial_started",
+      recipientEmail: to,
+      enabled: true,
+      appUrl,
+      sendMail,
+    });
+    expect(first).toBe("sent");
+    expect(second).toBe("skipped");
+    expect(sends).toBe(1);
+  });
+
   it("retries a failed send and then stops after the max attempts", async () => {
     const admin = createMemoryTrialEmailAdmin();
     let calls = 0;

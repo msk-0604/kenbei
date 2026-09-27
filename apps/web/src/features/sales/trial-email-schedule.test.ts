@@ -50,6 +50,56 @@ describe("trial email schedule", () => {
     ).toEqual([]);
   });
 
+  it("does not backfill past lifecycle mails for an existing mid-trial company", () => {
+    expect(
+      dueTrialEmailKinds({
+        now: new Date("2026-09-27T12:00:00.000Z"),
+        trialEndsAt: new Date("2026-10-04T09:57:32.000Z"),
+        status: "trialing",
+        sentKinds: [],
+      }),
+    ).toEqual([]);
+  });
+
+  it("still schedules all three windows for a newly registered company", () => {
+    const trialEndsAt = new Date("2026-10-15T00:00:00.000Z");
+    expect(
+      dueTrialEmailKinds({
+        now: new Date("2026-10-01T12:00:00.000Z"),
+        trialEndsAt,
+        status: "trialing",
+        sentKinds: [],
+      }),
+    ).toEqual(["trial_started"]);
+    expect(
+      dueTrialEmailKinds({
+        now: new Date("2026-10-04T12:00:00.000Z"),
+        trialEndsAt,
+        status: "trialing",
+        sentKinds: ["trial_started"],
+      }),
+    ).toEqual(["trial_day3"]);
+    expect(
+      dueTrialEmailKinds({
+        now: new Date("2026-10-13T12:00:00.000Z"),
+        trialEndsAt,
+        status: "trialing",
+        sentKinds: ["trial_started", "trial_day3"],
+      }),
+    ).toEqual(["trial_ending_soon"]);
+  });
+
+  it("does not queue a late start or day-3 mail after those windows close", () => {
+    expect(
+      dueTrialEmailKinds({
+        now: new Date("2026-10-13T00:00:00.000Z"),
+        trialEndsAt: new Date("2026-10-15T00:00:00.000Z"),
+        status: "trialing",
+        sentKinds: [],
+      }),
+    ).toEqual(["trial_ending_soon"]);
+  });
+
   it("retries failed sends with backoff and stops after max attempts", () => {
     const now = new Date("2026-10-01T00:00:00.000Z");
     expect(canRetryTrialEmail({ status: "sent", attemptCount: 1, nextRetryAt: null, now })).toBe(false);
