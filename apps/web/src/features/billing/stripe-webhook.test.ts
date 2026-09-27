@@ -78,6 +78,7 @@ describe("stripe webhook insert-first", () => {
       table: "organization_billing",
       row: { organization_id: "org_1", plan_code: "pro", status: "active", trial_ends_at: null },
     });
+    expect(admin.writes.some((item) => item.table === "sales_funnel_events" && item.row.event_kind === "paid")).toBe(true);
 
     await applyStripeWebhookBusiness(
       admin,

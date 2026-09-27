@@ -13,7 +13,11 @@ describe("vercel cron schedule", () => {
   it("registers task-deadlines at 07:00 JST in the Vercel app root", () => {
     const web = readCrons("apps/web/vercel.json");
     const root = readCrons("vercel.json");
-    expect(web).toEqual([{ path: "/api/cron/task-deadlines", schedule: "0 22 * * *" }]);
+    expect(web).toEqual([
+      { path: "/api/cron/task-deadlines", schedule: "0 22 * * *" },
+      { path: "/api/cron/trial-emails", schedule: "0 22 * * *" },
+    ]);
     expect(root).toContainEqual({ path: "/api/cron/task-deadlines", schedule: "0 22 * * *" });
+    expect(root).toContainEqual({ path: "/api/cron/trial-emails", schedule: "0 22 * * *" });
   });
 });

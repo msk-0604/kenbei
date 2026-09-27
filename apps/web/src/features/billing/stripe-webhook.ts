@@ -1,4 +1,4 @@
-import { persistableBillingPlanCode } from "@kensapo/domain";
+import { normalizeBillingPlanCode, persistableBillingPlanCode } from "@kensapo/domain";
 
 export type StripeWebhookObject = Record<string, unknown>;
 
@@ -88,6 +88,28 @@ export async function applyStripeWebhookBusiness(
         trial_ends_at: null,
         ...(planCode ? { plan_code: planCode } : {}),
       });
+      const attribution = obj.metadata as
+        | { visitor_id?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string; utm_content?: string; utm_term?: string }
+        | undefined;
+      try {
+        await admin
+          .from("sales_funnel_events")
+          .insert({
+            visitor_id: attribution?.visitor_id || `org:${organizationId}`,
+            organization_id: organizationId,
+            event_kind: "paid",
+            utm_source: attribution?.utm_source ?? null,
+            utm_medium: attribution?.utm_medium ?? null,
+            utm_campaign: attribution?.utm_campaign ?? null,
+            utm_content: attribution?.utm_content ?? null,
+            utm_term: attribution?.utm_term ?? null,
+            plan_code: planCode ? normalizeBillingPlanCode(planCode) : null,
+          })
+          .select("id")
+          .maybeSingle();
+      } catch {
+        // Funnel table may be missing until the approved migration is applied.
+      }
     }
   }
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {

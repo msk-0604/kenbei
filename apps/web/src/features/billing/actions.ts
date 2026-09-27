@@ -11,6 +11,8 @@ import { readServerEnv } from "@/lib/server-env";
 import { logServerError } from "@/lib/server-log";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { readAttributionFromCookies, stripeAttributionMetadata } from "@/features/sales/attribution-cookies";
 
 function stripeSecret(): string | null {
   const key = readServerEnv("STRIPE_SECRET_KEY");
@@ -61,6 +63,23 @@ export async function startCheckoutAction(planCode: string): Promise<{ error: st
     };
   }
   const price = priceLookup.price;
+  const attribution = stripeAttributionMetadata(readAttributionFromCookies(await cookies()));
+  const checkoutParams = new URLSearchParams({
+    mode: "subscription",
+    success_url: `${getAppUrl()}/settings/billing?ok=1`,
+    cancel_url: `${getAppUrl()}/settings/billing?canceled=1`,
+    client_reference_id: workspace.organizationId,
+    "line_items[0][price]": price,
+    "line_items[0][quantity]": "1",
+    "subscription_data[metadata][organization_id]": workspace.organizationId,
+    "subscription_data[metadata][plan_code]": checkoutPlan,
+    "metadata[organization_id]": workspace.organizationId,
+    "metadata[plan_code]": checkoutPlan,
+  });
+  for (const [key, value] of Object.entries(attribution)) {
+    checkoutParams.set(`metadata[${key}]`, value);
+    checkoutParams.set(`subscription_data[metadata][${key}]`, value);
+  }
   let res: Response;
   try {
     res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -69,18 +88,7 @@ export async function startCheckoutAction(planCode: string): Promise<{ error: st
         Authorization: `Bearer ${secret}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        mode: "subscription",
-        success_url: `${getAppUrl()}/settings/billing?ok=1`,
-        cancel_url: `${getAppUrl()}/settings/billing?canceled=1`,
-        client_reference_id: workspace.organizationId,
-        "line_items[0][price]": price,
-        "line_items[0][quantity]": "1",
-        "subscription_data[metadata][organization_id]": workspace.organizationId,
-        "subscription_data[metadata][plan_code]": checkoutPlan,
-        "metadata[organization_id]": workspace.organizationId,
-        "metadata[plan_code]": checkoutPlan,
-      }),
+      body: checkoutParams,
     });
   } catch {
     await logServerError(

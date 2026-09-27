@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { afterOrganizationCreated } from "@/features/sales/after-org-create";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 function formString(formData: FormData, key: string): string {
@@ -25,9 +26,12 @@ export async function createOrganizationAction(
     redirect("/login");
   }
 
-  const { error } = await supabase.rpc("create_organization", { p_name: name });
+  const { data: organizationId, error } = await supabase.rpc("create_organization", { p_name: name });
   if (error) {
     return { error: error.message };
+  }
+  if (typeof organizationId === "string") {
+    await afterOrganizationCreated({ organizationId, email: user.email });
   }
 
   redirect("/");

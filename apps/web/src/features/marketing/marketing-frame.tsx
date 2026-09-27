@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { KENBEI_OPERATOR_NAME, KENBEI_OPERATOR_URL } from "@/features/marketing/contact";
+import { AttributionCapture } from "@/features/sales/attribution-capture";
 
 export function MarketingCta({
   href,
@@ -72,6 +73,7 @@ export function MarketingFooter() {
 export function MarketingFrame({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-5 py-6 md:px-8 md:py-10">
+      <AttributionCapture />
       <MarketingHeader />
       <div className="flex-1">{children}</div>
       <div className="mt-16 pb-8">

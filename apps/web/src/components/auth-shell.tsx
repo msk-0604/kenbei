@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AttributionCapture } from "@/features/sales/attribution-capture";
 
 export function AuthShell({
   title,
@@ -11,6 +12,7 @@ export function AuthShell({
 }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 py-10">
+      <AttributionCapture />
       <p className="inline-flex items-center gap-3 text-3xl font-semibold tracking-tight text-[var(--kb-ink)]">
         <img src="/icon-192.png" alt="" width={40} height={40} className="h-10 w-10 rounded-xl" />
         KENBEI
