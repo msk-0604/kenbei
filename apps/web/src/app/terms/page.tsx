@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
-import { KENBEI_SUPPORT_EMAIL, KENBEI_SUPPORT_MAILTO } from "@/features/marketing/contact";
+import {
+  KENBEI_OPERATOR_NAME,
+  KENBEI_OPERATOR_URL,
+  KENBEI_SUPPORT_EMAIL,
+  KENBEI_SUPPORT_MAILTO,
+} from "@/features/marketing/contact";
 import { MarketingFrame } from "@/features/marketing/marketing-frame";
 
 export const metadata: Metadata = {
@@ -14,6 +19,16 @@ export default function TermsPage() {
         <h1 className="text-3xl font-semibold tracking-tight">利用規約</h1>
         <p className="mt-3 text-sm text-zinc-500">KENBEI（施工管理・現場管理Webサービス）</p>
         <div className="mt-8 flex flex-col gap-6 text-base leading-7 text-zinc-700">
+          <section>
+            <h2 className="text-lg font-semibold text-[var(--kb-ink)]">運営者</h2>
+            <p className="mt-2">
+              本サービスの運営者は
+              <a href={KENBEI_OPERATOR_URL} className="font-medium underline" rel="noopener noreferrer">
+                {KENBEI_OPERATOR_NAME}
+              </a>
+              です。
+            </p>
+          </section>
           <section>
             <h2 className="text-lg font-semibold text-[var(--kb-ink)]">サービス概要</h2>
             <p className="mt-2">

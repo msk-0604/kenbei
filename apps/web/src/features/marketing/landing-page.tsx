@@ -8,7 +8,7 @@ import {
   TRIAL_NO_CARD_LINE,
   landingPaidPlans,
   memberLimitLabel,
-  monthlyYenLabel,
+  monthlyYenWithTaxLabel,
 } from "@/features/marketing/landing-copy";
 import { MarketingCta, MarketingFrame } from "@/features/marketing/marketing-frame";
 
@@ -61,7 +61,7 @@ export function MarketingLandingPage() {
       <section className="mt-16">
         <h2 className="text-2xl font-semibold tracking-tight">料金</h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-          比較表は、リポジトリのプラン定義で確認できた項目だけを載せています。税込・税別、保存容量、機能差、AI利用制限はここに書いていません。
+          月額は税込です。保存容量、機能差、AI利用制限はここに書いていません。
         </p>
         <div className="mt-5 overflow-x-auto rounded-3xl bg-[var(--kb-card)] ring-1 ring-[var(--kb-line)]">
           <table className="w-full min-w-[20rem] text-left text-sm">
@@ -80,7 +80,15 @@ export function MarketingLandingPage() {
                 <th className="px-4 py-3 font-medium text-zinc-500">月額</th>
                 {plans.map((plan) => (
                   <td key={plan.code} className="px-4 py-3 tabular-nums font-semibold">
-                    {monthlyYenLabel(plan.monthlyPriceJpy)}
+                    {monthlyYenWithTaxLabel(plan.monthlyPriceJpy)}
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-[var(--kb-line)]">
+                <th className="px-4 py-3 font-medium text-zinc-500">税</th>
+                {plans.map((plan) => (
+                  <td key={plan.code} className="px-4 py-3">
+                    税込
                   </td>
                 ))}
               </tr>

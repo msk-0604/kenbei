@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { KENBEI_OPERATOR_NAME, KENBEI_OPERATOR_URL } from "@/features/marketing/contact";
 
 export function MarketingCta({
   href,
@@ -48,8 +49,8 @@ export function MarketingFooter() {
       <p className="mt-1">施工管理・現場管理Webサービス</p>
       <p className="mt-4">
         運営：
-        <a href="https://starklab.jp" className="font-medium underline" rel="noopener noreferrer">
-          Stark Lab（スタークラボ）
+        <a href={KENBEI_OPERATOR_URL} className="font-medium underline" rel="noopener noreferrer">
+          {KENBEI_OPERATOR_NAME}
         </a>
       </p>
       <nav className="mt-4 flex flex-col gap-2 sm:flex-row sm:gap-5">

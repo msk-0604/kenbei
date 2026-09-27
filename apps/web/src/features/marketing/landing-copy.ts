@@ -48,11 +48,21 @@ export function memberLimitLabel(maxMembers: number | null): string {
   return `${maxMembers}名まで`;
 }
 
+export const TAX_INCLUDED_LABEL = "税込";
+
 export function monthlyYenLabel(amount: number): string {
   return `月額 ${amount.toLocaleString("ja-JP")}円`;
 }
 
+export function monthlyYenWithTaxLabel(amount: number): string {
+  return `${monthlyYenLabel(amount)}（${TAX_INCLUDED_LABEL}）`;
+}
+
 export const LANDING_FAQS = [
+  {
+    q: "料金は税込ですか？",
+    a: "STANDARD 月額39,800円、BUSINESS 月額65,000円は、いずれも税込です。",
+  },
   {
     q: "クレジットカードの登録は必要ですか？",
     a: "アカウント作成と14日間の無料体験の開始には、カード登録は不要です。カードはSTANDARDまたはBUSINESSのお支払い手続きのときに登録します。",
