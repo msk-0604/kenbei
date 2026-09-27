@@ -9,7 +9,12 @@ describe("funnel store", () => {
         return {
           insert: async (row: Record<string, unknown>) => {
             if (writes.some((item) => item.visitor_id === row.visitor_id && item.event_kind === row.event_kind)) {
-              return { error: { code: "23505", message: "duplicate" } };
+              return {
+                error: {
+                  code: "23505",
+                  message: 'duplicate key value violates unique constraint "sales_funnel_events_visit_visitor_uidx"',
+                },
+              };
             }
             writes.push(row);
             return { error: null };

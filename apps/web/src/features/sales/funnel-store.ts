@@ -1,5 +1,5 @@
 import type { UtmAttribution } from "./attribution";
-import { isMissingSalesTable } from "./missing-table";
+import { isMissingSalesTable, isUniqueSalesConstraint } from "./missing-table";
 
 export type FunnelAdmin = {
   from: (table: string) => {
@@ -34,11 +34,11 @@ export async function insertFunnelEvent(
   if (!result.error) {
     return "ok";
   }
+  if (isUniqueSalesConstraint(result.error)) {
+    return "duplicate";
+  }
   if (isMissingSalesTable(result.error)) {
     return "missing";
-  }
-  if (result.error.code === "23505") {
-    return "duplicate";
   }
   return "error";
 }

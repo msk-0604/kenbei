@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { dueTrialEmailKinds } from "./trial-email-schedule";
 import { canRetryTrialEmail, nextTrialEmailRetryAt, TRIAL_EMAIL_MAX_ATTEMPTS } from "./trial-email-retry";
 import { trialEmailCopy } from "./trial-email-copy";
-import { isMissingSalesTable } from "./missing-table";
+import { isMissingSalesTable, isUniqueSalesConstraint } from "./missing-table";
 
 describe("trial email schedule", () => {
   const trialEndsAt = new Date("2026-10-15T00:00:00.000Z");
@@ -79,8 +79,13 @@ describe("trial email schedule", () => {
     expect(trialEmailCopy("trial_ending_soon", "https://app.kenbei.jp").text).toMatch(/自動課金しません/);
   });
 
-  it("treats a missing funnel table as skippable", () => {
+  it("does not treat a unique violation as a missing table", () => {
+    const unique = {
+      code: "23505",
+      message: 'duplicate key value violates unique constraint "sales_funnel_events_visit_visitor_uidx"',
+    };
+    expect(isUniqueSalesConstraint(unique)).toBe(true);
+    expect(isMissingSalesTable(unique)).toBe(false);
     expect(isMissingSalesTable({ code: "42P01", message: "relation does not exist" })).toBe(true);
-    expect(isMissingSalesTable({ code: "23505", message: "duplicate" })).toBe(false);
   });
 });
