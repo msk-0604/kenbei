@@ -5,6 +5,7 @@ import { tokyoTodayIso } from "@/lib/dates";
 import { pickTodayFocusTasks, type TodayFocusTask } from "@/features/today/focus-tasks";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Workspace } from "@/lib/session";
+import { pickProjectDayReport } from "@/features/reports/project-day-report";
 
 export type TodayProject = {
   projectId: string;
@@ -205,7 +206,7 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
       .lte("taken_at", `${today}T23:59:59+09:00`),
     supabase
       .from("daily_reports")
-      .select("id, project_id, status")
+      .select("id, project_id, status, task_id, updated_at")
       .in("project_id", ids)
       .eq("organization_id", workspace.organizationId)
       .eq("work_on", today)
@@ -232,7 +233,10 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
   ]);
 
   const photoRows = (photos.data as { id: string; project_id: string }[] | null) ?? [];
-  const reportRows = (reports.data as { id: string; project_id: string; status: string }[] | null) ?? [];
+  const reportRows =
+    (reports.data as
+      | { id: string; project_id: string; status: string; task_id: string | null; updated_at: string | null }[]
+      | null) ?? [];
   const taskRows =
     (tasks.data as
       | { id: string; project_id: string; title: string; status: string; due_on: string | null }[]
@@ -244,7 +248,7 @@ export async function loadTodayBoard(workspace: Workspace): Promise<{
 
   const board = projects.map((project) => {
     const projectPhotos = photoRows.filter((row) => row.project_id === project.projectId);
-    const report = reportRows.find((row) => row.project_id === project.projectId);
+    const report = pickProjectDayReport(reportRows.filter((row) => row.project_id === project.projectId));
     const projectTasks = taskRows.filter((row) => row.project_id === project.projectId);
     const projectProcesses = processRows.filter((row) => row.project_id === project.projectId);
     const delayed = projectProcesses.some((row) =>

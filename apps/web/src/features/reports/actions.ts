@@ -11,6 +11,7 @@ import { getAiService } from "@/lib/engines";
 import { similarProjectsFor } from "@/features/similar/queries";
 import { notifyWorkspaceMembers, listMemberProfileIdsWithPermission } from "@/lib/notifications";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { pickProjectDayReport } from "@/features/reports/project-day-report";
 
 export async function createTodayReportDraftAction(projectId: string): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
@@ -106,12 +107,20 @@ export async function createTodayReportDraftAction(projectId: string): Promise<{
 
   const existing = await supabase
     .from("daily_reports")
-    .select("id, status")
+    .select("id, status, task_id, updated_at")
+    .eq("organization_id", workspace.organizationId)
     .eq("project_id", projectId)
     .eq("work_on", today)
     .is("deleted_at", null)
-    .maybeSingle();
-  const existingRow = existing.data as { id: string; status: string } | null;
+    .order("updated_at", { ascending: false })
+    .limit(20);
+  if (existing.error) {
+    return { error: toUserActionError(existing.error.message, "日報を作成") };
+  }
+  const existingRow = pickProjectDayReport(
+    (existing.data as { id: string; status: string; task_id: string | null; updated_at: string | null }[] | null) ??
+      [],
+  );
   if (existingRow?.status === "confirmed") {
     return { error: "今日の日報はすでに確定しています。" };
   }
