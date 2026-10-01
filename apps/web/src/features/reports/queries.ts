@@ -3,6 +3,7 @@ import "server-only";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signedPhotoUrls } from "@/lib/signed-urls";
 import { currentOrganizationId } from "@/lib/org-scope";
+import { pickProjectDayReport } from "@/features/reports/project-day-report";
 
 export type DailyReportRecord = {
   id: string;
@@ -157,13 +158,16 @@ export async function getReportOnDate(projectId: string, workOn: string): Promis
   const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from("daily_reports")
-    .select("id")
+    .select("id, task_id, updated_at")
     .eq("project_id", projectId)
     .eq("organization_id", organizationId)
     .eq("work_on", workOn)
     .is("deleted_at", null)
-    .maybeSingle();
-  const row = data as { id: string } | null;
+    .order("updated_at", { ascending: false })
+    .limit(20);
+  const row = pickProjectDayReport(
+    (data as { id: string; task_id: string | null; updated_at: string | null }[] | null) ?? [],
+  );
   if (!row) {
     return null;
   }

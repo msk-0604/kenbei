@@ -91,7 +91,7 @@ export function ReportFormScreen() {
         .eq("organization_id", workspace.organizationId)
         .is("deleted_at", null);
     }
-    const { data } = await query.maybeSingle();
+    const { data } = route.params.reportId ? await query.maybeSingle() : await query.limit(1).maybeSingle();
     const row = data as {
       id: string;
       status: string;
