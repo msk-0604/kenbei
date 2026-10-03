@@ -2,16 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { draftDailyReportTemplate } from "@kensapo/ai";
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { tokyoTodayIso } from "@/lib/dates";
 import { formNumber, formString } from "@/lib/form";
 import { toUserActionError } from "@/lib/user-error";
-import { getAiService } from "@/lib/engines";
-import { similarProjectsFor } from "@/features/similar/queries";
 import { notifyWorkspaceMembers, listMemberProfileIdsWithPermission } from "@/lib/notifications";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+/**
+ * Opens today's report for this site. Reports are written by hand: a new one
+ * starts blank (today's photos pre-attached), and an existing draft is never
+ * overwritten.
+ */
 export async function createTodayReportDraftAction(projectId: string): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
   const locked = await assertOrganizationWritable(workspace.organizationId);
@@ -25,32 +27,45 @@ export async function createTodayReportDraftAction(projectId: string): Promise<{
   const today = tokyoTodayIso();
   const project = await supabase
     .from("projects")
-    .select("id, name, work_summary")
+    .select("id")
     .eq("id", projectId)
     .eq("organization_id", workspace.organizationId)
     .maybeSingle();
-  const projectRow = project.data as { id: string; name: string; work_summary: string | null } | null;
-  if (!projectRow) {
+  if (!project.data) {
     return { error: "現場が見つかりません。" };
   }
 
-  const photos = await supabase
-    .from("photos")
-    .select("work_type_key, location_spot, floor, comment, proposed_description")
+  const existing = await supabase
+    .from("daily_reports")
+    .select("id")
     .eq("project_id", projectId)
+    .eq("work_on", today)
     .is("deleted_at", null)
-    .gte("taken_at", `${today}T00:00:00+09:00`)
-    .lte("taken_at", `${today}T23:59:59+09:00`);
-  const photoRows =
-    (photos.data as
-      | {
-          work_type_key: string | null;
-          location_spot: string | null;
-          floor: string | null;
-          comment: string | null;
-          proposed_description: string | null;
-        }[]
-      | null) ?? [];
+    .maybeSingle();
+  const existingId = (existing.data as { id: string } | null)?.id;
+  if (existingId) {
+    redirect(`/reports/${existingId}`);
+  }
+
+  const inserted = await supabase
+    .from("daily_reports")
+    .insert({
+      organization_id: workspace.organizationId,
+      project_id: projectId,
+      work_on: today,
+      body: "",
+      draft_source: "manual",
+      status: "draft",
+      created_by: workspace.userId,
+      updated_by: workspace.userId,
+    })
+    .select("id")
+    .maybeSingle();
+  if (inserted.error || !inserted.data) {
+    return { error: toUserActionError(inserted.error?.message, "日報を作成") };
+  }
+  const reportId = (inserted.data as { id: string }).id;
+
   const photoIds = await supabase
     .from("photos")
     .select("id")
@@ -58,111 +73,7 @@ export async function createTodayReportDraftAction(projectId: string): Promise<{
     .is("deleted_at", null)
     .gte("taken_at", `${today}T00:00:00+09:00`)
     .lte("taken_at", `${today}T23:59:59+09:00`);
-
-  const tasks = await supabase
-    .from("project_tasks")
-    .select("title, status")
-    .eq("project_id", projectId)
-    .is("deleted_at", null)
-    .neq("status", "done");
-  const processes = await supabase
-    .from("processes")
-    .select("name, percent, status")
-    .eq("project_id", projectId)
-    .is("deleted_at", null);
-
-  const photoNotes = photoRows.map((row) =>
-    [row.floor, row.location_spot, row.work_type_key, row.comment ?? row.proposed_description]
-      .filter(Boolean)
-      .join(" "),
-  );
-  const taskNotes = ((tasks.data as { title: string; status: string }[] | null) ?? []).map(
-    (row) => `${row.title}（${row.status}）`,
-  );
-  const processRows = (processes.data as { name: string; percent: number; status: string }[] | null) ?? [];
-  const progressNote =
-    processRows.length > 0
-      ? processRows.map((row) => `${row.name} ${row.percent}%`).join(" / ")
-      : undefined;
-
-  const similar = await similarProjectsFor(workspace.organizationId, projectId);
-  const similarHints = similar?.matches.slice(0, 3).map((item) => {
-    const reason = item.reasons[0]?.label ?? "類似";
-    return `${item.name}: ${reason}${item.durationDays ? ` / 工期${item.durationDays}日` : ""}`;
-  });
-  const draftInput = {
-    projectName: projectRow.name,
-    workOn: today,
-    authorName: workspace.displayName,
-    photoNotes,
-    taskNotes,
-    progressNote,
-    workSummary: projectRow.work_summary ?? undefined,
-    similarHints,
-  };
-  const draft = await getAiService()
-    .draftDailyReport(draftInput)
-    .catch(() => draftDailyReportTemplate(draftInput));
-
-  const existing = await supabase
-    .from("daily_reports")
-    .select("id, status")
-    .eq("project_id", projectId)
-    .eq("work_on", today)
-    .is("deleted_at", null)
-    .maybeSingle();
-  const existingRow = existing.data as { id: string; status: string } | null;
-  if (existingRow?.status === "confirmed") {
-    return { error: "今日の日報はすでに確定しています。" };
-  }
-
-  let reportId = existingRow?.id;
-  if (reportId) {
-    const { error } = await supabase
-      .from("daily_reports")
-      .update({
-        body: draft.body,
-        work_location: draft.workLocation ?? null,
-        progress_note: draft.progressNote ?? progressNote ?? null,
-        issues: draft.issues ?? null,
-        safety_notes: draft.safetyNotes ?? null,
-        tomorrow_plan: draft.tomorrowPlan ?? null,
-        draft_source: "auto",
-        status: "draft",
-        updated_by: workspace.userId,
-      })
-      .eq("id", reportId);
-    if (error) {
-      return { error: toUserActionError(error.message, "日報を作成") };
-    }
-  } else {
-    const inserted = await supabase
-      .from("daily_reports")
-      .insert({
-        organization_id: workspace.organizationId,
-        project_id: projectId,
-        work_on: today,
-        body: draft.body,
-        work_location: draft.workLocation ?? null,
-        progress_note: draft.progressNote ?? progressNote ?? null,
-        issues: draft.issues ?? null,
-        safety_notes: draft.safetyNotes ?? null,
-        tomorrow_plan: draft.tomorrowPlan ?? null,
-        draft_source: "auto",
-        status: "draft",
-        created_by: workspace.userId,
-        updated_by: workspace.userId,
-      })
-      .select("id")
-      .maybeSingle();
-    if (inserted.error || !inserted.data) {
-      return { error: toUserActionError(inserted.error?.message, "日報を作成") };
-    }
-    reportId = (inserted.data as { id: string }).id;
-  }
-
   const ids = ((photoIds.data as { id: string }[] | null) ?? []).map((row) => row.id);
-  await supabase.from("daily_report_photos").delete().eq("report_id", reportId);
   if (ids.length > 0) {
     await supabase.from("daily_report_photos").insert(
       ids.slice(0, 12).map((photoId, index) => ({
@@ -175,22 +86,7 @@ export async function createTodayReportDraftAction(projectId: string): Promise<{
     );
   }
 
-  const confirmers = await listMemberProfileIdsWithPermission(
-    supabase,
-    workspace.organizationId,
-    "capture.confirm",
-  );
-  await notifyWorkspaceMembers(workspace, {
-    projectId,
-    kind: "confirm_request",
-    title: "日報の確認依頼があります",
-    href: `/reports/${reportId}`,
-    profileIds: confirmers.filter((id) => id !== workspace.userId),
-    extra: { reportId },
-  });
-
   revalidatePath("/");
-  revalidatePath("/confirm");
   redirect(`/reports/${reportId}`);
 }
 
@@ -207,15 +103,23 @@ export async function saveReportAction(
     return { error: "日報を保存する権限がありません。" };
   }
   const reportId = formString(formData, "reportId");
+  const body = formString(formData, "body");
   const workerCount = formNumber(formData, "workerCount");
   const photoIds = formData
     .getAll("photoId")
     .filter((value): value is string => typeof value === "string" && value.length > 0);
   const supabase = await createServerSupabaseClient();
+  const before = await supabase
+    .from("daily_reports")
+    .select("body")
+    .eq("id", reportId)
+    .eq("organization_id", workspace.organizationId)
+    .maybeSingle();
+  const firstWrite = !(before.data as { body: string } | null)?.body?.trim() && Boolean(body.trim());
   const { error } = await supabase
     .from("daily_reports")
     .update({
-      body: formString(formData, "body"),
+      body,
       weather: formString(formData, "weather") || null,
       work_location: formString(formData, "workLocation") || null,
       worker_count: workerCount,
@@ -252,6 +156,22 @@ export async function saveReportAction(
       })),
     );
   }
+  if (firstWrite && projectId) {
+    const confirmers = await listMemberProfileIdsWithPermission(
+      supabase,
+      workspace.organizationId,
+      "capture.confirm",
+    );
+    await notifyWorkspaceMembers(workspace, {
+      projectId,
+      kind: "confirm_request",
+      title: "日報の確認依頼があります",
+      href: `/reports/${reportId}`,
+      profileIds: confirmers.filter((id) => id !== workspace.userId),
+      extra: { reportId },
+    });
+    revalidatePath("/confirm");
+  }
   revalidatePath(`/reports/${reportId}`);
   if (projectId) {
     revalidatePath(`/projects/${projectId}`);
@@ -269,6 +189,15 @@ export async function confirmReportAction(reportId: string): Promise<{ error: st
     return { error: "日報を確定する権限がありません。" };
   }
   const supabase = await createServerSupabaseClient();
+  const draft = await supabase
+    .from("daily_reports")
+    .select("body")
+    .eq("id", reportId)
+    .eq("organization_id", workspace.organizationId)
+    .maybeSingle();
+  if (!(draft.data as { body: string } | null)?.body?.trim()) {
+    return { error: "作業内容を書いて「日報を保存」してから確定してください。" };
+  }
   const { error } = await supabase
     .from("daily_reports")
     .update({
