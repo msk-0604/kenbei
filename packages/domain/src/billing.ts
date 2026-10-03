@@ -17,7 +17,7 @@ export type BillingPlanDefinition = {
 
 export const KENBEI_PLAN_NAME = "KENBEI";
 export const KENBEI_MONTHLY_PRICE_JPY = 9_800;
-export const KENBEI_MAX_MEMBERS = 50;
+export const KENBEI_MAX_MEMBERS = 20;
 
 export const DEFAULT_BILLING_PLANS: readonly BillingPlanDefinition[] = [
   { code: "free", name: "FREE", maxMembers: KENBEI_MAX_MEMBERS, monthlyPriceJpy: 0 },
@@ -31,7 +31,7 @@ export const DEFAULT_BILLING_PLANS: readonly BillingPlanDefinition[] = [
   { code: "enterprise", name: "ENTERPRISE", maxMembers: null, monthlyPriceJpy: 0 },
 ] as const;
 
-export const SEAT_CONSULT_MESSAGE = "51名以上でのご利用は、お問い合わせください。";
+export const SEAT_CONSULT_MESSAGE = `${KENBEI_MAX_MEMBERS + 1}名以上でのご利用は、お問い合わせください。`;
 
 export function isBillingPlanCode(value: string): value is BillingPlanCode {
   return (BILLING_PLAN_CODES as readonly string[]).includes(value);

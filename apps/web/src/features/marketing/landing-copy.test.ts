@@ -16,11 +16,11 @@ describe("landing copy stays on confirmed billing facts", () => {
   it("sells one plan at 9,800 yen per month", () => {
     const standard = DEFAULT_BILLING_PLANS.find((plan) => plan.code === "standard");
     expect(standard?.monthlyPriceJpy).toBe(9_800);
-    expect(standard?.maxMembers).toBe(50);
-    expect(landingPlan()).toEqual({ code: "standard", name: "KENBEI", monthlyPriceJpy: 9_800, maxMembers: 50 });
+    expect(standard?.maxMembers).toBe(20);
+    expect(landingPlan()).toEqual({ code: "standard", name: "KENBEI", monthlyPriceJpy: 9_800, maxMembers: 20 });
     expect(monthlyYenLabel(9_800)).toBe("月額 9,800円");
     expect(monthlyYenWithTaxLabel(9_800)).toBe("月額 9,800円（税込）");
-    expect(memberLimitLabel(50)).toBe("50名まで");
+    expect(memberLimitLabel(20)).toBe("20名まで");
     expect(memberLimitLabel(null)).toBe("人数上限なし");
   });
 

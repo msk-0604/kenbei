@@ -104,7 +104,7 @@ export function MarketingLandingPage() {
           </ul>
         </article>
         <p className="mt-3 text-sm text-zinc-500">
-          51名以上でのご利用は
+          {plan.maxMembers != null ? `${plan.maxMembers + 1}名以上` : "大人数"}でのご利用は
           <Link href="/contact" className="mx-1 underline">
             お問い合わせ
           </Link>

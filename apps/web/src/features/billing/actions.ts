@@ -41,7 +41,7 @@ export async function startCheckoutAction(planCode: string): Promise<{ error: st
   const secret = stripeSecret();
   const checkoutPlan = persistableBillingPlanCode(planCode);
   if (checkoutPlan !== "pro") {
-    return { error: "このプランは画面から契約できません。51名以上はお問い合わせください。" };
+    return { error: "このプランは画面から契約できません。21名以上はお問い合わせください。" };
   }
   const priceLookup = resolveStripePriceForPlan(planCode);
   if (!secret) {

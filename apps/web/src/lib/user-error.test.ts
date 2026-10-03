@@ -14,8 +14,8 @@ describe("toUserActionError", () => {
   });
 
   it("does not mix a plan limit with a network retry", () => {
-    expect(toUserActionError("51名以上でのご利用は、お問い合わせください。", "招待リンクを作成")).toBe(
-      "51名以上でのご利用は、お問い合わせください。",
+    expect(toUserActionError("21名以上でのご利用は、お問い合わせください。", "招待リンクを作成")).toBe(
+      "21名以上でのご利用は、お問い合わせください。",
     );
   });
 });
