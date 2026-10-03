@@ -8,6 +8,7 @@ describe("public marketing routes", () => {
     expect(isAnonymousPublicPath("/terms")).toBe(true);
     expect(isAnonymousPublicPath("/contact")).toBe(true);
     expect(isAnonymousPublicPath("/login")).toBe(true);
+    expect(isAnonymousPublicPath("/manifest.webmanifest")).toBe(true);
     expect(isAnonymousPublicPath("/projects")).toBe(false);
   });
 
