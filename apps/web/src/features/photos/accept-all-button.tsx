@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { acceptAllProposedPhotosAction } from "@/features/photos/actions";
 
 export function AcceptAllProposedButton({ count }: { count: number }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   if (count === 0) {
@@ -23,11 +25,11 @@ export function AcceptAllProposedButton({ count }: { count: number }) {
               setError(result.error);
               return;
             }
-            window.location.reload();
+            router.refresh();
           });
         }}
       >
-        {pending ? "????" : `????????????${count}??`}
+        {pending ? "反映中…" : `AIの整理案をすべて確定（${count}枚）`}
       </button>
       {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
     </div>

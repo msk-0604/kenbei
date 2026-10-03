@@ -70,7 +70,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-[var(--kb-ink)]">AI機能</h2>
             <p className="mt-2">
-              AI軍師の出力は補助情報です。現場判断・法令順守・安全の最終責任は利用者にあります。
+              AIによる写真整理などの出力は補助情報です。現場判断・法令順守・安全の最終責任は利用者にあります。
             </p>
           </section>
           <section>

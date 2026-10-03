@@ -178,7 +178,7 @@ describe("trial email schedule", () => {
     expect(started.subject).toMatch(/14日間無料体験/);
     expect(started.text).toMatch(/現場ごとの写真/);
     expect(started.text).toMatch(/日報PDF/);
-    expect(started.text).toMatch(/AI軍師/);
+    expect(started.text).not.toMatch(/AI軍師/);
     expect(started.text).toMatch(/月額9,800円（税込/);
     expect(started.text).not.toMatch(/39,800|65,000|STANDARD|BUSINESS/);
     expect(started.text).toMatch(/settings\/billing/);

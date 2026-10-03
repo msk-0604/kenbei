@@ -35,7 +35,6 @@ export function TodayView({
   ops,
   pendingCaptureId,
   onboarding,
-  signals,
   focusTasks,
   selectedProjectId,
   createdProject = false,
@@ -45,7 +44,6 @@ export function TodayView({
   ops: TodayOps;
   pendingCaptureId: string | null;
   onboarding: OnboardingFlags & { complete: boolean; firstProjectId?: string | null; hasReport?: boolean };
-  signals: { id: string; title: string; reason: string }[];
   focusTasks: TodayFocusTask[];
   selectedProjectId?: string | null;
   createdProject?: boolean;
@@ -63,7 +61,7 @@ export function TodayView({
       })
     : { steps: [], next: null };
   const alertCount =
-    (ops.overdueTaskCount > 0 ? 1 : 0) + (ops.delayedCount > 0 ? 1 : 0) + (pendingCaptureId ? 1 : 0) + signals.length;
+    (ops.overdueTaskCount > 0 ? 1 : 0) + (ops.delayedCount > 0 ? 1 : 0) + (pendingCaptureId ? 1 : 0);
 
   return (
     <div className="flex flex-col gap-7">
@@ -205,12 +203,6 @@ export function TodayView({
                 </Link>
               </li>
             ) : null}
-            {signals.map((item) => (
-              <li key={item.id} className="rounded-2xl bg-white px-4 py-3 ring-1 ring-[var(--kb-line)]">
-                <p className="font-medium">{item.title}</p>
-                {item.reason ? <p className="mt-0.5 text-zinc-600">{item.reason}</p> : null}
-              </li>
-            ))}
           </ul>
         </section>
       ) : null}

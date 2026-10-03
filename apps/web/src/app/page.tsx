@@ -5,7 +5,6 @@ import { TodayView } from "@/features/today/today-view";
 import { loadTodayBoard } from "@/features/today/queries";
 import { loadOnboardingFlags } from "@/features/onboarding/queries";
 import { MarketingLandingPage } from "@/features/marketing/landing-page";
-import { getDecisionEngine } from "@/lib/engines";
 import { getWorkspace, hasOrganization } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -41,10 +40,9 @@ export default async function HomePage({
   }
 
   const params = await searchParams;
-  const [{ projects, ops, pendingCaptureId, focusTasks }, onboarding, signals] = await Promise.all([
+  const [{ projects, ops, pendingCaptureId, focusTasks }, onboarding] = await Promise.all([
     loadTodayBoard(workspace),
     loadOnboardingFlags(workspace),
-    getDecisionEngine().listForToday(workspace.organizationId, workspace.membershipId),
   ]);
 
   return (
@@ -55,11 +53,6 @@ export default async function HomePage({
         ops={ops}
         pendingCaptureId={pendingCaptureId}
         onboarding={onboarding}
-        signals={signals.map((item) => ({
-          id: item.id,
-          title: item.title,
-          reason: String(item.evidence.reason ?? ""),
-        }))}
         focusTasks={focusTasks}
         selectedProjectId={params.project ?? null}
         createdProject={params.created === "project"}

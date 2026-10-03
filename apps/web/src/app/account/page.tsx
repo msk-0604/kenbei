@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { accountAdminLinks, memberFacingRoleLabel } from "@kensapo/domain";
+import { accountAdminLinks, memberFacingRoleLabel, type BillingAccessKind } from "@kensapo/domain";
 import { AppShell } from "@/components/app-shell";
 import { SignOutButton } from "@/features/auth/sign-out-button";
 import { listUnreadNotifications } from "@/lib/notifications";
 import { can, requireWorkspace } from "@/lib/authz-guard";
+import { getEntitlement } from "@/lib/entitlement";
+import { KENBEI_PRICE_LABEL, KENBEI_PRICE_NOTE } from "@/features/billing/plan-copy";
 
 export const dynamic = "force-dynamic";
 
@@ -42,13 +44,51 @@ function MenuGroup({ title, items }: { title: string; items: MenuItem[] }) {
   );
 }
 
+function BillingCard({ access, trialDaysLeft }: { access: BillingAccessKind; trialDaysLeft: number | null }) {
+  if (access === "paid_active") {
+    return (
+      <Link
+        href="/settings/billing"
+        className="kb-tap flex min-h-14 items-center justify-between gap-3 rounded-3xl bg-white px-5 py-3 ring-1 ring-[var(--kb-line)]"
+      >
+        <span>
+          <span className="block font-medium">ご契約中（{KENBEI_PRICE_LABEL}）</span>
+          <span className="block text-sm text-zinc-500">お支払い・領収書・解約</span>
+        </span>
+        <span aria-hidden className="text-zinc-400">
+          ›
+        </span>
+      </Link>
+    );
+  }
+  const lead =
+    access === "trial_active"
+      ? `無料体験 残り${trialDaysLeft ?? 0}日`
+      : access === "trial_expired"
+        ? "無料体験が終了しました"
+        : "ご契約が無効です";
+  return (
+    <Link href="/settings/billing" className="kb-tap kb-elev block rounded-3xl bg-[var(--kb-ink)] p-5 text-white">
+      <span className="block text-sm text-sky-300">{lead}</span>
+      <span className="mt-1 block text-2xl font-semibold tracking-tight">{KENBEI_PRICE_LABEL}で続ける</span>
+      <span className="mt-1 block text-sm text-white/70">{KENBEI_PRICE_NOTE}</span>
+      <span className="mt-4 flex min-h-12 items-center justify-center rounded-2xl bg-[var(--kb-accent)] font-medium">
+        契約する →
+      </span>
+    </Link>
+  );
+}
+
 export default async function AccountPage() {
   const workspace = await requireWorkspace();
-  const notifications = await listUnreadNotifications(workspace);
   const links = accountAdminLinks({
     orgManage: can(workspace, "org.manage"),
     memberManage: can(workspace, "member.manage"),
   });
+  const [notifications, entitlement] = await Promise.all([
+    listUnreadNotifications(workspace),
+    links.billing ? getEntitlement(workspace.organizationId) : Promise.resolve(null),
+  ]);
 
   const daily: MenuItem[] = [
     { href: "/photos", label: "写真一覧", note: "現場ごとに探す・整理する" },
@@ -59,30 +99,25 @@ export default async function AccountPage() {
       note: "日報・写真・音声報告の確認",
       badge: notifications.length,
     },
-  ];
-  const tools: MenuItem[] = [
     { href: "/capture", label: "音声で報告", note: "話すだけで記録" },
-    { href: "/strategist", label: "AI軍師", note: "現場の段取りを相談" },
-    { href: "/knowledge", label: "社内資料", note: "マニュアル・過去資料" },
   ];
   const admin: MenuItem[] = [
     ...(links.memberManage ? [{ href: "/settings", label: "メンバー管理", note: "招待・権限・会社のロゴ" }] : []),
-    ...(links.billing ? [{ href: "/settings/billing", label: "ご契約", note: "月額9,800円・お支払い・解約" }] : []),
     ...(links.dataExport ? [{ href: "/settings/data", label: "データを保存", note: "まとめてダウンロード" }] : []),
   ];
 
   return (
     <AppShell>
       <h1 className="text-3xl font-semibold tracking-tight">メニュー</h1>
-      <div className="mt-4 rounded-3xl bg-[var(--kb-card)] px-5 py-4 ring-1 ring-[var(--kb-line)]">
-        <p className="font-medium">{workspace.displayName}</p>
-        <p className="text-sm text-zinc-500">
-          {workspace.organizationName} · {memberFacingRoleLabel(workspace.roleCode) || workspace.roleName}
-        </p>
-      </div>
+      <p className="mt-2 text-sm text-zinc-500">
+        {workspace.displayName} · {workspace.organizationName} ·{" "}
+        {memberFacingRoleLabel(workspace.roleCode) || workspace.roleName}
+      </p>
       <div className="mt-6 flex flex-col gap-6">
+        {entitlement && entitlement.access !== "grandfathered_free" ? (
+          <BillingCard access={entitlement.access} trialDaysLeft={entitlement.trialDaysLeft} />
+        ) : null}
         <MenuGroup title="毎日使う" items={daily} />
-        <MenuGroup title="便利な機能" items={tools} />
         <MenuGroup title="会社の管理" items={admin} />
       </div>
       <div className="mt-10">

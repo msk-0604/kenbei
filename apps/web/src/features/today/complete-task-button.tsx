@@ -38,7 +38,7 @@ export function CompleteTaskButton({
             const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
             window.setTimeout(() => {
               router.refresh();
-            }, reduce ? 0 : 900);
+            }, reduce ? 0 : 250);
           });
         }}
       >

@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { briefWeeklySummary } from "@kensapo/ai";
 import { AppShell } from "@/components/app-shell";
 import { EmptyGuide } from "@/components/empty-guide";
 import { AppLink } from "@/components/app-nav";
 import { listRecentReports } from "@/features/reports/queries";
 import { listTodayProjects } from "@/features/today/queries";
 import { CreateTodayReportButton } from "@/features/reports/forms";
-import { loadOpsBriefFacts } from "@/features/strategist/facts";
 import { requireWorkspace } from "@/lib/authz-guard";
 import { CREATE_PROJECT_PATH } from "@/features/projects/routes";
 
@@ -16,7 +14,6 @@ export default async function ReportsPage() {
   const workspace = await requireWorkspace();
   const [reports, today] = await Promise.all([listRecentReports(), listTodayProjects(workspace)]);
   const first = today[0];
-  const weekly = await loadOpsBriefFacts(workspace.organizationId, first?.projectId ?? null);
 
   return (
     <AppShell>
@@ -25,13 +22,6 @@ export default async function ReportsPage() {
         <div className="mt-6">
           <CreateTodayReportButton projectId={first.projectId} />
         </div>
-      ) : null}
-      {reports.length > 0 ? (
-        <section className="mt-6 whitespace-pre-wrap rounded-3xl bg-white p-5 text-sm ring-1 ring-zinc-100">
-          <h2 className="mb-2 text-base font-medium">週次要約（下書き）</h2>
-          <p>{briefWeeklySummary(weekly)}</p>
-          <p className="mt-2 text-xs text-zinc-500">確定操作ではありません。日報の確定は各日報画面で行います。</p>
-        </section>
       ) : null}
       <ul className="mt-6 flex flex-col gap-3">
         {reports.map((report) => (

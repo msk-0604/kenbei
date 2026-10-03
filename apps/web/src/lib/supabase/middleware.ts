@@ -42,9 +42,10 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims verifies the JWT locally (asymmetric keys) and only calls the
+  // Auth server when it has to, so every navigation skips one round trip.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const user = claimsData?.claims?.sub ? claimsData.claims : null;
 
   const path = request.nextUrl.pathname;
   const isPublic = isAnonymousPublicPath(path);

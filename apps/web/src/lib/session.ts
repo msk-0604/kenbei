@@ -74,9 +74,13 @@ export const getWorkspace = cache(async (): Promise<Workspace | null> => {
   }
 
   const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Same verification as getUser(), without the Auth round trip when the
+  // project signs JWTs with asymmetric keys.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
+  const user = claims?.sub
+    ? { id: claims.sub, email: typeof claims.email === "string" ? claims.email : undefined }
+    : null;
   if (!user) {
     bindSentryWorkspace(null);
     return null;

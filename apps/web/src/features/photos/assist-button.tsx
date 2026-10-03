@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { proposePhotoAssistAction } from "@/features/photos/actions";
 
 export function PhotoAssistButton({ photoId }: { photoId: string }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   return (
@@ -18,7 +20,7 @@ export function PhotoAssistButton({ photoId }: { photoId: string }) {
             setPending(false);
             setError(result?.error ?? null);
             if (!result?.error) {
-              window.location.reload();
+              router.refresh();
             }
           });
         }}

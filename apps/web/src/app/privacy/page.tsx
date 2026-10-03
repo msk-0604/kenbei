@@ -44,7 +44,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-[var(--kb-ink)]">外部サービス</h2>
             <p className="mt-2">
-              認証・データ保管に Supabase、有料プランの決済に Stripe、AI軍師の補助応答に OpenAI、障害監視に Sentry、配信に
+              認証・データ保管に Supabase、有料プランの決済に Stripe、写真整理の補助に OpenAI、障害監視に Sentry、配信に
               Vercel を利用します。各社の取り扱いに従います。
             </p>
           </section>

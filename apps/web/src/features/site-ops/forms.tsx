@@ -191,9 +191,7 @@ function TaskStatusCard({ task }: { task: TaskRecord }) {
         return;
       }
       setSuccess(taskStatusSuccessMessage(next));
-      window.setTimeout(() => {
-        router.refresh();
-      }, 700);
+      router.refresh();
     });
   }
 

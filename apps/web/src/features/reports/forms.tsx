@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   REPORT_SAFETY_NOTE_PRESET,
   REPORT_SAFETY_PRESETS,
@@ -60,6 +61,7 @@ export function CreateTodayReportButton({
 }
 
 export function ConfirmReportButton({ reportId, disabled }: { reportId: string; disabled: boolean }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -80,9 +82,7 @@ export function ConfirmReportButton({ reportId, disabled }: { reportId: string; 
             }
             setPending(false);
             setSuccess(true);
-            window.setTimeout(() => {
-              window.location.reload();
-            }, 700);
+            router.refresh();
           });
         }}
       >

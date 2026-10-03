@@ -24,7 +24,7 @@ export const DESKTOP_NAV = [
 ] as const;
 
 /** Pages reached from メニュー; keep the メニュー tab lit while on them. */
-const MENU_PATHS = ["/account", "/settings", "/strategist", "/knowledge", "/confirm", "/capture"];
+const MENU_PATHS = ["/account", "/settings", "/knowledge", "/confirm", "/capture"];
 
 type IconName = (typeof DESKTOP_NAV)[number]["icon"];
 
@@ -138,7 +138,6 @@ export function AppLink({
   return (
     <Link
       href={href}
-      prefetch
       className={`inline-flex min-h-12 items-center justify-center rounded-2xl px-4 text-base font-medium kb-tap ${styles} ${className ?? ""}`}
     >
       <LinkBusy>{children}</LinkBusy>
