@@ -55,6 +55,28 @@ export function MarketingLandingPage() {
       </section>
 
       <section className="mt-16">
+        <h2 className="text-2xl font-semibold tracking-tight">実際の画面</h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+          スマホで開くと「今日やること」が出ます。上から順に押すだけで、A4の工事日報ができあがります。
+        </p>
+        <div className="mt-5 grid items-start gap-4 md:grid-cols-[minmax(0,320px)_1fr]">
+          <figure className="kb-elev mx-auto w-full max-w-[320px] overflow-hidden rounded-[2rem] bg-white ring-1 ring-[var(--kb-line)]">
+            <img src="/lp/today.png" alt="KENBEIの「今日やること」画面" width={780} height={1344} className="w-full" />
+            <figcaption className="border-t border-[var(--kb-line)] px-4 py-3 text-sm text-zinc-600">今日やること（スマホ）</figcaption>
+          </figure>
+          <figure className="kb-elev overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--kb-line)]">
+            <img src="/lp/report.png" alt="KENBEIで作った工事日報の見本" width={1191} height={1550} className="w-full" />
+            <figcaption className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--kb-line)] px-4 py-3 text-sm text-zinc-600">
+              <span>できあがる工事日報（A4・PDF）</span>
+              <Link href="/sample" className="font-medium text-[var(--kb-accent)] underline">
+                見本を大きく見る
+              </Link>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section className="mt-16">
         <h2 className="text-2xl font-semibold tracking-tight">使い方は3つだけ</h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
           覚えることはありません。開いた画面の一番上のボタンを、上から順に押すだけです。

@@ -14,6 +14,7 @@ import { AppLink } from "@/components/app-nav";
 import { EmptyGuide } from "@/components/empty-guide";
 import { ActionNotice } from "@/components/action-notice";
 import { RevealPanel } from "@/components/reveal-panel";
+import { InstallHint } from "@/components/install-hint";
 import { emptyWorkspaceCreateProjectHref } from "@/features/projects/routes";
 import {
   TODAY_REPORT_DONE_LABEL,
@@ -152,9 +153,18 @@ export function TodayView({
         <EmptyGuide
           title="まず現場をひとつ登録しましょう"
           body="現場名を入れるだけで始められます。登録したら、写真を撮る → 作業をチェック → 日報を出す、の3ステップです。"
-          action={createProjectHref ? <AppLink href={createProjectHref}>最初の現場を登録する</AppLink> : undefined}
+          action={
+            <>
+              {createProjectHref ? <AppLink href={createProjectHref}>最初の現場を登録する</AppLink> : null}
+              <AppLink href="/sample" variant="secondary">
+                日報の見本を見る
+              </AppLink>
+            </>
+          }
         />
       )}
+
+      <InstallHint />
 
       <OnboardingChecklist
         flags={onboarding}

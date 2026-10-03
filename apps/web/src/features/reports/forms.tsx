@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   REPORT_SAFETY_NOTE_PRESET,
@@ -14,7 +14,7 @@ import {
   workCandidatesFromTasks,
 } from "@kensapo/domain";
 import { confirmReportAction, createTodayReportDraftAction, saveReportAction } from "@/features/reports/actions";
-import type { DailyReportRecord } from "@/features/reports/queries";
+import type { DailyReportRecord, PreviousReportText } from "@/features/reports/queries";
 import type { PhotoRecord } from "@/features/photos/queries";
 
 import { FormSuccessNotice } from "@/components/action-notice";
@@ -97,12 +97,40 @@ export function ReportEditor({
   report,
   photos,
   tasks,
+  previous,
 }: {
   report: DailyReportRecord;
   photos: PhotoRecord[];
   tasks: { title: string; status: string }[];
+  previous?: PreviousReportText | null;
 }) {
   const [state, action, pending] = useActionState(saveReportAction, null);
+  const workLocationRef = useRef<HTMLInputElement>(null);
+  const workerCountRef = useRef<HTMLInputElement>(null);
+  const partnerCompaniesRef = useRef<HTMLInputElement>(null);
+  const equipmentRef = useRef<HTMLInputElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  function copyPrevious() {
+    if (!previous) {
+      return;
+    }
+    if (body.trim() && !window.confirm("書いた作業内容を、前回の日報の内容で置き換えますか？")) {
+      return;
+    }
+    setBody(previous.body);
+    setTomorrowPlan(previous.tomorrowPlan ?? "");
+    const fill = (ref: { current: HTMLInputElement | null }, value: string | number | null) => {
+      if (ref.current && !ref.current.value && value != null && value !== "") {
+        ref.current.value = String(value);
+      }
+    };
+    fill(workLocationRef, previous.workLocation);
+    fill(workerCountRef, previous.workerCount);
+    fill(partnerCompaniesRef, previous.partnerCompaniesText);
+    fill(equipmentRef, previous.equipmentText);
+    setCopied(true);
+  }
   const [weather, setWeather] = useState(() => weatherTextForStorage(report.weather));
   const [body, setBody] = useState(report.body);
   const [tomorrowPlan, setTomorrowPlan] = useState(report.tomorrowPlan ?? "");
@@ -142,6 +170,16 @@ export function ReportEditor({
       {[...photoIds].map((id) => (
         <input key={id} type="hidden" name="photoId" value={id} />
       ))}
+
+      {previous ? (
+        <button
+          type="button"
+          onClick={copyPrevious}
+          className="kb-tap min-h-12 rounded-2xl bg-[var(--kb-accent-soft)] px-4 text-base font-medium text-[var(--kb-accent)]"
+        >
+          {copied ? "✓ 前回の内容を入れました（保存を忘れずに）" : `前回（${previous.workOn.slice(5).replace("-", "/")}）の日報をコピー`}
+        </button>
+      ) : null}
 
       <section>
         <h2 className="text-sm font-medium">天候</h2>
@@ -300,6 +338,7 @@ export function ReportEditor({
           <label className="text-sm font-medium">
             作業箇所
             <input
+              ref={workLocationRef}
               name="workLocation"
               defaultValue={report.workLocation ?? ""}
               className="mt-1 w-full rounded-xl border border-zinc-200 px-4"
@@ -308,6 +347,7 @@ export function ReportEditor({
           <label className="text-sm font-medium">
             作業人数
             <input
+              ref={workerCountRef}
               name="workerCount"
               type="number"
               inputMode="numeric"
@@ -318,6 +358,7 @@ export function ReportEditor({
           <label className="text-sm font-medium">
             協力会社
             <input
+              ref={partnerCompaniesRef}
               name="partnerCompaniesText"
               defaultValue={report.partnerCompaniesText ?? ""}
               className="mt-1 w-full rounded-xl border border-zinc-200 px-4"
@@ -326,6 +367,7 @@ export function ReportEditor({
           <label className="text-sm font-medium">
             使用機材
             <input
+              ref={equipmentRef}
               name="equipmentText"
               defaultValue={report.equipmentText ?? ""}
               className="mt-1 w-full rounded-xl border border-zinc-200 px-4"

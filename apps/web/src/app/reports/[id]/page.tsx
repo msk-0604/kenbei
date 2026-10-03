@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { weatherLineForPdf } from "@kensapo/domain";
 import { AppShell } from "@/components/app-shell";
 import { ConfirmReportButton, ReportEditor } from "@/features/reports/forms";
-import { getReport } from "@/features/reports/queries";
+import { getPreviousReportText, getReport } from "@/features/reports/queries";
+import { SharePdfButton } from "@/features/reports/share-pdf-button";
 import { searchPhotos } from "@/features/photos/queries";
 import { listProjectTasks } from "@/features/site-ops/queries";
 import { requireWorkspace } from "@/lib/authz-guard";
@@ -21,16 +22,17 @@ export default async function ReportDetailPage({
   if (!report) {
     notFound();
   }
-  const [photos, tasks] = await Promise.all([
+  const isDraft = report.status === "draft";
+  const [photos, tasks, previous] = await Promise.all([
     searchPhotos({
       projectId: report.projectId,
       from: report.workOn,
       to: report.workOn,
     }),
     listProjectTasks(report.projectId),
+    isDraft ? getPreviousReportText(report.projectId, report.workOn) : Promise.resolve(null),
   ]);
   const weatherLine = weatherLineForPdf(report.weather);
-  const isDraft = report.status === "draft";
 
   return (
     <AppShell>
@@ -50,6 +52,7 @@ export default async function ReportDetailPage({
             report={report}
             photos={photos}
             tasks={tasks.map((task) => ({ title: task.title, status: task.status }))}
+            previous={previous}
           />
         </div>
       ) : (
@@ -68,6 +71,13 @@ export default async function ReportDetailPage({
       )}
       <div className="mt-6 flex flex-col gap-3">
         {isDraft ? <ConfirmReportButton reportId={report.id} disabled={false} /> : null}
+        {report.status === "confirmed" ? (
+          <SharePdfButton
+            reportId={report.id}
+            fileName={`日報_${report.projectName}_${report.workOn}.pdf`}
+            title={`日報 ${report.projectName} ${report.workOn}`}
+          />
+        ) : null}
         {report.status === "confirmed" ? (
           <Link
             href={`/reports/${report.id}/print`}

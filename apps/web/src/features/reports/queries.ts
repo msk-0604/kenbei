@@ -170,6 +170,54 @@ export async function getReportOnDate(projectId: string, workOn: string): Promis
   return getReport(row.id);
 }
 
+export type PreviousReportText = {
+  workOn: string;
+  body: string;
+  tomorrowPlan: string | null;
+  workLocation: string | null;
+  workerCount: number | null;
+  partnerCompaniesText: string | null;
+  equipmentText: string | null;
+};
+
+/** Text of the most recent earlier report on the same site, for "copy last report". */
+export async function getPreviousReportText(projectId: string, beforeWorkOn: string): Promise<PreviousReportText | null> {
+  const organizationId = await currentOrganizationId();
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("daily_reports")
+    .select("work_on, body, tomorrow_plan, work_location, worker_count, partner_companies_text, equipment_text")
+    .eq("project_id", projectId)
+    .eq("organization_id", organizationId)
+    .lt("work_on", beforeWorkOn)
+    .neq("body", "")
+    .is("deleted_at", null)
+    .order("work_on", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const row = data as {
+    work_on: string;
+    body: string;
+    tomorrow_plan: string | null;
+    work_location: string | null;
+    worker_count: number | null;
+    partner_companies_text: string | null;
+    equipment_text: string | null;
+  } | null;
+  if (!row) {
+    return null;
+  }
+  return {
+    workOn: row.work_on,
+    body: row.body,
+    tomorrowPlan: row.tomorrow_plan,
+    workLocation: row.work_location,
+    workerCount: row.worker_count,
+    partnerCompaniesText: row.partner_companies_text,
+    equipmentText: row.equipment_text,
+  };
+}
+
 export async function listDraftReports(): Promise<DailyReportRecord[]> {
   const organizationId = await currentOrganizationId();
   const supabase = await createServerSupabaseClient();
