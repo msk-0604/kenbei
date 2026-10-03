@@ -65,14 +65,14 @@ export function OnboardingChecklist({
               <Link
                 href={href}
                 className={`kb-tap flex min-h-12 flex-col justify-center rounded-2xl px-4 py-3 ${
-                  done ? "bg-[#f3eee6] text-zinc-500" : "bg-white ring-1 ring-[var(--kb-line)]"
+                  done ? "bg-[var(--kb-soft)] text-zinc-500" : "bg-white ring-1 ring-[var(--kb-line)]"
                 }`}
               >
                 <span className="flex items-center justify-between gap-3">
                   <span className="font-medium text-[var(--kb-ink)]">
                     {experienceReady ? item.label : `${index + 1}. ${item.label}`}
                   </span>
-                  <span className={`shrink-0 text-sm ${done ? "text-emerald-700" : "text-[var(--kb-amber)]"}`}>
+                  <span className={`shrink-0 text-sm ${done ? "text-emerald-700" : "text-[var(--kb-accent)]"}`}>
                     {done ? "完了" : "次へ"}
                   </span>
                 </span>

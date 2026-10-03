@@ -16,7 +16,7 @@ export function MarketingCta({
     variant === "primary"
       ? "bg-[var(--kb-ink)] text-white"
       : variant === "accent"
-        ? "bg-[var(--kb-amber)] text-white"
+        ? "bg-[var(--kb-accent)] text-white"
         : "bg-white text-[var(--kb-ink)] ring-1 ring-[var(--kb-line)]";
   return (
     <Link

@@ -16,7 +16,7 @@ function MenuGroup({ title, items }: { title: string; items: MenuItem[] }) {
   return (
     <section>
       <h2 className="text-sm font-medium text-zinc-500">{title}</h2>
-      <ul className="mt-2 overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--kb-line)]">
+      <ul className="mt-2 kb-elev overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--kb-line)]">
         {items.map((item, index) => (
           <li key={item.href} className={index > 0 ? "border-t border-[var(--kb-line)]" : undefined}>
             <Link href={item.href} className="kb-tap flex min-h-14 items-center justify-between gap-3 px-5 py-3">
@@ -26,7 +26,7 @@ function MenuGroup({ title, items }: { title: string; items: MenuItem[] }) {
               </span>
               <span className="flex shrink-0 items-center gap-2">
                 {item.badge ? (
-                  <span className="rounded-full bg-[var(--kb-amber)] px-2 py-0.5 text-xs font-semibold text-white">
+                  <span className="rounded-full bg-[var(--kb-accent)] px-2 py-0.5 text-xs font-semibold text-white">
                     {item.badge}
                   </span>
                 ) : null}

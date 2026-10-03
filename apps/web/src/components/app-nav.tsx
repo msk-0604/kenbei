@@ -196,7 +196,7 @@ function MobileItem({
         className="kb-tap relative flex min-h-14 flex-col items-center justify-end gap-0.5 px-1 pb-1 text-xs font-semibold text-[var(--kb-ink)]"
       >
         <LinkBusy stacked>
-          <span className="-mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--kb-amber)] text-white shadow-lg ring-4 ring-white">
+          <span className="-mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--kb-accent)] text-white shadow-lg ring-4 ring-white">
             <NavIcon name={icon} className="h-6 w-6" />
           </span>
           <span>{label}</span>
@@ -256,7 +256,7 @@ export function AppNav({
           <Link
             href="/photos/upload"
             prefetch
-            className="kb-tap inline-flex min-h-10 items-center gap-1.5 rounded-full bg-[var(--kb-amber)] px-4 text-sm font-semibold text-white"
+            className="kb-tap inline-flex min-h-10 items-center gap-1.5 rounded-full bg-[var(--kb-accent)] px-4 text-sm font-semibold text-white"
           >
             <NavIcon name="photo" className="h-4 w-4" />
             写真を撮る

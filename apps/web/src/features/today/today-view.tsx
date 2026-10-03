@@ -97,7 +97,7 @@ export function TodayView({
             </nav>
           ) : null}
 
-          <article className="rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)] md:p-6">
+          <article className="kb-elev rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)] md:p-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm text-zinc-500">今日の現場</p>
@@ -105,7 +105,7 @@ export function TodayView({
               </div>
               <Link
                 href={`/projects/${current.projectId}`}
-                className="kb-tap inline-flex min-h-10 shrink-0 items-center text-sm font-medium text-[var(--kb-amber)]"
+                className="kb-tap inline-flex min-h-10 shrink-0 items-center text-sm font-medium text-[var(--kb-accent)]"
               >
                 現場を開く →
               </Link>
@@ -119,9 +119,9 @@ export function TodayView({
                     key={step.key}
                     className={`flex items-center gap-3 rounded-2xl px-4 py-3 ${
                       isNext
-                        ? "bg-[#fff4eb] ring-2 ring-[var(--kb-amber)]"
+                        ? "bg-[var(--kb-accent-soft)] ring-2 ring-[var(--kb-accent)]"
                         : step.done
-                          ? "bg-[#f3eee6]"
+                          ? "bg-[var(--kb-soft)]"
                           : "bg-zinc-50"
                     }`}
                   >
@@ -130,7 +130,7 @@ export function TodayView({
                         step.done
                           ? "bg-emerald-600 text-white"
                           : isNext
-                            ? "bg-[var(--kb-amber)] text-white"
+                            ? "bg-[var(--kb-accent)] text-white"
                             : "bg-white text-zinc-500 ring-1 ring-[var(--kb-line)]"
                       }`}
                     >
@@ -250,7 +250,7 @@ function NextAction({
       <div className="grid gap-2 sm:grid-cols-2">
         <Link
           href={photoHref}
-          className="kb-tap inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-[var(--kb-amber)] px-4 text-base font-medium text-white shadow-sm"
+          className="kb-tap inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-[var(--kb-accent)] px-4 text-base font-medium text-white shadow-sm"
         >
           写真を撮る
         </Link>

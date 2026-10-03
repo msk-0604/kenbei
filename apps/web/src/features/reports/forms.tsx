@@ -291,7 +291,7 @@ export function ReportEditor({
       <button
         type="button"
         onClick={() => setMoreOpen((open) => !open)}
-        className="kb-tap min-h-12 rounded-2xl bg-[#f3eee6] px-4 text-sm font-medium text-zinc-700"
+        className="kb-tap min-h-12 rounded-2xl bg-[var(--kb-soft)] px-4 text-sm font-medium text-zinc-700"
       >
         {moreOpen ? "その他を閉じる" : "人数・箇所など（任意）"}
       </button>

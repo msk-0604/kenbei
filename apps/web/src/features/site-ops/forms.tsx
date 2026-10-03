@@ -112,7 +112,7 @@ export function CreateTaskForm({
       <button
         type="button"
         onClick={() => setMore((open) => !open)}
-        className="kb-tap min-h-12 rounded-2xl bg-[#f3eee6] px-4 text-sm font-medium text-zinc-700"
+        className="kb-tap min-h-12 rounded-2xl bg-[var(--kb-soft)] px-4 text-sm font-medium text-zinc-700"
       >
         {more ? "詳細を閉じる" : "担当・説明（任意）"}
       </button>

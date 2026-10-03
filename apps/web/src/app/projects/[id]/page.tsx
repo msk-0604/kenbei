@@ -105,7 +105,7 @@ export default async function ProjectDetailPage({
         <div className="mt-5 grid grid-cols-2 gap-2">
           <Link
             href={`/photos/upload?projectId=${id}`}
-            className="kb-tap inline-flex min-h-12 items-center justify-center rounded-2xl bg-[var(--kb-amber)] font-medium text-white"
+            className="kb-tap inline-flex min-h-12 items-center justify-center rounded-2xl bg-[var(--kb-accent)] font-medium text-white"
           >
             写真を撮る
           </Link>

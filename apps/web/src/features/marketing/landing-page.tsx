@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   HOW_TO_STEPS,
   LANDING_FAQS,
-  LANDING_HEADLINE,
   LANDING_LEAD,
   LANDING_PAINS,
   TRIAL_NO_CARD_LINE,
@@ -19,10 +18,14 @@ export function MarketingLandingPage() {
   return (
     <MarketingFrame>
       <section className="mt-10 md:mt-16">
-        <p className="inline-flex rounded-full bg-white px-3 py-1 text-sm font-medium text-[var(--kb-amber)] ring-1 ring-[var(--kb-line)]">
+        <p className="inline-flex rounded-full bg-white px-3 py-1 text-sm font-medium text-[var(--kb-accent)] ring-1 ring-[var(--kb-line)]">
           施工管理者・現場監督のための現場事務ツール
         </p>
-        <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-tight md:text-6xl">{LANDING_HEADLINE}</h1>
+        <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-tight md:text-6xl">
+          現場が終わったら、
+          <br />
+          <span className="kb-brand-text">15分</span>で日報まで。
+        </h1>
         <p className="mt-5 max-w-2xl text-base leading-7 text-zinc-600 md:text-lg">{LANDING_LEAD}</p>
         <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <MarketingCta href="/signup">14日間無料で試す</MarketingCta>
@@ -76,9 +79,9 @@ export function MarketingLandingPage() {
         <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
           プランはひとつだけ。人数で値段が変わったり、機能が削られたりしません。
         </p>
-        <article className="mt-5 overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--kb-line)] md:grid md:grid-cols-2">
+        <article className="mt-5 kb-elev overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--kb-line)] md:grid md:grid-cols-2">
           <div className="bg-[var(--kb-ink)] p-6 text-white md:p-8">
-            <p className="text-sm font-medium text-amber-200">{plan.name}</p>
+            <p className="text-sm font-medium text-sky-300">{plan.name}</p>
             <p className="mt-3 text-5xl font-semibold tabular-nums tracking-tight">
               {monthlyYenLabel(plan.monthlyPriceJpy)}
             </p>
@@ -95,7 +98,7 @@ export function MarketingLandingPage() {
           <ul className="flex flex-col justify-center gap-3 p-6 text-base leading-7 text-zinc-700 md:p-8">
             {KENBEI_INCLUDED.map((item) => (
               <li key={item} className="flex gap-3">
-                <span aria-hidden className="font-semibold text-[var(--kb-amber)]">
+                <span aria-hidden className="font-semibold text-[var(--kb-accent)]">
                   ✓
                 </span>
                 {item}
