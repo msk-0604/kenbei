@@ -8,7 +8,9 @@ export function isAnonymousPublicPath(pathname: string): boolean {
     pathname === "/signup" ||
     pathname === "/join" ||
     pathname === "/forgot-password" ||
-    pathname === "/reset-password"
+    pathname === "/reset-password" ||
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/robots.txt"
   ) {
     return true;
   }
