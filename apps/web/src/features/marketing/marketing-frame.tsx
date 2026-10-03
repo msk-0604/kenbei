@@ -10,12 +10,14 @@ export function MarketingCta({
 }: {
   href: string;
   children: ReactNode;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "accent";
 }) {
   const look =
     variant === "primary"
       ? "bg-[var(--kb-ink)] text-white"
-      : "bg-white text-[var(--kb-ink)] ring-1 ring-[var(--kb-line)]";
+      : variant === "accent"
+        ? "bg-[var(--kb-amber)] text-white"
+        : "bg-white text-[var(--kb-ink)] ring-1 ring-[var(--kb-line)]";
   return (
     <Link
       href={href}

@@ -179,8 +179,8 @@ describe("trial email schedule", () => {
     expect(started.text).toMatch(/現場ごとの写真/);
     expect(started.text).toMatch(/日報PDF/);
     expect(started.text).toMatch(/AI軍師/);
-    expect(started.text).toMatch(/39,800円（税込/);
-    expect(started.text).toMatch(/65,000円（税込/);
+    expect(started.text).toMatch(/月額9,800円（税込/);
+    expect(started.text).not.toMatch(/39,800|65,000|STANDARD|BUSINESS/);
     expect(started.text).toMatch(/settings\/billing/);
     expect(trialEmailCopy("trial_day3", "https://app.kenbei.jp").text).toMatch(/タスク/);
     expect(trialEmailCopy("trial_ending_soon", "https://app.kenbei.jp").text).toMatch(/自動課金しません/);

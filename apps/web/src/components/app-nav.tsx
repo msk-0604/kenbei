@@ -5,32 +5,38 @@ import { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+/** Bottom bar: the 4 places a site manager goes every day, plus a big camera button in the middle. */
 export const MOBILE_NAV = [
   { href: "/", label: "今日", icon: "today" },
   { href: "/projects", label: "現場", icon: "site" },
-  { href: "/photos", label: "写真", icon: "photo" },
-  { href: "/tasks", label: "タスク", icon: "check" },
+  { href: "/photos/upload", label: "撮る", icon: "photo", primary: true },
   { href: "/reports", label: "日報", icon: "report" },
-  { href: "/account", label: "自分", icon: "me" },
+  { href: "/account", label: "メニュー", icon: "menu" },
 ] as const;
 
 export const DESKTOP_NAV = [
   { href: "/", label: "今日", icon: "today" },
   { href: "/projects", label: "現場", icon: "site" },
   { href: "/photos", label: "写真", icon: "photo" },
+  { href: "/tasks", label: "タスク", icon: "check" },
   { href: "/reports", label: "日報", icon: "report" },
-  { href: "/confirm", label: "確認", icon: "check" },
-  { href: "/strategist", label: "AI軍師", icon: "ai" },
-  { href: "/knowledge", label: "資料", icon: "docs" },
-  { href: "/settings", label: "設定", icon: "org" },
-  { href: "/account", label: "自分", icon: "me" },
+  { href: "/account", label: "メニュー", icon: "menu" },
 ] as const;
+
+/** Pages reached from メニュー; keep the メニュー tab lit while on them. */
+const MENU_PATHS = ["/account", "/settings", "/strategist", "/knowledge", "/confirm", "/capture"];
 
 type IconName = (typeof DESKTOP_NAV)[number]["icon"];
 
 function isActivePath(pathname: string, href: string): boolean {
   if (href === "/") {
     return pathname === "/";
+  }
+  if (href === "/account") {
+    return MENU_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  }
+  if (href === "/photos") {
+    return pathname === "/photos" || (pathname.startsWith("/photos/") && !pathname.startsWith("/photos/upload"));
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -65,15 +71,10 @@ function NavIcon({ name, className }: { name: IconName; className?: string }) {
           <path d="M8 6.5l1.4-2h5.2L16 6.5" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
         </svg>
       );
-    case "ai":
+    case "menu":
       return (
         <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden>
-          <path
-            d="M12 3.5l1.2 5.2L18.5 10 13.2 11.3 12 16.5l-1.2-5.2L5.5 10l5.3-1.3L12 3.5z"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            strokeLinejoin="round"
-          />
+          <path d="M4.5 7h15M4.5 12h15M4.5 17h15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
       );
     case "check":
@@ -83,32 +84,11 @@ function NavIcon({ name, className }: { name: IconName; className?: string }) {
           <path d="M8.2 12.2l2.4 2.4 5.2-5.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
       );
-    case "me":
-      return (
-        <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden>
-          <circle cx="12" cy="8.5" r="3.2" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M5.5 19c1.2-3.2 3.5-4.8 6.5-4.8s5.3 1.6 6.5 4.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      );
     case "report":
       return (
         <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden>
           <path d="M7 3.5h7.5L19 8v12.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z" stroke="currentColor" strokeWidth="1.8" />
           <path d="M14.5 3.8V8H19M8.5 12.5h7M8.5 16h5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      );
-    case "docs":
-      return (
-        <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden>
-          <path d="M8 5.5h10.5v14H8A2.5 2.5 0 0 1 5.5 17V8A2.5 2.5 0 0 1 8 5.5z" stroke="currentColor" strokeWidth="1.8" />
-          <path d="M9.5 9.5h7M9.5 13h7M9.5 16.5h4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-      );
-    case "org":
-      return (
-        <svg viewBox="0 0 24 24" fill="none" className={common} aria-hidden>
-          <path d="M4.5 20V10.5h6V20M10.5 20V6.5h9V20M4.5 20h15" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-          <path d="M7 13.5h1M7 16.5h1M13.5 9.5h2M13.5 13h2M13.5 16.5h2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
         </svg>
       );
     default:
@@ -199,12 +179,31 @@ function MobileItem({
   label,
   icon,
   active,
+  primary = false,
 }: {
   href: string;
   label: string;
   icon: IconName;
   active: boolean;
+  primary?: boolean;
 }) {
+  if (primary) {
+    return (
+      <Link
+        href={href}
+        prefetch
+        aria-current={active ? "page" : undefined}
+        className="kb-tap relative flex min-h-14 flex-col items-center justify-end gap-0.5 px-1 pb-1 text-xs font-semibold text-[var(--kb-ink)]"
+      >
+        <LinkBusy stacked>
+          <span className="-mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--kb-amber)] text-white shadow-lg ring-4 ring-white">
+            <NavIcon name={icon} className="h-6 w-6" />
+          </span>
+          <span>{label}</span>
+        </LinkBusy>
+      </Link>
+    );
+  }
   return (
     <Link
       href={href}
@@ -216,7 +215,7 @@ function MobileItem({
     >
       {active ? <span className="absolute inset-x-4 top-0 h-0.5 rounded-full bg-[var(--kb-ink)]" /> : null}
       <LinkBusy stacked>
-        <NavIcon name={icon} className={`h-[18px] w-[18px] ${active ? "text-[var(--kb-ink)]" : ""}`} />
+        <NavIcon name={icon} className={`h-5 w-5 ${active ? "text-[var(--kb-ink)]" : ""}`} />
         <span>{label}</span>
       </LinkBusy>
     </Link>
@@ -225,50 +224,25 @@ function MobileItem({
 
 export function AppNav({
   orgSwitcher,
-  canOpenSettings = false,
 }: {
   orgSwitcher: ReactNode;
   canOpenSettings?: boolean;
 }) {
   const pathname = usePathname();
-  const desktopNav = DESKTOP_NAV.filter((item) => item.href !== "/settings" || canOpenSettings);
   return (
     <>
-      <header className="mb-6 flex items-center justify-between gap-3 md:hidden">
+      <header className="mb-5 flex items-center justify-between gap-3 md:hidden">
         <Link href="/" prefetch className="inline-flex shrink-0 items-center" aria-label="KENBEI">
           <img src="/logo-k.png" alt="KENBEI" width={28} height={28} className="h-7 w-7 object-contain" />
         </Link>
-        <div className="flex min-w-0 items-center justify-end gap-2">
-          <Link
-            href="/strategist"
-            prefetch
-            className={`kb-tap inline-flex min-h-10 items-center rounded-full px-3 text-sm font-medium ${
-              isActivePath(pathname, "/strategist")
-                ? "bg-[var(--kb-ink)] text-white"
-                : "bg-white text-zinc-700 ring-1 ring-[var(--kb-line)]"
-            }`}
-          >
-            AI軍師
-          </Link>
-          {canOpenSettings ? (
-            <Link
-              href="/settings"
-              prefetch
-              className={`kb-tap inline-flex min-h-10 items-center rounded-full px-3 text-sm font-medium ${
-                isActivePath(pathname, "/settings") ? "bg-[var(--kb-ink)] text-white" : "bg-white text-zinc-700 ring-1 ring-[var(--kb-line)]"
-              }`}
-            >
-              設定
-            </Link>
-          ) : null}
-        </div>
+        <div className="min-w-0">{orgSwitcher}</div>
       </header>
       <header className="mb-8 hidden items-center justify-between gap-4 md:flex">
         <Link href="/" prefetch className="inline-flex shrink-0 items-center" aria-label="KENBEI">
           <img src="/logo-k.png" alt="KENBEI" width={28} height={28} className="h-7 w-7 object-contain" />
         </Link>
         <nav className="flex flex-1 flex-wrap items-center justify-center gap-1 rounded-full bg-white p-1 ring-1 ring-[var(--kb-line)]">
-          {desktopNav.map((item) => (
+          {DESKTOP_NAV.map((item) => (
             <DesktopItem
               key={item.href}
               href={item.href}
@@ -278,16 +252,30 @@ export function AppNav({
             />
           ))}
         </nav>
-        <div className="shrink-0">{orgSwitcher}</div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/photos/upload"
+            prefetch
+            className="kb-tap inline-flex min-h-10 items-center gap-1.5 rounded-full bg-[var(--kb-amber)] px-4 text-sm font-semibold text-white"
+          >
+            <NavIcon name="photo" className="h-4 w-4" />
+            写真を撮る
+          </Link>
+          {orgSwitcher}
+        </div>
       </header>
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--kb-line)] bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-6">
+      <nav
+        aria-label="メインメニュー"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--kb-line)] bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+      >
+        <div className="mx-auto grid max-w-lg grid-cols-5">
           {MOBILE_NAV.map((item) => (
             <MobileItem
               key={item.href}
               href={item.href}
               label={item.label}
               icon={item.icon}
+              primary={"primary" in item && item.primary}
               active={isActivePath(pathname, item.href)}
             />
           ))}

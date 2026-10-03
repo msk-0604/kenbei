@@ -14,8 +14,8 @@ describe("toUserActionError", () => {
   });
 
   it("does not mix a plan limit with a network retry", () => {
-    expect(toUserActionError("4名以上は STANDARD（月額39,800円）が必要です。", "招待リンクを作成")).toBe(
-      "4名以上は STANDARD（月額39,800円）が必要です。",
+    expect(toUserActionError("51名以上でのご利用は、お問い合わせください。", "招待リンクを作成")).toBe(
+      "51名以上でのご利用は、お問い合わせください。",
     );
   });
 });

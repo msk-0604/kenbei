@@ -36,15 +36,16 @@ import { getEntitlement } from "@/lib/entitlement";
 
 export const dynamic = "force-dynamic";
 
+/** Everyday tabs first; the rest sits in a quieter second row. */
 const TABS = [
-  { id: "overview", label: "概要" },
-  { id: "photos", label: "写真" },
-  { id: "reports", label: "日報" },
-  { id: "schedule", label: "工程" },
-  { id: "chat", label: "チャット" },
-  { id: "tasks", label: "タスク" },
-  { id: "files", label: "図面" },
-  { id: "members", label: "メンバー" },
+  { id: "photos", label: "写真", primary: true },
+  { id: "tasks", label: "タスク", primary: true },
+  { id: "reports", label: "日報", primary: true },
+  { id: "schedule", label: "工程", primary: false },
+  { id: "chat", label: "チャット", primary: false },
+  { id: "files", label: "図面", primary: false },
+  { id: "members", label: "メンバー", primary: false },
+  { id: "overview", label: "現場情報", primary: false },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -63,7 +64,7 @@ export default async function ProjectDetailPage({
   const workspace = await requireWorkspace();
   const { id } = await params;
   const query = await searchParams;
-  const tab: TabId = isTab(query.tab) ? query.tab : "overview";
+  const tab: TabId = isTab(query.tab) ? query.tab : "photos";
   const project = await getProject(id);
   if (!project) {
     notFound();
@@ -100,16 +101,52 @@ export default async function ProjectDetailPage({
       <p className="text-sm text-zinc-500">{project.address ?? "住所未登録"}</p>
       <p className="mt-2 text-sm text-zinc-500">全体進捗 {overallProgress(processes)}%</p>
 
-      <nav className="-mx-5 mt-6 flex gap-1 overflow-x-auto px-5 md:mx-0 md:px-0">
-        {TABS.map((item) => (
+      {canPhoto ? (
+        <div className="mt-5 grid grid-cols-2 gap-2">
           <Link
-            key={item.id}
-            href={`/projects/${id}?tab=${item.id}`}
-            className={`shrink-0 rounded-xl px-3 py-2 text-sm ${tab === item.id ? "bg-zinc-900 text-white" : "bg-white text-zinc-700 ring-1 ring-zinc-200"}`}
+            href={`/photos/upload?projectId=${id}`}
+            className="kb-tap inline-flex min-h-12 items-center justify-center rounded-2xl bg-[var(--kb-amber)] font-medium text-white"
           >
-            {item.label}
+            写真を撮る
           </Link>
-        ))}
+          <Link
+            href={`/projects/${id}?tab=reports`}
+            className="kb-tap inline-flex min-h-12 items-center justify-center rounded-2xl bg-white font-medium ring-1 ring-[var(--kb-line)]"
+          >
+            今日の日報
+          </Link>
+        </div>
+      ) : null}
+
+      <nav aria-label="現場のメニュー" className="mt-6 flex flex-col gap-2">
+        <div className="grid grid-cols-3 gap-1 rounded-2xl bg-white p-1 ring-1 ring-[var(--kb-line)]">
+          {TABS.filter((item) => item.primary).map((item) => (
+            <Link
+              key={item.id}
+              href={`/projects/${id}?tab=${item.id}`}
+              aria-current={tab === item.id ? "page" : undefined}
+              className={`kb-tap inline-flex min-h-11 items-center justify-center rounded-xl text-sm font-medium ${
+                tab === item.id ? "bg-[var(--kb-ink)] text-white" : "text-zinc-700"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+        <div className="-mx-5 flex gap-1 overflow-x-auto px-5 md:mx-0 md:px-0">
+          {TABS.filter((item) => !item.primary).map((item) => (
+            <Link
+              key={item.id}
+              href={`/projects/${id}?tab=${item.id}`}
+              aria-current={tab === item.id ? "page" : undefined}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-sm ${
+                tab === item.id ? "bg-[var(--kb-ink)] text-white" : "text-zinc-500 hover:text-zinc-800"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
       </nav>
 
       {tab === "overview" ? (

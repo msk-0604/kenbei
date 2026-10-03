@@ -56,7 +56,7 @@ describe("classifyBillingAccess", () => {
     expect(workspaceWriteBlockMessage(access)).toMatch(/無料体験が終了/);
   });
 
-  it("allows STANDARD and BUSINESS while the subscription is active", () => {
+  it("allows the paid plan (and legacy business) while the subscription is active", () => {
     expect(
       classifyBillingAccess({
         planCode: "pro",

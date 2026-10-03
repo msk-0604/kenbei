@@ -25,7 +25,7 @@ export default async function BillingPage({
   if (!can(workspace, "org.manage")) {
     return (
       <AppShell>
-        <h1 className="text-3xl font-semibold">会社の導入</h1>
+        <h1 className="text-3xl font-semibold">ご契約</h1>
         <p className="mt-3">管理者による契約手続きをお待ちください</p>
       </AppShell>
     );
@@ -36,8 +36,8 @@ export default async function BillingPage({
       <p className="text-sm text-zinc-500">
         <a href="/settings">設定</a>
       </p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">会社の導入</h1>
-      <p className="mt-2 text-sm leading-6 text-zinc-600">プランの確認とお支払いは、この画面から進めます。</p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight">ご契約</h1>
+      <p className="mt-2 text-sm leading-6 text-zinc-600">料金はひとつだけ。契約・お支払い・解約はこの画面で完結します。</p>
       {error ? (
         <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-200" role="alert">
           {error}
@@ -59,18 +59,18 @@ export default async function BillingPage({
           status={entitlement.status}
           cancelAtPeriodEnd={entitlement.cancelAtPeriodEnd}
           access={entitlement.access}
+          trialDaysLeft={entitlement.trialDaysLeft}
           variant="billing"
         />
       </div>
       {canOpenBillingPortal(true, entitlement.stripeCustomerId) ? (
         <form action={openBillingPortalAction} className="mt-4">
-          <button type="submit" className="rounded-2xl bg-white px-4 py-2 ring-1 ring-zinc-200">
-            契約内容を確認・変更
+          <button type="submit" className="w-full rounded-2xl bg-white px-4 py-2 font-medium ring-1 ring-[var(--kb-line)]">
+            支払い方法・領収書を確認
           </button>
         </form>
-      ) : (
-        <p className="mt-4 text-sm text-zinc-500">カード登録はSTANDARDまたはBUSINESSのお支払い手続きのときに行います。</p>
-      )}
+      ) : null}
+      {entitlement.access === "paid_active" && !entitlement.cancelAtPeriodEnd ? (
       <section className="mt-8 rounded-3xl bg-amber-50 p-5 ring-1 ring-amber-200">
         <h2 className="font-medium">解約の前に</h2>
         <p className="mt-2 text-sm">データをエクスポートしますか？ 解約後も当面はエクスポートできますが、先に取ることを推奨します。</p>
@@ -83,6 +83,7 @@ export default async function BillingPage({
           </button>
         </form>
       </section>
+      ) : null}
     </AppShell>
   );
 }

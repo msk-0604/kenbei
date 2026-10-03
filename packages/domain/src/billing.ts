@@ -1,5 +1,7 @@
 /**
  * Official KENBEI plans. Seat checks and UI must use this catalog.
+ * KENBEI sells one paid plan (`standard`, shown as "KENBEI"). `business` stays
+ * only so legacy subscriptions keep resolving; it is not offered in the UI.
  * Stripe Price IDs stay in env. DB `billing_plans` may still use legacy codes
  * (team/pro); persistableBillingPlanCode maps STANDARD → `pro` for the FK.
  */
@@ -13,14 +15,23 @@ export type BillingPlanDefinition = {
   monthlyPriceJpy: number;
 };
 
+export const KENBEI_PLAN_NAME = "KENBEI";
+export const KENBEI_MONTHLY_PRICE_JPY = 9_800;
+export const KENBEI_MAX_MEMBERS = 50;
+
 export const DEFAULT_BILLING_PLANS: readonly BillingPlanDefinition[] = [
-  { code: "free", name: "FREE", maxMembers: 50, monthlyPriceJpy: 0 },
-  { code: "standard", name: "STANDARD", maxMembers: 50, monthlyPriceJpy: 39_800 },
-  { code: "business", name: "BUSINESS", maxMembers: null, monthlyPriceJpy: 65_000 },
+  { code: "free", name: "FREE", maxMembers: KENBEI_MAX_MEMBERS, monthlyPriceJpy: 0 },
+  {
+    code: "standard",
+    name: KENBEI_PLAN_NAME,
+    maxMembers: KENBEI_MAX_MEMBERS,
+    monthlyPriceJpy: KENBEI_MONTHLY_PRICE_JPY,
+  },
+  { code: "business", name: KENBEI_PLAN_NAME, maxMembers: null, monthlyPriceJpy: KENBEI_MONTHLY_PRICE_JPY },
   { code: "enterprise", name: "ENTERPRISE", maxMembers: null, monthlyPriceJpy: 0 },
 ] as const;
 
-export const BUSINESS_SEAT_CONSULT_MESSAGE = "51名以上は BUSINESS です。お問い合わせください。";
+export const SEAT_CONSULT_MESSAGE = "51名以上でのご利用は、お問い合わせください。";
 
 export function isBillingPlanCode(value: string): value is BillingPlanCode {
   return (BILLING_PLAN_CODES as readonly string[]).includes(value);
@@ -55,7 +66,7 @@ export function billingPlanByCode(code: string | null | undefined): BillingPlanD
   if (found) {
     return found;
   }
-  return { code: "free", name: "FREE", maxMembers: 50, monthlyPriceJpy: 0 };
+  return { code: "free", name: "FREE", maxMembers: KENBEI_MAX_MEMBERS, monthlyPriceJpy: 0 };
 }
 
 export function planAllowsMemberCount(
@@ -73,8 +84,8 @@ export function seatLimitError(planCode: string | null | undefined, nextMemberCo
   if (plan.code === "business" || plan.code === "enterprise") {
     return null;
   }
-  if (nextMemberCount >= 51) {
-    return BUSINESS_SEAT_CONSULT_MESSAGE;
+  if (nextMemberCount > KENBEI_MAX_MEMBERS) {
+    return SEAT_CONSULT_MESSAGE;
   }
   return null;
 }

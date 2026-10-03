@@ -1,140 +1,102 @@
-import { normalizeBillingPlanCode, type BillingAccessKind } from "@kensapo/domain";
+import Link from "next/link";
+import { KENBEI_PLAN_NAME, type BillingAccessKind } from "@kensapo/domain";
 import { startCheckoutFormAction } from "@/features/billing/actions";
 import { CheckoutSubmitButton } from "@/features/billing/checkout-submit-button";
 import {
+  KENBEI_INCLUDED,
+  KENBEI_PRICE_LABEL,
+  KENBEI_PRICE_NOTE,
+  checkoutButtonLabel,
   currentPlanHeadline,
-  monthlyPriceLabel,
-  planUseLine,
-  trialPlanLabel,
+  dailyPriceLabel,
 } from "@/features/billing/plan-copy";
-import { KenbeiFlow } from "@/features/product/kenbei-flow";
-import { BILLING_HEADLINE, BILLING_SUPPORT } from "@/features/product/workflow";
 
-function PlanCheckoutForm({
-  planCode,
-  label,
-  buttonClassName,
-}: {
-  planCode: "standard" | "business";
-  label: string;
-  buttonClassName?: string;
-}) {
+function CheckoutForm({ label }: { label: string }) {
   return (
     <form action={startCheckoutFormAction}>
-      <input type="hidden" name="planCode" value={planCode} />
-      <CheckoutSubmitButton label={label} className={buttonClassName} />
+      <input type="hidden" name="planCode" value="standard" />
+      <CheckoutSubmitButton label={label} />
     </form>
   );
 }
 
 export function PlanBillingPanel({
-  planCode,
   status,
   cancelAtPeriodEnd,
   access,
+  trialDaysLeft,
   variant,
 }: {
   planCode: string;
   status: string;
   cancelAtPeriodEnd: boolean;
   access: BillingAccessKind;
+  trialDaysLeft?: number | null;
   variant: "settings" | "billing";
 }) {
-  const normalized = normalizeBillingPlanCode(planCode);
+  const paid = access === "paid_active";
   const locked = access === "trial_expired" || access === "paid_inactive";
-  const emphasize = variant === "settings" && (access === "trial_active" || locked);
-  const statusLabel = status === "active" ? "利用中" : status === "trialing" ? "無料体験" : status;
-  const ink = emphasize ? "text-white/80" : "text-zinc-600";
-  const muted = emphasize ? "text-white/70" : "text-zinc-500";
+  const headline = currentPlanHeadline("", access);
+
+  if (variant === "settings") {
+    return (
+      <Link
+        href="/settings/billing"
+        className={`kb-tap flex items-center justify-between gap-4 rounded-3xl p-5 ${
+          locked ? "bg-[var(--kb-ink)] text-white" : "bg-white ring-1 ring-[var(--kb-line)]"
+        }`}
+      >
+        <span className="min-w-0">
+          <span className={`block text-sm ${locked ? "text-amber-200" : "text-zinc-500"}`}>ご契約</span>
+          <span className="mt-1 block font-semibold">
+            {headline}
+            {access === "trial_active" && trialDaysLeft != null ? `（残り${trialDaysLeft}日）` : ""}
+          </span>
+          {cancelAtPeriodEnd ? <span className="mt-1 block text-sm opacity-70">期末で解約予約済み</span> : null}
+        </span>
+        <span className={`shrink-0 text-sm font-medium ${locked ? "text-white" : "text-[var(--kb-amber)]"}`}>
+          {paid ? "確認" : "契約へ"} →
+        </span>
+      </Link>
+    );
+  }
 
   return (
-    <section
-      className={
-        emphasize
-          ? "rounded-3xl bg-[var(--kb-ink)] p-5 text-white"
-          : "rounded-3xl bg-[var(--kb-card)] p-5 ring-1 ring-[var(--kb-line)]"
-      }
-    >
-      <p className={`text-sm font-medium ${emphasize ? "text-amber-200" : "text-[var(--kb-amber)]"}`}>会社の導入</p>
-      <h2 className="mt-1 text-xl font-semibold leading-snug tracking-tight">{BILLING_HEADLINE}</h2>
-      <p className={`mt-2 text-sm ${muted}`}>
-        {currentPlanHeadline(planCode, access)}
-        {status && status !== "active" && access !== "trial_active" && access !== "trial_expired" ? ` / ${statusLabel}` : ""}
-        {cancelAtPeriodEnd ? "（期末で解約予約）" : ""}
-      </p>
-      <div className="mt-4">
-        <KenbeiFlow compare tone={emphasize ? "dark" : "light"} />
+    <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--kb-line)]">
+      <div className="bg-[var(--kb-ink)] p-6 text-white">
+        <p className="text-sm font-medium text-amber-200">{KENBEI_PLAN_NAME}</p>
+        <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
+          <span className="text-4xl font-semibold tabular-nums tracking-tight">{KENBEI_PRICE_LABEL}</span>
+          <span className="text-sm text-white/70">（{dailyPriceLabel()}）</span>
+        </p>
+        <p className="mt-2 text-sm text-white/70">{KENBEI_PRICE_NOTE}</p>
       </div>
-      <p className={`mt-4 text-sm leading-6 ${ink}`}>{BILLING_SUPPORT}</p>
-
-      <article
-        className={`mt-5 rounded-2xl p-4 ${
-          emphasize ? "bg-white/10" : "bg-white ring-1 ring-[var(--kb-line)]"
-        } ${access === "trial_active" || access === "trial_expired" ? "ring-2 ring-[var(--kb-amber)]" : ""}`}
-      >
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-sm font-medium text-[var(--kb-amber)]">{trialPlanLabel()}</p>
-          {access === "trial_active" ? <p className="text-sm font-medium">利用中</p> : null}
-          {access === "trial_expired" ? <p className="text-sm font-medium">終了</p> : null}
-        </div>
-        <p className={`mt-2 text-sm leading-6 ${emphasize ? "text-white/85" : "text-zinc-600"}`}>
-          {planUseLine("free")}
+      <div className="p-6">
+        <p className="text-base font-semibold" data-testid="plan-status">
+          {headline}
+          {access === "trial_active" && trialDaysLeft != null ? `（残り${trialDaysLeft}日）` : ""}
+          {status && status !== "active" && status !== "trialing" ? ` / ${status}` : ""}
+          {cancelAtPeriodEnd ? "（期末で解約予約）" : ""}
         </p>
-      </article>
-
-      <div className="mt-3 grid gap-3 lg:grid-cols-2">
-        <article
-          className={`rounded-2xl p-5 ${
-            emphasize ? "bg-white text-[var(--kb-ink)]" : "bg-white ring-1 ring-[var(--kb-line)]"
-          } ${normalized === "standard" && access === "paid_active" ? "ring-2 ring-[var(--kb-amber)]" : "ring-1 ring-[var(--kb-amber)]/40"}`}
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-medium text-[var(--kb-amber)]">STANDARD</p>
-            <span className="rounded-full bg-[#fff4eb] px-2 py-0.5 text-xs font-medium text-[var(--kb-amber)]">
-              会社導入
-            </span>
-            {normalized === "standard" && access === "paid_active" ? <span className="text-sm font-medium">契約中</span> : null}
+        <ul className="mt-4 flex flex-col gap-2 text-sm leading-6 text-zinc-700">
+          {KENBEI_INCLUDED.map((item) => (
+            <li key={item} className="flex gap-2">
+              <span aria-hidden className="font-semibold text-[var(--kb-amber)]">
+                ✓
+              </span>
+              {item}
+            </li>
+          ))}
+        </ul>
+        {paid ? null : (
+          <div className="mt-6">
+            <CheckoutForm label={checkoutButtonLabel(access)} />
+            <p className="mt-3 text-center text-xs text-zinc-500">
+              カードはこのあとの支払い画面（Stripe）で登録します。
+            </p>
           </div>
-          <p className="mt-2 text-3xl font-semibold tabular-nums">{monthlyPriceLabel("standard")}</p>
-          <p className="mt-2 text-sm leading-6 text-zinc-600">{planUseLine("standard")}</p>
-          <div className="mt-4">
-            <PlanCheckoutForm planCode="standard" label="STANDARDを導入" />
-          </div>
-        </article>
-        <article
-          className={`rounded-2xl p-4 ${
-            emphasize ? "bg-white text-[var(--kb-ink)]" : "bg-white ring-1 ring-[var(--kb-line)]"
-          } ${normalized === "business" && access === "paid_active" ? "ring-2 ring-[var(--kb-amber)]" : ""}`}
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-medium text-[var(--kb-amber)]">BUSINESS</p>
-            {normalized === "business" && access === "paid_active" ? <span className="text-sm font-medium">契約中</span> : null}
-          </div>
-          <p className="mt-2 text-2xl font-semibold tabular-nums">{monthlyPriceLabel("business")}</p>
-          <p className="mt-2 text-sm leading-6 text-zinc-600">{planUseLine("business")}</p>
-          <div className="mt-4">
-            <PlanCheckoutForm
-              planCode="business"
-              label="BUSINESSを導入"
-              buttonClassName={emphasize ? "bg-[var(--kb-ink)] text-white" : undefined}
-            />
-          </div>
-        </article>
+        )}
       </div>
-
-      {variant === "settings" ? (
-        <p className={`mt-4 text-sm ${muted}`}>
-          契約の確認や解約は{" "}
-          <a href="/settings/billing" className={`underline ${emphasize ? "text-white" : "text-zinc-800"}`}>
-            プラン・お支払い
-          </a>
-          から進めます。
-        </p>
-      ) : (
-        <p className="mt-4 text-sm text-zinc-500">
-          ダウングレードや支払い方法の変更は、「契約内容を確認・変更」から行います。カードはお支払い手続きのときに登録します。
-        </p>
-      )}
     </section>
   );
 }

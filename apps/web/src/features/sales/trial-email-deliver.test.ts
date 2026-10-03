@@ -63,7 +63,7 @@ describe("trial email delivery", () => {
     expect(inbox[0]?.text).toMatch(/現場ごとの写真/);
     expect(inbox[0]?.text).toMatch(/日報PDF/);
     expect(inbox[0]?.text).toMatch(/AI軍師/);
-    expect(inbox[0]?.text).toMatch(/39,800円（税込/);
+    expect(inbox[0]?.text).toMatch(/9,800円（税込/);
     expect(inbox[1]?.subject).toMatch(/現場写真と残作業/);
     expect(inbox[1]?.text).toMatch(/開始から3日/);
     expect(inbox[2]?.subject).toMatch(/終了が近づいています/);

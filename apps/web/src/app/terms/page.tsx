@@ -50,8 +50,8 @@ export default function TermsPage() {
           <section>
             <h2 className="text-lg font-semibold text-[var(--kb-ink)]">無料体験と有料プラン</h2>
             <p className="mt-2">
-              新規利用について、14日間の無料体験をご案内しています。継続利用は STANDARD または BUSINESS
-              などの有料プランをご契約ください。料金はアプリ内の請求設定に表示される内容が優先されます。無料体験の開始だけで自動課金はしません。
+              新規利用について、14日間の無料体験をご案内しています。継続利用は有料プラン（月額9,800円・税込）を
+              ご契約ください。料金はアプリ内の請求設定に表示される内容が優先されます。無料体験の開始だけで自動課金はしません。
             </p>
           </section>
           <section>
