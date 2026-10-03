@@ -18,13 +18,13 @@ export const HOW_TO_STEPS = [
   },
   {
     title: "出す",
-    body: "今日の写真と作業から日報の下書きができます。確認して確定すれば、A4・PDFでそのまま提出できます。",
+    body: "日報の画面を開くと今日の写真が付いています。作業をタップで書き足して確定すれば、A4・PDFでそのまま提出できます。",
   },
 ] as const;
 
 export const LANDING_PAINS = [
   { before: "写真がスマホ・LINE・PCにバラバラ", after: "現場ごとに1か所へ" },
-  { before: "事務所に戻ってからExcelで日報", after: "現場で下書き、確認するだけ" },
+  { before: "事務所に戻ってからExcelで日報", after: "現場でその場で書いて、そのままPDF" },
   { before: "残作業は口頭とメモ", after: "期限つきタスクでチーム共有" },
 ] as const;
 

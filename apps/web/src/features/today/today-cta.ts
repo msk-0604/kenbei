@@ -52,7 +52,7 @@ export function todaySteps(input: {
       key: "report",
       title: "日報を出す",
       status:
-        input.reportStatus === "confirmed" ? "確定済み" : input.reportStatus === "draft" ? "下書きあり・確認待ち" : "まだ",
+        input.reportStatus === "confirmed" ? "確定済み" : input.reportStatus === "draft" ? "書きかけ" : "まだ",
       done: input.reportStatus === "confirmed",
     },
   ];

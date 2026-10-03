@@ -193,6 +193,7 @@ export function ReportEditor({
             required
             value={body}
             onChange={(event) => setBody(event.target.value)}
+            placeholder="例）2F 配管工事、外壁の下地確認"
             className="mt-1 min-h-28 w-full rounded-xl border border-zinc-200 px-4 py-3 text-base"
           />
         </label>
