@@ -169,7 +169,7 @@ export function ProjectDetailScreen() {
       >
         <Text style={styles.secondaryText}>この現場の工程</Text>
       </Pressable>
-      <Text style={styles.muted}>似た現場・AI要約は Web の現場概要で確認できます。</Text>
+      <Text style={styles.muted}>現場の詳しい情報は Web の現場画面で確認できます。</Text>
     </ScrollView>
   );
 }

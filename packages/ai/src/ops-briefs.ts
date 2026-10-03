@@ -51,7 +51,7 @@ export function briefDelayRisk(facts: OpsBriefFacts): string {
     "【遅延リスク】",
     `${delayed.join("、")} が遅れています。`,
     similar.length > 0 ? `似た現場の参考: ${similar.join(" / ")}` : "比較できる類似現場はまだ少ないです。",
-    "AIは工程を変更しません。復旧タスクは人が確認して追加してください。",
+    "KENBEIは工程を変更しません。復旧タスクは人が確認して追加してください。",
   ].join("\n");
 }
 
