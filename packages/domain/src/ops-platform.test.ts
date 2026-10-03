@@ -113,7 +113,7 @@ describe("seat limit", () => {
     expect(seatLimitError("free", 50)).toBeNull();
     expect(seatLimitError("free", 51)).toMatch(/51名以上/);
     expect(seatLimitError("standard", 50)).toBeNull();
-    expect(seatLimitError("pro", 51)).toMatch(/BUSINESS/);
+    expect(seatLimitError("pro", 51)).toMatch(/お問い合わせ/);
     expect(seatLimitError("business", 80)).toBeNull();
     expect(seatLimitError("enterprise", 80)).toBeNull();
   });

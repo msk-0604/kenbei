@@ -16,13 +16,13 @@ export async function generateMetadata(): Promise<Metadata> {
     return {};
   }
   return {
-    title: "KENBEI | 現場写真・残作業・日報を、ひとつに。",
+    title: "KENBEI | 現場が終わったら、15分で日報まで。月額9,800円",
     description:
-      "建設会社の現場監督・施工管理者向け。現場ごとの写真、タスク、進捗をまとめて管理し、日報をPDFで出力できます。",
+      "施工管理者・現場監督向け。写真を撮る、作業にチェック、日報を出すの3ステップ。会社まるごと月額9,800円（税込）、14日間無料。",
     openGraph: {
-      title: "KENBEI | 現場写真・残作業・日報を、ひとつに。",
+      title: "KENBEI | 現場が終わったら、15分で日報まで。月額9,800円",
       description:
-        "建設会社の現場監督・施工管理者向け。現場ごとの写真、タスク、進捗をまとめて管理し、日報をPDFで出力できます。",
+        "施工管理者・現場監督向け。写真を撮る、作業にチェック、日報を出すの3ステップ。会社まるごと月額9,800円（税込）、14日間無料。",
     },
   };
 }
@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ created?: string }>;
+  searchParams: Promise<{ created?: string; project?: string }>;
 }) {
   const workspace = await getWorkspace();
   if (!workspace) {
@@ -61,6 +61,7 @@ export default async function HomePage({
           reason: String(item.evidence.reason ?? ""),
         }))}
         focusTasks={focusTasks}
+        selectedProjectId={params.project ?? null}
         createdProject={params.created === "project"}
       />
     </AppShell>

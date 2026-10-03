@@ -34,14 +34,14 @@ function PlanLine() {
         const row = data as { plan_code: string; status: string } | null;
         if (row) {
           const label =
-            row.plan_code === "free"
-              ? "FREE"
-              : row.plan_code === "business"
-                ? "BUSINESS"
+            row.status === "trialing"
+              ? "無料体験"
+              : row.plan_code === "free"
+                ? "FREE"
                 : row.plan_code === "enterprise"
                   ? "ENTERPRISE"
-                  : "STANDARD";
-          setPlan(`${label} / ${row.status}`);
+                  : "KENBEI 月額9,800円";
+          setPlan(`${label} / ${row.status === "active" ? "利用中" : row.status}`);
         }
       });
   }, [workspace?.organizationId]);

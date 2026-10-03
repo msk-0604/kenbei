@@ -43,6 +43,7 @@ export default async function SettingsPage() {
             status={entitlement.status}
             cancelAtPeriodEnd={entitlement.cancelAtPeriodEnd}
             access={entitlement.access}
+            trialDaysLeft={entitlement.trialDaysLeft}
             variant="settings"
           />
         </div>

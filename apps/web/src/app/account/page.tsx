@@ -7,6 +7,41 @@ import { can, requireWorkspace } from "@/lib/authz-guard";
 
 export const dynamic = "force-dynamic";
 
+type MenuItem = { href: string; label: string; note: string; badge?: number };
+
+function MenuGroup({ title, items }: { title: string; items: MenuItem[] }) {
+  if (items.length === 0) {
+    return null;
+  }
+  return (
+    <section>
+      <h2 className="text-sm font-medium text-zinc-500">{title}</h2>
+      <ul className="mt-2 overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--kb-line)]">
+        {items.map((item, index) => (
+          <li key={item.href} className={index > 0 ? "border-t border-[var(--kb-line)]" : undefined}>
+            <Link href={item.href} className="kb-tap flex min-h-14 items-center justify-between gap-3 px-5 py-3">
+              <span className="min-w-0">
+                <span className="block font-medium">{item.label}</span>
+                <span className="block text-sm text-zinc-500">{item.note}</span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2">
+                {item.badge ? (
+                  <span className="rounded-full bg-[var(--kb-amber)] px-2 py-0.5 text-xs font-semibold text-white">
+                    {item.badge}
+                  </span>
+                ) : null}
+                <span aria-hidden className="text-zinc-400">
+                  ›
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default async function AccountPage() {
   const workspace = await requireWorkspace();
   const notifications = await listUnreadNotifications(workspace);
@@ -15,46 +50,41 @@ export default async function AccountPage() {
     memberManage: can(workspace, "member.manage"),
   });
 
+  const daily: MenuItem[] = [
+    { href: "/photos", label: "写真一覧", note: "現場ごとに探す・整理する" },
+    { href: "/tasks", label: "タスク", note: "全現場の残作業" },
+    {
+      href: "/confirm",
+      label: "確認待ち",
+      note: "日報・写真・音声報告の確認",
+      badge: notifications.length,
+    },
+  ];
+  const tools: MenuItem[] = [
+    { href: "/capture", label: "音声で報告", note: "話すだけで記録" },
+    { href: "/strategist", label: "AI軍師", note: "現場の段取りを相談" },
+    { href: "/knowledge", label: "社内資料", note: "マニュアル・過去資料" },
+  ];
+  const admin: MenuItem[] = [
+    ...(links.memberManage ? [{ href: "/settings", label: "メンバー管理", note: "招待・権限・会社のロゴ" }] : []),
+    ...(links.billing ? [{ href: "/settings/billing", label: "ご契約", note: "月額9,800円・お支払い・解約" }] : []),
+    ...(links.dataExport ? [{ href: "/settings/data", label: "データを保存", note: "まとめてダウンロード" }] : []),
+  ];
+
   return (
     <AppShell>
-      <h1 className="text-3xl font-semibold tracking-tight">自分</h1>
-      <p className="mt-3 text-base text-zinc-600">{workspace.displayName}</p>
-      <p className="text-base text-zinc-600">{workspace.organizationName}</p>
-      <p className="mt-1 text-sm text-zinc-500">
-        {memberFacingRoleLabel(workspace.roleCode) || workspace.roleName}
-      </p>
-      <nav className="mt-8 flex flex-col gap-3">
-        <Link href="/strategist" className="kb-tap rounded-2xl bg-white px-4 py-3 ring-1 ring-[var(--kb-line)]">
-          AI軍師
-        </Link>
-        {links.memberManage ? (
-          <Link href="/settings" className="kb-tap rounded-2xl bg-white px-4 py-3 ring-1 ring-[var(--kb-line)]">
-            メンバー管理
-          </Link>
-        ) : null}
-        {links.billing ? (
-          <Link href="/settings/billing" className="kb-tap rounded-2xl bg-white px-4 py-3 ring-1 ring-[var(--kb-line)]">
-            会社の導入
-          </Link>
-        ) : null}
-        {links.dataExport ? (
-          <Link href="/settings/data" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
-            データを保存
-          </Link>
-        ) : null}
-        <Link href="/confirm" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
-          確認待ち {notifications.length > 0 ? `（${notifications.length}）` : ""}
-        </Link>
-        <Link href="/knowledge" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
-          社内資料
-        </Link>
-        <Link href="/reports" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
-          日報
-        </Link>
-        <Link href="/capture" className="rounded-2xl bg-white px-4 py-3 ring-1 ring-zinc-100">
-          音声で報告
-        </Link>
-      </nav>
+      <h1 className="text-3xl font-semibold tracking-tight">メニュー</h1>
+      <div className="mt-4 rounded-3xl bg-[var(--kb-card)] px-5 py-4 ring-1 ring-[var(--kb-line)]">
+        <p className="font-medium">{workspace.displayName}</p>
+        <p className="text-sm text-zinc-500">
+          {workspace.organizationName} · {memberFacingRoleLabel(workspace.roleCode) || workspace.roleName}
+        </p>
+      </div>
+      <div className="mt-6 flex flex-col gap-6">
+        <MenuGroup title="毎日使う" items={daily} />
+        <MenuGroup title="便利な機能" items={tools} />
+        <MenuGroup title="会社の管理" items={admin} />
+      </div>
       <div className="mt-10">
         <SignOutButton />
       </div>

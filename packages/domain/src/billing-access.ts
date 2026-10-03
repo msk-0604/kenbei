@@ -20,10 +20,10 @@ export type BillingAccessInput = {
 const PAID_ACTIVE_STATUSES = new Set(["active"]);
 
 export const TRIAL_EXPIRED_WRITE_MESSAGE =
-  "14日間の無料体験が終了しました。引き続きKENBEIをご利用いただくには、STANDARDまたはBUSINESSをご契約ください。";
+  "14日間の無料体験が終了しました。引き続きご利用いただくには、KENBEI（月額9,800円・税込）をご契約ください。";
 
 export const PAID_INACTIVE_WRITE_MESSAGE =
-  "ご契約が無効です。引き続きKENBEIをご利用いただくには、STANDARDまたはBUSINESSをご契約ください。";
+  "ご契約が無効です。引き続きご利用いただくには、KENBEI（月額9,800円・税込）をご契約ください。";
 
 function asDate(value: Date | string | undefined): Date {
   if (!value) {

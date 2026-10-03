@@ -3,6 +3,7 @@ import {
   todayPhotoHref,
   todayReportHref,
   todayTaskHref,
+  todaySteps,
   TODAY_PHOTO_LABEL,
   TODAY_REPORT_DONE_LABEL,
   TODAY_REPORT_LABEL,
@@ -30,5 +31,19 @@ describe("Today core CTAs", () => {
 
   it("opens an existing daily report instead of creating another", () => {
     expect(todayReportHref("rep-1")).toBe("/reports/rep-1");
+  });
+});
+
+describe("todaySteps", () => {
+  it("starts with photos on a fresh day", () => {
+    const result = todaySteps({ photoCount: 0, openFocusTaskCount: 2, reportStatus: "none" });
+    expect(result.next).toBe("photo");
+    expect(result.steps.map((step) => step.status)).toEqual(["まだ0枚", "残り 2件", "まだ"]);
+  });
+
+  it("moves to tasks, then the report, then finishes", () => {
+    expect(todaySteps({ photoCount: 3, openFocusTaskCount: 1, reportStatus: "none" }).next).toBe("task");
+    expect(todaySteps({ photoCount: 3, openFocusTaskCount: 0, reportStatus: "draft" }).next).toBe("report");
+    expect(todaySteps({ photoCount: 3, openFocusTaskCount: 0, reportStatus: "confirmed" }).next).toBeNull();
   });
 });

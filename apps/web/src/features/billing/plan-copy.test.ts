@@ -1,34 +1,40 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_BILLING_PLANS } from "@kensapo/domain";
 import {
+  KENBEI_INCLUDED,
+  KENBEI_PRICE_LABEL,
+  KENBEI_PRICE_NOTE,
+  checkoutButtonLabel,
   currentPlanHeadline,
+  dailyPriceLabel,
   isFreePlan,
   monthlyPriceLabel,
-  planUseLine,
   trialPlanLabel,
 } from "./plan-copy";
-import { BILLING_HEADLINE, BILLING_SUPPORT } from "../product/workflow";
 
 describe("plan-copy", () => {
-  it("keeps official paid prices without showing seat tiers in billing copy", () => {
-    expect(monthlyPriceLabel("standard")).toBe("月額 39,800円");
-    expect(monthlyPriceLabel("business")).toBe("月額 65,000円");
-    expect(DEFAULT_BILLING_PLANS.find((plan) => plan.code === "standard")?.monthlyPriceJpy).toBe(39_800);
-    const visible = [trialPlanLabel(), monthlyPriceLabel("standard"), monthlyPriceLabel("business"), planUseLine("standard")].join(
-      " ",
-    );
+  it("shows one paid price of 9,800 yen", () => {
+    expect(monthlyPriceLabel("standard")).toBe("月額 9,800円");
+    expect(KENBEI_PRICE_LABEL).toBe("月額 9,800円");
+    expect(DEFAULT_BILLING_PLANS.find((plan) => plan.code === "standard")?.monthlyPriceJpy).toBe(9_800);
+    expect(dailyPriceLabel()).toBe("1日あたり約327円");
+    expect(KENBEI_PRICE_NOTE).toMatch(/税込/);
+    const visible = [
+      trialPlanLabel(),
+      KENBEI_PRICE_LABEL,
+      KENBEI_PRICE_NOTE,
+      ...KENBEI_INCLUDED,
+      checkoutButtonLabel("trial_active"),
+      checkoutButtonLabel("trial_expired"),
+    ].join(" ");
     expect(visible).toMatch(/14日間無料体験/);
-    expect(visible).not.toMatch(/1〜3名|4〜30名|31〜50名|51名以上|月額 0円/);
+    expect(visible).not.toMatch(/39,800|65,000|STANDARD|BUSINESS|月額 0円/);
   });
 
-  it("frames STANDARD as a company plan", () => {
-    expect(currentPlanHeadline("free", "trial_active")).toBe("現在 14日間無料体験");
+  it("describes the current state in plain words", () => {
+    expect(currentPlanHeadline("free", "trial_active")).toMatch(/無料体験中/);
+    expect(currentPlanHeadline("pro", "paid_active")).toBe("KENBEIをご契約中です");
     expect(currentPlanHeadline("free", "grandfathered_free")).toBe("現在 FREE");
     expect(isFreePlan("pro")).toBe(false);
-    expect(planUseLine("standard")).toMatch(/標準業務/);
-    expect(planUseLine("business")).toMatch(/同じ流れ/);
-    const salesCopy = [BILLING_HEADLINE, BILLING_SUPPORT, planUseLine("standard"), trialPlanLabel()].join(" ");
-    expect(salesCopy).not.toMatch(/4人目|1席|席代/);
-    expect(salesCopy).not.toMatch(/使える流れは同じ/);
   });
 });
