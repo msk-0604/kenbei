@@ -47,14 +47,14 @@ export function PlanBillingPanel({
         }`}
       >
         <span className="min-w-0">
-          <span className={`block text-sm ${locked ? "text-amber-200" : "text-zinc-500"}`}>ご契約</span>
+          <span className={`block text-sm ${locked ? "text-sky-300" : "text-zinc-500"}`}>ご契約</span>
           <span className="mt-1 block font-semibold">
             {headline}
             {access === "trial_active" && trialDaysLeft != null ? `（残り${trialDaysLeft}日）` : ""}
           </span>
           {cancelAtPeriodEnd ? <span className="mt-1 block text-sm opacity-70">期末で解約予約済み</span> : null}
         </span>
-        <span className={`shrink-0 text-sm font-medium ${locked ? "text-white" : "text-[var(--kb-amber)]"}`}>
+        <span className={`shrink-0 text-sm font-medium ${locked ? "text-white" : "text-[var(--kb-accent)]"}`}>
           {paid ? "確認" : "契約へ"} →
         </span>
       </Link>
@@ -62,9 +62,9 @@ export function PlanBillingPanel({
   }
 
   return (
-    <section className="overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--kb-line)]">
+    <section className="kb-elev overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--kb-line)]">
       <div className="bg-[var(--kb-ink)] p-6 text-white">
-        <p className="text-sm font-medium text-amber-200">{KENBEI_PLAN_NAME}</p>
+        <p className="text-sm font-medium text-sky-300">{KENBEI_PLAN_NAME}</p>
         <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
           <span className="text-4xl font-semibold tabular-nums tracking-tight">{KENBEI_PRICE_LABEL}</span>
           <span className="text-sm text-white/70">（{dailyPriceLabel()}）</span>
@@ -81,7 +81,7 @@ export function PlanBillingPanel({
         <ul className="mt-4 flex flex-col gap-2 text-sm leading-6 text-zinc-700">
           {KENBEI_INCLUDED.map((item) => (
             <li key={item} className="flex gap-2">
-              <span aria-hidden className="font-semibold text-[var(--kb-amber)]">
+              <span aria-hidden className="font-semibold text-[var(--kb-accent)]">
                 ✓
               </span>
               {item}

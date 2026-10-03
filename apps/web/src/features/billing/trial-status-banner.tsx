@@ -14,7 +14,7 @@ export function TrialStatusBanner({
       <p className="mb-4 flex flex-wrap items-center gap-x-2 text-sm text-zinc-500" data-testid="trial-remaining">
         <span>無料体験 残り{daysRemaining}日</span>
         {canManageBilling ? (
-          <a href="/settings/billing" className="font-medium text-[var(--kb-amber)] underline-offset-2 hover:underline">
+          <a href="/settings/billing" className="font-medium text-[var(--kb-accent)] underline-offset-2 hover:underline">
             続けるなら月額9,800円
           </a>
         ) : null}

@@ -123,7 +123,7 @@ function PhotosCard({ proposal }: { proposal: Extract<StrategistProposal, { kind
               <li key={item.photoId} className="flex items-center justify-between gap-3 rounded-xl bg-white/80 px-3 py-2 text-sm ring-1 ring-zinc-100">
                 <input type="hidden" name="photoIds" value={item.photoId} />
                 <span className="min-w-0 truncate text-zinc-700">{item.label}</span>
-                <a className="shrink-0 text-sm font-medium text-[var(--kb-amber)]" href={`/photos/${item.photoId}`}>
+                <a className="shrink-0 text-sm font-medium text-[var(--kb-accent)]" href={`/photos/${item.photoId}`}>
                   開く
                 </a>
               </li>

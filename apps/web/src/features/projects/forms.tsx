@@ -26,7 +26,7 @@ export function CreateProjectForm() {
       <button
         type="button"
         onClick={() => setDetailsOpen((open) => !open)}
-        className="kb-tap min-h-12 rounded-2xl bg-[#f3eee6] px-4 text-sm font-medium text-zinc-700"
+        className="kb-tap min-h-12 rounded-2xl bg-[var(--kb-soft)] px-4 text-sm font-medium text-zinc-700"
       >
         {detailsOpen ? "詳細を閉じる" : "詳細を入力（任意）"}
       </button>
