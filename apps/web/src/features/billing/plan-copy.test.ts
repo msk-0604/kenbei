@@ -34,7 +34,7 @@ describe("plan-copy", () => {
   it("describes the current state in plain words", () => {
     expect(currentPlanHeadline("free", "trial_active")).toMatch(/無料体験中/);
     expect(currentPlanHeadline("pro", "paid_active")).toBe("KENBEIをご契約中です");
-    expect(currentPlanHeadline("free", "grandfathered_free")).toBe("現在 FREE");
+    expect(currentPlanHeadline("free", "grandfathered_free")).toBe("いまは無料でご利用中です");
     expect(isFreePlan("pro")).toBe(false);
   });
 });
