@@ -27,9 +27,6 @@ import { DrawingUploadForm } from "@/features/drawings/upload-form";
 import { listProjectChatMembers, listProjectMessages } from "@/features/chat/queries";
 import { ProjectChatPanel } from "@/features/chat/chat-panel";
 import { GanttChart } from "@/features/gantt/gantt-chart";
-import { SimilarProjectsPanel } from "@/features/similar/panel";
-import { similarProjectsFor } from "@/features/similar/queries";
-import { StrategistForm } from "@/features/strategist/form";
 import { workspaceWritesAllowed } from "@kensapo/domain";
 import { can, requireWorkspace } from "@/lib/authz-guard";
 import { getEntitlement } from "@/lib/entitlement";
@@ -77,12 +74,10 @@ export default async function ProjectDetailPage({
 
   const needAssignments = tab === "overview" || tab === "members";
   const needMembers = tab === "tasks" || tab === "members";
-  const needSimilar = tab === "overview";
-  const [assignments, members, processes, similar] = await Promise.all([
+  const [assignments, members, processes] = await Promise.all([
     needAssignments ? listAssignments(id) : Promise.resolve([]),
     needMembers ? listOrgMembers() : Promise.resolve([]),
     listProjectProcesses(id),
-    needSimilar ? similarProjectsFor(workspace.organizationId, id) : Promise.resolve(null),
   ]);
   const manager =
     assignments.find((row) => row.roleInProject === "supervisor" || row.roleInProject === "manager") ??
@@ -161,11 +156,6 @@ export default async function ProjectDetailPage({
             <a href={`/api/pdf/project/${id}`} className="mt-3 inline-flex text-sm underline">
               現場サマリーPDF
             </a>
-          </section>
-          <SimilarProjectsPanel result={similar} />
-          <section className="rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
-            <h2 className="mb-3 text-base font-medium">この現場のAI軍師</h2>
-            <StrategistForm projectId={id} />
           </section>
           {canEdit ? (
             <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-zinc-100">
@@ -323,10 +313,6 @@ async function ChatTab({
   ]);
   return (
     <div className="mt-6 flex flex-col gap-6">
-      <section className="rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
-        <h2 className="mb-3 text-base font-medium">チャットをAI軍師に聞く</h2>
-        <StrategistForm projectId={projectId} />
-      </section>
       <ProjectChatPanel
         projectId={projectId}
         organizationId={organizationId}
@@ -349,10 +335,6 @@ async function TasksTab({
   const tasks = await listProjectTasks(projectId);
   return (
     <div className="mt-6 flex flex-col gap-6">
-      <section className="rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
-        <h2 className="mb-3 text-base font-medium">タスクをAI軍師に聞く</h2>
-        <StrategistForm projectId={projectId} />
-      </section>
       <section className="rounded-3xl bg-white p-5 ring-1 ring-zinc-100">
         <h2 className="mb-3 text-base font-medium">今日の作業を追加</h2>
         <CreateTaskForm projectId={projectId} members={members} />

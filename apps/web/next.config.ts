@@ -15,6 +15,12 @@ const nextConfig: NextConfig = {
     "@kensapo/similar-projects",
   ],
   experimental: {
+    // Keep visited/prefetched pages in the client router cache briefly so
+    // switching tabs is instant. Server actions still revalidate on write.
+    staleTimes: {
+      dynamic: 30,
+      static: 60,
+    },
     serverActions: {
       bodySizeLimit: "12mb",
     },

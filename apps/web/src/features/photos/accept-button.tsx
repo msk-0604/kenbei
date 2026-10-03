@@ -2,8 +2,10 @@
 
 import { acceptPhotoProposalAction } from "@/features/photos/actions";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function AcceptPhotoButton({ photoId }: { photoId: string }) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   return (
@@ -18,7 +20,7 @@ export function AcceptPhotoButton({ photoId }: { photoId: string }) {
             setPending(false);
             setError(result?.error ?? null);
             if (!result?.error) {
-              window.location.reload();
+              router.refresh();
             }
           });
         }}
