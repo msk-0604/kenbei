@@ -4,6 +4,7 @@ export function isAnonymousPublicPath(pathname: string): boolean {
     pathname === "/privacy" ||
     pathname === "/terms" ||
     pathname === "/contact" ||
+    pathname === "/legal" ||
     pathname === "/login" ||
     pathname === "/signup" ||
     pathname === "/join" ||
@@ -18,7 +19,7 @@ export function isAnonymousPublicPath(pathname: string): boolean {
 }
 
 export function hideAppChrome(pathname: string, signedIn = false): boolean {
-  if (pathname === "/privacy" || pathname === "/terms" || pathname === "/contact") {
+  if (pathname === "/privacy" || pathname === "/terms" || pathname === "/contact" || pathname === "/legal") {
     return true;
   }
   if (pathname === "/" && !signedIn) {

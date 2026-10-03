@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { weatherLineForPdf } from "@kensapo/domain";
 import { AppShell } from "@/components/app-shell";
 import { ConfirmReportButton, ReportEditor } from "@/features/reports/forms";
-import { getReport } from "@/features/reports/queries";
+import { getPreviousReportText, getReport } from "@/features/reports/queries";
 import { searchPhotos } from "@/features/photos/queries";
 import { listProjectTasks } from "@/features/site-ops/queries";
 import { requireWorkspace } from "@/lib/authz-guard";
@@ -21,16 +21,17 @@ export default async function ReportDetailPage({
   if (!report) {
     notFound();
   }
-  const [photos, tasks] = await Promise.all([
+  const isDraft = report.status === "draft";
+  const [photos, tasks, previous] = await Promise.all([
     searchPhotos({
       projectId: report.projectId,
       from: report.workOn,
       to: report.workOn,
     }),
     listProjectTasks(report.projectId),
+    isDraft ? getPreviousReportText(report.projectId, report.workOn) : Promise.resolve(null),
   ]);
   const weatherLine = weatherLineForPdf(report.weather);
-  const isDraft = report.status === "draft";
 
   return (
     <AppShell>
@@ -50,6 +51,7 @@ export default async function ReportDetailPage({
             report={report}
             photos={photos}
             tasks={tasks.map((task) => ({ title: task.title, status: task.status }))}
+            previous={previous}
           />
         </div>
       ) : (
