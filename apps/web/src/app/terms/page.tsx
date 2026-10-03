@@ -68,9 +68,9 @@ export default function TermsPage() {
             </p>
           </section>
           <section>
-            <h2 className="text-lg font-semibold text-[var(--kb-ink)]">AI機能</h2>
+            <h2 className="text-lg font-semibold text-[var(--kb-ink)]">自動整理機能</h2>
             <p className="mt-2">
-              AIによる写真整理などの出力は補助情報です。現場判断・法令順守・安全の最終責任は利用者にあります。
+              写真の自動整理などの結果は補助情報です。現場判断・法令順守・安全の最終責任は利用者にあります。
             </p>
           </section>
           <section>

@@ -29,7 +29,7 @@ export function AcceptAllProposedButton({ count }: { count: number }) {
           });
         }}
       >
-        {pending ? "反映中…" : `AIの整理案をすべて確定（${count}枚）`}
+        {pending ? "反映中…" : `整理案をすべて確定（${count}枚）`}
       </button>
       {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
     </div>

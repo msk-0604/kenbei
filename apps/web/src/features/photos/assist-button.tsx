@@ -25,7 +25,7 @@ export function PhotoAssistButton({ photoId }: { photoId: string }) {
           });
         }}
       >
-        {pending ? "提案中…" : "AI説明の候補を出す"}
+        {pending ? "提案中…" : "説明の候補を出す"}
       </button>
       <p className="mt-2 text-xs text-zinc-500">確定はしません。下の「この整理で確定」が必要です。</p>
       {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}

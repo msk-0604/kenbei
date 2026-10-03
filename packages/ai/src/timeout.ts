@@ -3,7 +3,7 @@ export const MIN_AI_TIMEOUT_MS = 3_000;
 export const MAX_AI_TIMEOUT_MS = 120_000;
 
 export const AI_TIMEOUT_USER_MESSAGE =
-  "AIの応答が時間切れになりました。もう一度お試しください。";
+  "応答が時間切れになりました。もう一度お試しください。";
 
 export class AiTimeoutError extends Error {
   readonly code = "AI_TIMEOUT" as const;
