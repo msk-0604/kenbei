@@ -14,6 +14,7 @@ import { AppLink } from "@/components/app-nav";
 import { EmptyGuide } from "@/components/empty-guide";
 import { ActionNotice } from "@/components/action-notice";
 import { RevealPanel } from "@/components/reveal-panel";
+import { InstallHint } from "@/components/install-hint";
 import { emptyWorkspaceCreateProjectHref } from "@/features/projects/routes";
 import {
   TODAY_REPORT_DONE_LABEL,
@@ -155,6 +156,8 @@ export function TodayView({
           action={createProjectHref ? <AppLink href={createProjectHref}>最初の現場を登録する</AppLink> : undefined}
         />
       )}
+
+      <InstallHint />
 
       <OnboardingChecklist
         flags={onboarding}

@@ -4,6 +4,7 @@ import { weatherLineForPdf } from "@kensapo/domain";
 import { AppShell } from "@/components/app-shell";
 import { ConfirmReportButton, ReportEditor } from "@/features/reports/forms";
 import { getPreviousReportText, getReport } from "@/features/reports/queries";
+import { SharePdfButton } from "@/features/reports/share-pdf-button";
 import { searchPhotos } from "@/features/photos/queries";
 import { listProjectTasks } from "@/features/site-ops/queries";
 import { requireWorkspace } from "@/lib/authz-guard";
@@ -70,6 +71,13 @@ export default async function ReportDetailPage({
       )}
       <div className="mt-6 flex flex-col gap-3">
         {isDraft ? <ConfirmReportButton reportId={report.id} disabled={false} /> : null}
+        {report.status === "confirmed" ? (
+          <SharePdfButton
+            reportId={report.id}
+            fileName={`日報_${report.projectName}_${report.workOn}.pdf`}
+            title={`日報 ${report.projectName} ${report.workOn}`}
+          />
+        ) : null}
         {report.status === "confirmed" ? (
           <Link
             href={`/reports/${report.id}/print`}
