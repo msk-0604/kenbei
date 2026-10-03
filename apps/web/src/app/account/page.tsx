@@ -66,7 +66,9 @@ function BillingCard({ access, trialDaysLeft }: { access: BillingAccessKind; tri
       ? `無料体験 残り${trialDaysLeft ?? 0}日`
       : access === "trial_expired"
         ? "無料体験が終了しました"
-        : "ご契約が無効です";
+        : access === "grandfathered_free"
+          ? "いまは無料でご利用中です"
+          : "ご契約が無効です";
   return (
     <Link href="/settings/billing" className="kb-tap kb-elev block rounded-3xl bg-[var(--kb-ink)] p-5 text-white">
       <span className="block text-sm text-sky-300">{lead}</span>
@@ -114,7 +116,7 @@ export default async function AccountPage() {
         {memberFacingRoleLabel(workspace.roleCode) || workspace.roleName}
       </p>
       <div className="mt-6 flex flex-col gap-6">
-        {entitlement && entitlement.access !== "grandfathered_free" ? (
+        {entitlement ? (
           <BillingCard access={entitlement.access} trialDaysLeft={entitlement.trialDaysLeft} />
         ) : null}
         <MenuGroup title="毎日使う" items={daily} />

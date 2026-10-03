@@ -53,6 +53,9 @@ export function currentPlanHeadline(planCode: string, access?: BillingAccessKind
   if (access === "paid_inactive") {
     return "契約が無効です";
   }
+  if (access === "grandfathered_free") {
+    return "いまは無料でご利用中です";
+  }
   return `現在 ${billingPlanByCode(planCode).name}`;
 }
 
