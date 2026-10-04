@@ -70,7 +70,7 @@ export function OnboardingChecklist({
               >
                 <span className="flex items-center justify-between gap-3">
                   <span className="font-medium text-[var(--kb-ink)]">
-                    {experienceReady ? item.label : `${index + 1}. ${item.label}`}
+                    {experienceReady ? "メンバーを招待する" : `${index + 1}. ${item.label}`}
                   </span>
                   <span className={`shrink-0 text-sm ${done ? "text-emerald-700" : "text-[var(--kb-accent)]"}`}>
                     {done ? "完了" : "次へ"}
