@@ -1,60 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type Ready = { kind: "ready"; file: File } | { kind: "loading" } | { kind: "failed"; status: number | null };
 
 /**
  * Shares the report PDF through the phone's share sheet (LINE, mail, etc.).
+ * iOS Safari only opens the share sheet straight from a tap, so the PDF is
+ * fetched when the page opens and shared without awaiting anything first.
  * Where file sharing is not supported (most desktops), it downloads the PDF.
  */
 export function SharePdfButton({ reportId, fileName, title }: { reportId: string; fileName: string; title: string }) {
-  const [phase, setPhase] = useState<"idle" | "pending" | "downloaded">("idle");
-  const [error, setError] = useState<string | null>(null);
+  const url = `/api/pdf/report/${reportId}`;
+  const [pdf, setPdf] = useState<Ready>({ kind: "loading" });
+  const [note, setNote] = useState<string | null>(null);
 
-  async function share() {
-    setPhase("pending");
-    setError(null);
-    try {
-      const res = await fetch(`/api/pdf/report/${reportId}`);
-      if (!res.ok) {
-        throw new Error(String(res.status));
-      }
-      const blob = await res.blob();
-      const file = new File([blob], fileName, { type: "application/pdf" });
-      if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title });
-        setPhase("idle");
-        return;
-      }
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      link.click();
-      URL.revokeObjectURL(url);
-      setPhase("downloaded");
-    } catch (cause) {
-      setPhase("idle");
-      if (cause instanceof DOMException && cause.name === "AbortError") {
-        return;
-      }
-      setError("PDFを用意できませんでした。通信状況を確認して、もう一度押してください。");
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(url)
+      .then(async (res) => {
+        if (!res.ok) {
+          throw res.status;
+        }
+        const blob = await res.blob();
+        if (!cancelled) {
+          setPdf({ kind: "ready", file: new File([blob], fileName, { type: "application/pdf" }) });
+        }
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) {
+          setPdf({ kind: "failed", status: typeof cause === "number" ? cause : null });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [url, fileName]);
+
+  function download(file: File) {
+    const objectUrl = URL.createObjectURL(file);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = fileName;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    setNote("PDFをダウンロードしました。LINEやメールに添付して送ってください。");
+  }
+
+  function share() {
+    setNote(null);
+    if (pdf.kind === "failed") {
+      // Let the browser open the PDF itself; its own share button still works.
+      window.location.href = url;
+      return;
     }
+    if (pdf.kind !== "ready") {
+      return;
+    }
+    const data = { files: [pdf.file], title };
+    if (typeof navigator.canShare === "function" && navigator.canShare(data)) {
+      navigator.share(data).catch((cause: unknown) => {
+        if (cause instanceof DOMException && cause.name === "AbortError") {
+          return;
+        }
+        download(pdf.file);
+      });
+      return;
+    }
+    download(pdf.file);
   }
 
   return (
     <div className="flex flex-col gap-2">
       <button
         type="button"
-        onClick={() => void share()}
-        disabled={phase === "pending"}
+        onClick={share}
+        disabled={pdf.kind === "loading"}
         className="kb-tap min-h-12 rounded-2xl bg-[var(--kb-accent)] font-medium text-white disabled:opacity-60"
       >
-        {phase === "pending" ? "PDFを用意中…" : "PDFを送る（LINE・メールなど）"}
+        {pdf.kind === "loading" ? "PDFを準備中…" : "PDFを送る（LINE・メールなど）"}
       </button>
-      {phase === "downloaded" ? (
-        <p className="text-sm text-zinc-600">PDFをダウンロードしました。LINEやメールに添付して送ってください。</p>
+      {pdf.kind === "failed" ? (
+        <p className="text-sm text-red-600">
+          PDFの作成に失敗しました{pdf.status ? `（コード ${pdf.status}）` : ""}。ボタンを押すとPDFを直接開きます。
+        </p>
       ) : null}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {note ? <p className="text-sm text-zinc-600">{note}</p> : null}
     </div>
   );
 }
