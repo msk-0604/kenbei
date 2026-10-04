@@ -9,12 +9,11 @@ import {
 import { classifyPhotoHeuristic, type PhotoClassification } from "@kensapo/ai";
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { formString } from "@/lib/form";
-import { isUniqueConstraintError } from "@/features/photos/upload-safety";
+import { isUniqueConstraintError, photoSaveErrorMessage } from "@/features/photos/upload-safety";
 import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
 import { getAiService } from "@/lib/engines";
 import { listMemberProfileIdsWithPermission, notifyWorkspaceMembers } from "@/lib/notifications";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { toUserActionError } from "@/lib/user-error";
 
 export type RegisteredPhotoItem = {
   id: string;
@@ -100,7 +99,7 @@ export async function registerPhotosAction(input: {
         ids.push(item.id);
         continue;
       }
-      return { error: toUserActionError(error.message, "写真を保存") };
+      return { error: photoSaveErrorMessage(error.message) };
     }
     ids.push(item.id);
     if (proposed) {
