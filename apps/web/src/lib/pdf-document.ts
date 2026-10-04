@@ -1,6 +1,6 @@
 import { PDFDocument, rgb, StandardFonts, type PDFFont } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import { isVariableOpenTypeFont, loadPdfFontBytes } from "./pdf-font";
+import { loadPdfFontBytes } from "./pdf-font";
 
 const PAGE_WIDTH = 595.28;
 const PAGE_HEIGHT = 841.89;
@@ -80,8 +80,8 @@ export async function buildPdf(title: string, lines: string[]): Promise<Uint8Arr
     if (!fontBytes) {
       font = await doc.embedFont(StandardFonts.Helvetica);
     } else {
-      // fontkit subsetting of variable CJK fonts yields wrong advances (scattered glyphs).
-      font = await doc.embedFont(fontBytes, { subset: !isVariableOpenTypeFont(fontBytes) });
+      // fontkit subsetting drops CJK glyphs; the bundled font is pre-trimmed instead.
+      font = await doc.embedFont(fontBytes, { subset: false });
     }
   } catch {
     return { error: "日本語フォントをPDFに埋め込めませんでした。TTF/OTF（Variable Font可）を確認してください。" };
