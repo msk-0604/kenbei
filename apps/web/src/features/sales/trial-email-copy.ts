@@ -52,5 +52,8 @@ function textToHtml(text: string): string {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;");
   const withLinks = escaped.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
-  return `<p>${withLinks.replaceAll("\n", "<br />")}</p>`;
+  return `<div style="max-width:520px;margin:0 auto;padding:24px;font-family:sans-serif;color:#0b1220;line-height:1.8;">
+<p style="margin:0 0 20px;"><img src="https://app.kenbei.jp/icon-192.png" width="40" height="40" alt="KENBEI" style="border:0;border-radius:10px;vertical-align:middle;"> <strong style="font-size:18px;vertical-align:middle;">KENBEI</strong></p>
+<p>${withLinks.replaceAll("\n", "<br />")}</p>
+</div>`;
 }
