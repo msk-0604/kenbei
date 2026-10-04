@@ -219,7 +219,11 @@ export async function resendInviteSignupEmailAction(
     },
   });
   if (error) {
-    return { error: error.message };
+    return {
+      error: /rate limit|too many|seconds/i.test(error.message)
+        ? "少し時間をおいてから、もう一度送ってください。"
+        : "確認メールを送れませんでした。時間をおいて、もう一度お試しください。",
+    };
   }
   return { ok: true };
 }

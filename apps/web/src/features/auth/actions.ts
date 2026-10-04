@@ -27,7 +27,7 @@ export async function signUpAction(
   const safeNext = safeAuthNextPath(formString(formData, "next"));
   await writeJoinNextCookie(safeNext);
   const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -37,9 +37,37 @@ export async function signUpAction(
     },
   });
   if (error) {
-    return { error: error.message };
+    return { error: signUpErrorMessage(error.message) };
   }
-  redirect(safeNext ? `/signup/check-email?next=${encodeURIComponent(safeNext)}` : "/signup/check-email");
+  // Supabase answers an already-registered address with a user that has no
+  // identities and sends no email, so say so instead of waiting for a mail.
+  if (data.user && (data.user.identities?.length ?? 0) === 0) {
+    return {
+      error: "このメールアドレスはすでに登録されています。ログインするか、「パスワードを忘れた」から再設定してください。",
+    };
+  }
+  // Email confirmation turned off: the user is signed in already.
+  if (data.session) {
+    redirect(safeNext || "/onboarding");
+  }
+  const query = new URLSearchParams({ email });
+  if (safeNext) {
+    query.set("next", safeNext);
+  }
+  redirect(`/signup/check-email?${query.toString()}`);
+}
+
+function signUpErrorMessage(message: string): string {
+  if (/rate limit|too many/i.test(message)) {
+    return "短時間に何度も送信されました。数分待ってから、もう一度お試しください。";
+  }
+  if (/invalid.*email|email.*invalid/i.test(message)) {
+    return "メールアドレスの形式を確認してください。";
+  }
+  if (/password/i.test(message)) {
+    return "パスワードは8文字以上で、推測されにくいものにしてください。";
+  }
+  return "登録できませんでした。時間をおいて、もう一度お試しください。";
 }
 
 export async function signInAction(

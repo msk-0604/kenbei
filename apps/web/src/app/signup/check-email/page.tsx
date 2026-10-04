@@ -18,13 +18,18 @@ export default async function CheckEmailPage({
   const nextPath = safeAuthNextPath(params.next);
   const email = normalizeInviteEmail(params.email);
   const loginHref = nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login";
+  const invited = Boolean(params.company);
+  const title = invited ? inviteConfirmInboxTitle(params.company) : "確認メールを送りました";
+  const description = invited
+    ? inviteConfirmInboxDescription({ companyName: params.company, email })
+    : `${email ? `${email} に` : ""}【KENBEI】メールアドレスの確認 というメールを送りました。`;
+  const steps = invited
+    ? inviteConfirmInboxSteps(params.company)
+    : ["メールアプリで【KENBEI】からのメールを開く", "「メールアドレスを確認する」を押す", "会社名を入れて、使い始める"];
   return (
-    <AuthShell
-      title={inviteConfirmInboxTitle(params.company)}
-      description={inviteConfirmInboxDescription({ companyName: params.company, email })}
-    >
+    <AuthShell title={title} description={description}>
       <ol className="flex flex-col gap-2">
-        {inviteConfirmInboxSteps(params.company).map((step, index) => (
+        {steps.map((step, index) => (
           <li key={step} className="flex gap-3 rounded-2xl bg-white px-4 py-3 text-sm ring-1 ring-[var(--kb-line)]">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--kb-ink)] text-xs font-semibold text-white">
               {index + 1}
@@ -33,7 +38,7 @@ export default async function CheckEmailPage({
           </li>
         ))}
       </ol>
-      <p className="mt-4 text-sm leading-6 text-zinc-600">届かないときは、迷惑メールフォルダも確認してください。</p>
+      <p className="mt-4 text-sm leading-6 text-zinc-600">数分たっても届かないときは、迷惑メールフォルダを確認するか、下のボタンでもう一度送ってください。</p>
       <div className="mt-4">
         <CheckEmailResend email={email ?? ""} nextPath={nextPath} />
       </div>
