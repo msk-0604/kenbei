@@ -77,7 +77,12 @@ export function PhotoUploader({
   );
 
   async function refreshPending() {
-    setPendingCount(await countQueuedPhotos());
+    try {
+      setPendingCount(await countQueuedPhotos());
+    } catch {
+      // Private browsing can block the on-device queue; nothing is pending then.
+      setPendingCount(0);
+    }
   }
 
   useEffect(() => {
@@ -181,7 +186,7 @@ export function PhotoUploader({
     if ("error" in result) {
       throw new Error(result.error);
     }
-    await removeQueuedPhotos(uploadedIds);
+    await removeQueuedPhotos(uploadedIds).catch(() => undefined);
     await refreshPending();
     return {
       photoId: result.ids[0] ?? registered[0]?.id ?? null,
@@ -306,8 +311,20 @@ export function PhotoUploader({
         });
         setDone(index + 1);
       }
-      await enqueuePhotos(prepared);
+      // Keep a copy on the device for offline retries. Safari private browsing
+      // cannot store photos there, so fall back to uploading directly.
+      let queued = true;
+      try {
+        await enqueuePhotos(prepared);
+      } catch {
+        queued = false;
+      }
       await refreshPending();
+      if (!navigator.onLine && !queued) {
+        setError("電波がないため保存できませんでした。電波のある場所で、もう一度押してください。");
+        setProgress("");
+        return;
+      }
       if (!navigator.onLine) {
         setProgress(
           `${prepared.length}枚を端末に保存しました（黒板${useBlackboard ? "付き" : "なし"}）。電波が戻ると送ります。`,
