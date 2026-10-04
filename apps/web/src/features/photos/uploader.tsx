@@ -33,9 +33,8 @@ import {
 import { extensionForMime, photoStoragePath } from "@/lib/storage-paths";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { registerPhotosAction } from "@/features/photos/actions";
-import { isExistingStorageObject } from "@/features/photos/upload-safety";
+import { isExistingStorageObject, photoSaveErrorMessage } from "@/features/photos/upload-safety";
 import { PhotoUploadNextSteps } from "@/features/photos/upload-next-steps";
-import { toUserActionError } from "@/lib/user-error";
 
 type FieldKey = keyof ConstructionBlackboard;
 
@@ -327,7 +326,7 @@ export function PhotoUploader({
       }
       clearSelected();
     } catch (caught) {
-      setError(toUserActionError(caught instanceof Error ? caught.message : null, "写真を保存"));
+      setError(photoSaveErrorMessage(caught instanceof Error ? caught.message : null));
       setProgress("送れなかった写真は端末に残します");
     } finally {
       setBusy(false);
