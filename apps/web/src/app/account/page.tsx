@@ -2,6 +2,7 @@ import Link from "next/link";
 import { accountAdminLinks, memberFacingRoleLabel, type BillingAccessKind } from "@kensapo/domain";
 import { AppShell } from "@/components/app-shell";
 import { SignOutButton } from "@/features/auth/sign-out-button";
+import { DisplayNameForm } from "@/features/profile/display-name-form";
 import { listUnreadNotifications } from "@/lib/notifications";
 import { can, requireWorkspace } from "@/lib/authz-guard";
 import { getEntitlement } from "@/lib/entitlement";
@@ -116,6 +117,12 @@ export default async function AccountPage() {
         {memberFacingRoleLabel(workspace.roleCode) || workspace.roleName}
       </p>
       <div className="mt-6 flex flex-col gap-6">
+        <section>
+          <h2 className="text-sm font-medium text-zinc-500">お名前（日報の記入者）</h2>
+          <div className="mt-2">
+            <DisplayNameForm defaultName={workspace.displayName} compact />
+          </div>
+        </section>
         {entitlement ? (
           <BillingCard access={entitlement.access} trialDaysLeft={entitlement.trialDaysLeft} />
         ) : null}

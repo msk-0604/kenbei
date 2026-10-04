@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { afterOrganizationCreated } from "@/features/sales/after-org-create";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { normalizeDisplayName } from "@/features/profile/display-name";
 
 function formString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -24,6 +25,11 @@ export async function createOrganizationAction(
   } = await supabase.auth.getUser();
   if (!user) {
     redirect("/login");
+  }
+
+  const displayName = normalizeDisplayName(formString(formData, "displayName"));
+  if (displayName) {
+    await supabase.from("profiles").update({ display_name: displayName }).eq("id", user.id);
   }
 
   const { data: organizationId, error } = await supabase.rpc("create_organization", { p_name: name });

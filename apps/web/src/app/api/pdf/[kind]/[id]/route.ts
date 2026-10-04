@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { getReport } from "@/features/reports/queries";
+import { getPrintCompany, getReport } from "@/features/reports/queries";
+import { weatherLineForPdf } from "@kensapo/domain";
+import { buildReportPdf } from "@/lib/report-pdf";
 import { getWorkspace } from "@/lib/session";
 import { getProject } from "@/features/projects/queries";
 import { listProjectProcesses, listProjectTasks, overallProgress } from "@/features/site-ops/queries";
 import { buildPdf, pdfAttachmentHeaders, pdfFailed } from "@/lib/pdf-document";
-import { dailyReportPdfLines } from "@/features/reports/pdf-lines";
 
 export async function GET(
   _request: Request,
@@ -20,7 +21,30 @@ export async function GET(
     if (!report) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
-    const pdf = await buildPdf(`日報 ${report.workOn}`, dailyReportPdfLines(report));
+    const company = await getPrintCompany(workspace.organizationName);
+    const [logo, ...photos] = await Promise.all([
+      company.logoUrl ? fetchBytes(company.logoUrl) : Promise.resolve(null),
+      ...report.photoUrls.slice(0, 7).map((photo) => fetchBytes(photo.url)),
+    ]);
+    const pdf = await buildReportPdf({
+      companyName: company.name,
+      logo,
+      workOn: report.workOn,
+      projectName: report.projectName,
+      authorName: report.authorName,
+      weatherLine: weatherLineForPdf(report.weather),
+      workerCount: report.workerCount,
+      workLocation: report.workLocation,
+      partnerCompanies: report.partnerCompaniesText,
+      equipment: report.equipmentText,
+      body: report.body,
+      progressNote: report.progressNote,
+      safetyNotes: report.safetyNotes,
+      issues: report.issues,
+      tomorrowPlan: report.tomorrowPlan,
+      remarks: report.remarks,
+      photos: photos.filter((item): item is Uint8Array => item != null),
+    });
     if (pdfFailed(pdf)) {
       return NextResponse.json({ error: pdf.error }, { status: 422 });
     }
@@ -47,4 +71,16 @@ export async function GET(
     });
   }
   return NextResponse.json({ error: "not found" }, { status: 404 });
+}
+
+async function fetchBytes(url: string): Promise<Uint8Array | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) {
+      return null;
+    }
+    return new Uint8Array(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
 }

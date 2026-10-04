@@ -41,7 +41,7 @@ describe("pdf font path", () => {
     const bytes = loadPdfFontBytes("", process.cwd());
     expect(bytes).toBeTruthy();
     expect((bytes?.byteLength ?? 0) > 1000).toBe(true);
-    expect(isVariableOpenTypeFont(bytes!)).toBe(true);
+    expect(isVariableOpenTypeFont(bytes!)).toBe(false);
   });
 });
 

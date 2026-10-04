@@ -15,6 +15,8 @@ import { EmptyGuide } from "@/components/empty-guide";
 import { ActionNotice } from "@/components/action-notice";
 import { RevealPanel } from "@/components/reveal-panel";
 import { InstallHint } from "@/components/install-hint";
+import { DisplayNameForm } from "@/features/profile/display-name-form";
+import { needsRealName } from "@/features/profile/display-name";
 import { emptyWorkspaceCreateProjectHref } from "@/features/projects/routes";
 import {
   TODAY_REPORT_DONE_LABEL,
@@ -163,6 +165,16 @@ export function TodayView({
           }
         />
       )}
+
+      {needsRealName(workspace.displayName, workspace.email) ? (
+        <section className="rounded-3xl bg-[var(--kb-accent-soft)] p-5">
+          <h2 className="font-semibold">日報に載るお名前を登録してください</h2>
+          <p className="mt-1 text-sm text-zinc-600">いまは「{workspace.displayName}」と表示されています。</p>
+          <div className="mt-3">
+            <DisplayNameForm defaultName="" compact />
+          </div>
+        </section>
+      ) : null}
 
       <InstallHint />
 

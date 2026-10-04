@@ -22,6 +22,18 @@ export function CreateOrganizationForm() {
         />
       </label>
       <p className="text-sm leading-6 text-zinc-500">現場名（マンション名・工事名）ではありません。</p>
+      <label className="flex flex-col gap-1 text-sm font-medium">
+        あなたのお名前
+        <input
+          name="displayName"
+          type="text"
+          required
+          autoComplete="name"
+          placeholder="例: 山田 太郎"
+          className="rounded-xl border border-zinc-200 bg-white px-4 text-base outline-none focus:border-zinc-900"
+        />
+      </label>
+      <p className="text-sm leading-6 text-zinc-500">日報の「記入者」として表示されます。</p>
       {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
       <button
         type="submit"
