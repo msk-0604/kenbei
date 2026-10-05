@@ -91,7 +91,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="ja">
       <body className="min-h-dvh bg-[var(--kb-paper)] text-[var(--kb-ink)] antialiased">
-        <LaunchSplash />
+        <LaunchSplash signedIn={Boolean(workspace)} />
         <AppChrome
           signedIn={Boolean(workspace)}
           canOpenSettings={Boolean(
