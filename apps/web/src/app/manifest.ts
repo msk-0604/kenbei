@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "現場の記録から、今日の事務まで。",
     start_url: "/",
     display: "standalone",
-    background_color: "#f4f6fa",
+    background_color: "#020b1c",
     theme_color: "#0b1220",
     lang: "ja",
     icons: [
