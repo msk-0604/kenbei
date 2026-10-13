@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { PasscodeLoginForm, readSavedLoginCode } from "@/features/auth/passcode-login-form";
 import { SignInForm } from "@/features/auth/sign-in-form";
 import { cn } from "@/lib/cn";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 type Mode = "passcode" | "email";
 
@@ -18,12 +19,23 @@ export function LoginChooser({
   isAdmin,
   initialLoginCode,
   nextPath,
+  signedOut = false,
 }: {
   isAdmin: boolean;
   initialLoginCode: string;
   nextPath?: string;
+  /** セッションが無効になって戻ってきた（端末に残ったトークンを消す） */
+  signedOut?: boolean;
 }) {
   const [mode, setMode] = useState<Mode>(isAdmin || initialLoginCode ? "passcode" : "email");
+
+  useEffect(() => {
+    if (signedOut) {
+      void createBrowserSupabaseClient()
+        .auth.signOut({ scope: "local" })
+        .catch(() => undefined);
+    }
+  }, [signedOut]);
 
   useEffect(() => {
     if (!isAdmin && !initialLoginCode && readSavedLoginCode()) {
@@ -33,6 +45,11 @@ export function LoginChooser({
 
   return (
     <div className="space-y-5">
+      {signedOut ? (
+        <p className="rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-lg text-amber-950">
+          ログインが切れました。もう一度ログインしてください。
+        </p>
+      ) : null}
       <div className="grid grid-cols-2 gap-3" role="tablist" aria-label="ログインの方法">
         {(
           [

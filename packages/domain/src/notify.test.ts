@@ -28,6 +28,15 @@ describe("canDeliverPushToken", () => {
 });
 
 describe("parseKenbeiRoute", () => {
+  it("opens web site pages as the project screen", () => {
+    const id = "11111111-1111-1111-1111-111111111111";
+    expect(parseKenbeiRoute(`/sites/${id}`)).toEqual({ type: "project", projectId: id });
+    expect(parseKenbeiRoute(`/sites/${id}/progress`)).toEqual({ type: "project", projectId: id });
+    expect(parseKenbeiRoute(`/sites/${id}/photos/gallery`)).toEqual({ type: "project", projectId: id });
+    expect(parseKenbeiRoute("/today?date=2026-10-13", { projectId: id })).toEqual({ type: "project", projectId: id });
+    expect(parseKenbeiRoute("/today?date=2026-10-13")).toBeNull();
+  });
+
   it("parses confirm, project, task, report, drawing", () => {
     expect(parseKenbeiRoute("/confirm")).toEqual({ type: "confirm" });
     expect(parseKenbeiRoute("kenbei://projects/11111111-1111-1111-1111-111111111111")).toEqual({

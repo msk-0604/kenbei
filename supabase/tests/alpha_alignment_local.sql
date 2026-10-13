@@ -305,5 +305,45 @@ BEGIN
   PERFORM pg_temp.expect(v_failed, 'organization_passcodes is server-only');
 END $$;
 
+-- Revoking crew sessions: server only, removes the crew login's sessions and refresh tokens.
 RESET ROLE;
+DO $$
+DECLARE
+  v_org uuid := (SELECT value FROM ctx WHERE key = 'org');
+  v_crew uuid := 'a3333333-3333-4333-8333-333333333333';
+  v_owner uuid := 'a1111111-1111-4111-8111-111111111111';
+  v_session uuid := gen_random_uuid();
+  v_failed boolean := false;
+BEGIN
+  IF to_regclass('auth.sessions') IS NULL THEN
+    RAISE NOTICE 'ok: (skipped session revocation: no auth.sessions in this database)';
+    RETURN;
+  END IF;
+  INSERT INTO auth.sessions (id, user_id) VALUES (v_session, v_crew), (gen_random_uuid(), v_owner);
+  INSERT INTO auth.refresh_tokens (token, user_id, session_id) VALUES ('crew-token', v_crew::text, v_session);
+
+  EXECUTE 'SET LOCAL ROLE authenticated';
+  PERFORM pg_temp.as_user(v_owner);
+  BEGIN
+    PERFORM public.revoke_crew_sessions(v_org);
+  EXCEPTION WHEN insufficient_privilege THEN
+    v_failed := true;
+  END;
+  EXECUTE 'RESET ROLE';
+  PERFORM pg_temp.expect(v_failed, 'app users cannot call revoke_crew_sessions directly');
+
+  EXECUTE 'SET LOCAL ROLE service_role';
+  PERFORM pg_temp.expect(public.revoke_crew_sessions(v_org) = 1, 'server revokes the crew session');
+  EXECUTE 'RESET ROLE';
+  PERFORM pg_temp.expect(
+    NOT EXISTS (SELECT 1 FROM auth.sessions WHERE user_id = v_crew)
+      AND NOT EXISTS (SELECT 1 FROM auth.refresh_tokens WHERE user_id = v_crew::text),
+    'crew sessions and refresh tokens are gone'
+  );
+  PERFORM pg_temp.expect(
+    EXISTS (SELECT 1 FROM auth.sessions WHERE user_id = v_owner),
+    'other members stay signed in'
+  );
+END $$;
+
 ROLLBACK;

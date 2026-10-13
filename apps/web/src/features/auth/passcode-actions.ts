@@ -187,6 +187,23 @@ export async function setPasscodeAction(
   return { ok: true, loginCode };
 }
 
+/** 共通ログインの端末をすべてログアウトさせる。合言葉を変えたあとに使う。 */
+export async function revokeCrewSessionsAction(): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  const workspace = await requireWorkspace();
+  if (!isSiteAdmin(workspace)) {
+    return { ok: false, error: "管理者だけが操作できます" };
+  }
+  const admin = createAdminSupabaseClient();
+  if (!admin) {
+    return { ok: false, error: "設定が未完了です（SUPABASE_SERVICE_ROLE_KEY）" };
+  }
+  const { data, error } = await admin.rpc("revoke_crew_sessions", { p_organization_id: workspace.organizationId });
+  if (error) {
+    return { ok: false, error: "ログアウトさせられませんでした。もう一度お試しください。" };
+  }
+  return { ok: true, count: typeof data === "number" ? data : 0 };
+}
+
 async function consumeLoginRateLimit(admin: SupabaseClient, key: string, max: number): Promise<boolean> {
   const result = decideRateLimit(
     await admin.rpc("consume_rate_limit", { p_key: key, p_max: max, p_window_seconds: 600 }),

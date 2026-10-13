@@ -7,7 +7,8 @@ import { getWorkspace, hasOrganization, type Workspace } from "@/lib/session";
 export async function requireWorkspace(): Promise<Workspace> {
   const workspace = await getWorkspace();
   if (!workspace) {
-    redirect("/login");
+    // middleware を通ってここに来るのは、トークンはあるがセッションが無効なとき（共通ログインの締め出しなど）
+    redirect("/login?signedout=1");
   }
   if (!hasOrganization(workspace)) {
     redirect("/onboarding");

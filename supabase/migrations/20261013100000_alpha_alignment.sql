@@ -144,6 +144,33 @@ $$;
 
 REVOKE ALL ON FUNCTION public.organization_crew_profile_id(uuid) FROM PUBLIC, anon, authenticated;
 
+-- 共通ログインの端末をすべてログアウトさせる（合言葉が漏れたとき用）。
+-- セッションと更新トークンを消すので、端末は次の更新（最大でアクセストークンの有効期限＝通常1時間）でログアウトになる。
+-- サーバー（サービスロール）からだけ呼ぶ。
+CREATE OR REPLACE FUNCTION public.revoke_crew_sessions(p_organization_id uuid)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+  v_profile uuid;
+  v_count int := 0;
+BEGIN
+  v_profile := public.organization_crew_profile_id(p_organization_id);
+  IF v_profile IS NULL THEN
+    RETURN 0;
+  END IF;
+  DELETE FROM auth.refresh_tokens WHERE user_id = v_profile::text;
+  DELETE FROM auth.sessions WHERE user_id = v_profile;
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RETURN v_count;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.revoke_crew_sessions(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.revoke_crew_sessions(uuid) TO service_role;
+
 -- crew ロールのメンバーシップは、その会社の共通ログイン用アカウントにだけ付けられる。
 -- それ以外は 20260922140000_protect_membership_roles.sql と同じ判定。
 CREATE OR REPLACE FUNCTION public.protect_membership_role()

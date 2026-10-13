@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; mode?: string; company?: string }>;
+  searchParams: Promise<{ next?: string; mode?: string; company?: string; signedout?: string }>;
 }) {
   const params = await searchParams;
   const nextPath = safeAuthNextPath(params.next) || undefined;
@@ -34,6 +34,7 @@ export default async function LoginPage({
             isAdmin={isAdmin}
             initialLoginCode={isValidLoginCode(company) ? company : ""}
             nextPath={nextPath}
+            signedOut={params.signedout === "1"}
           />
         ) : (
           <p className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 text-lg text-amber-900">

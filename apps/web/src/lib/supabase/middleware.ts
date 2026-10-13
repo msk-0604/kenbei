@@ -58,8 +58,11 @@ export async function updateSession(request: NextRequest) {
   }
 
   // 共通ログインの端末から「管理者としてログイン」する場合だけ、ログイン中でも開ける
-  const switchingToAdmin = path === "/login" && request.nextUrl.searchParams.get("mode") === "admin";
-  if (user && !switchingToAdmin && (path === "/login" || path === "/signup")) {
+  // 締め出された端末（signedout=1）も、残ったトークンを消すためにログイン画面を開ける
+  const keepLoginOpen =
+    path === "/login" &&
+    (request.nextUrl.searchParams.get("mode") === "admin" || request.nextUrl.searchParams.get("signedout") === "1");
+  if (user && !keepLoginOpen && (path === "/login" || path === "/signup")) {
     const next = request.nextUrl.searchParams.get("next");
     const url = request.nextUrl.clone();
     if (next && next.startsWith("/") && !next.startsWith("//")) {

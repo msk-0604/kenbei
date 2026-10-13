@@ -5,7 +5,12 @@ import { KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { getPasscodeStatusAction, setPasscodeAction, type PasscodeKind } from "@/features/auth/passcode-actions";
+import {
+  getPasscodeStatusAction,
+  revokeCrewSessionsAction,
+  setPasscodeAction,
+  type PasscodeKind,
+} from "@/features/auth/passcode-actions";
 
 const CONFIG: Record<PasscodeKind, { title: string; description: string; label: string }> = {
   worker: {
@@ -30,6 +35,32 @@ export function PasscodeSettings({ kind }: { kind: PasscodeKind }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [revoking, setRevoking] = useState(false);
+  const [revokeMessage, setRevokeMessage] = useState("");
+
+  async function handleRevoke() {
+    if (
+      !window.confirm(
+        "合言葉でログインしている作業員の端末を、すべてログアウトさせます。作業員はもう一度、会社コードと合言葉で入り直します。よろしいですか？",
+      )
+    ) {
+      return;
+    }
+    setRevoking(true);
+    setRevokeMessage("");
+    try {
+      const result = await revokeCrewSessionsAction();
+      setRevokeMessage(
+        result.ok
+          ? `${result.count}台の端末をログアウトさせました。端末によっては、切れるまで最大1時間かかります。`
+          : result.error,
+      );
+    } catch {
+      setRevokeMessage("ログアウトさせられませんでした。もう一度お試しください。");
+    } finally {
+      setRevoking(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -109,6 +140,17 @@ export function PasscodeSettings({ kind }: { kind: PasscodeKind }) {
           合言葉を保存する
         </Button>
       </form>
+      {kind === "worker" && currentlySet ? (
+        <div className="mt-6 border-t-2 border-gray-100 pt-5">
+          <p className="mb-3 text-base leading-relaxed text-gray-600">
+            合言葉が知られてしまったときは、合言葉を変えてから下のボタンを押すと、今ログインしている作業員の端末も使えなくなります。
+          </p>
+          <Button type="button" variant="danger" fullWidth loading={revoking} onClick={() => void handleRevoke()}>
+            作業員の端末をすべてログアウトさせる
+          </Button>
+          {revokeMessage ? <p className="mt-3 rounded-lg bg-gray-50 px-3 py-2 text-base text-gray-700">{revokeMessage}</p> : null}
+        </div>
+      ) : null}
     </Card>
   );
 }
