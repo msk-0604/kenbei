@@ -1,34 +1,250 @@
 @import "tailwindcss";
 
+/* デザインの方針（kenbei-alpha と同じ）
+   色は意味で使う：主要な操作=紺 / 戻る・補助=白 / 削除=赤 / 案内=薄い青 / 完了=緑 / 作業中=オレンジ
+   60代でも使いやすく：本文20px・タップ領域は最低64px・押した感触（tap-press）・短いアニメーション */
+
 :root {
-  color-scheme: light;
-  /* Palette follows the logo: near-black + blue. */
-  --kb-ink: #0b1220;
-  --kb-paper: #f4f6fa;
-  --kb-accent: #0a66ff;
-  --kb-accent-soft: #e8f1ff;
-  --kb-soft: #eef2f7;
-  --kb-line: #e2e8f0;
+  --background: #ffffff;
+  --foreground: #0f1729;
+  --navy-950: #0f1729;
+  --navy-900: #1a2744;
+  --navy-800: #243352;
+  --navy-700: #2f4066;
+  --navy-400: #6b7fa8;
+  --navy-300: #94a3c4;
+  --navy-200: #c3cde0;
+
+  /* 色の意味を統一 */
+  --color-primary: #1a2744;       /* 主要な操作 */
+  --color-primary-hover: #243352;
+  --color-secondary: #ffffff;     /* 戻る・補助操作 */
+  --color-danger: #dc2626;        /* 削除 */
+  --color-danger-bg: #fef2f2;
+  --color-hint: #eff6ff;          /* 案内・ヒント */
+  --color-hint-text: #1e40af;
+  --color-success: #059669;       /* 完了 */
+  --color-warning: #d97706;       /* 作業中 */
+
+  /* 60代向け：文字大きめ・タップしやすい */
+  --text-base-size: 1.25rem;     /* 20px */
+  --text-label-size: 1.125rem;   /* 18px */
+  --text-heading-size: 1.875rem; /* 30px */
+  --touch-min: 4rem;            /* 64px */
+
+  /* 既存画面（日報・写真の整理など）が使う色 */
+  --kb-ink: #0f1729;
+  --kb-paper: #ffffff;
+  --kb-accent: #1a2744;
+  --kb-accent-soft: #eff6ff;
+  --kb-soft: #f3f4f6;
+  --kb-line: #e5e7eb;
   --kb-card: #ffffff;
-  --kb-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --kb-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --kb-micro: 150ms;
-  --kb-move: 200ms;
+  --kb-move: 220ms;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-navy-950: var(--navy-950);
+  --color-navy-900: var(--navy-900);
+  --color-navy-800: var(--navy-800);
+  --color-navy-700: var(--navy-700);
+  --color-navy-400: var(--navy-400);
+  --color-navy-300: var(--navy-300);
+  --color-navy-200: var(--navy-200);
+  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP",
+    "Noto Sans CJK JP", Roboto, Meiryo, "Yu Gothic UI", sans-serif;
 }
 
 body {
-  font-family:
-    "Hiragino Sans",
-    "Hiragino Kaku Gothic ProN",
-    "Noto Sans JP",
-    "Segoe UI",
-    ui-sans-serif,
-    system-ui,
-    sans-serif;
-  background:
-    radial-gradient(900px 420px at 100% -10%, rgba(10, 102, 255, 0.08), transparent 60%),
-    radial-gradient(700px 360px at 0% -10%, rgba(0, 200, 255, 0.06), transparent 55%),
-    var(--kb-paper);
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--text-base-size);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* 日付入力：iOS SafariはネイティブのカレンダーUI部品が中身の
+   サイズを優先し、width: 100% を無視して親要素からはみ出したり、
+   逆に他の入力欄より狭くなったりすることがある。
+   ネイティブの見た目をリセットし、ボックスサイズを明示的に固定
+   することで、他の input と同じ幅の扱いにする */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  min-width: 0;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  margin-left: 4px;
+  padding: 4px;
+}
+
+/* 候補入力欄（list属性つき）：パソコンのChrome等は▼を自前で描画するため、
+   独自に出しているChevronDownアイコンと二重に見えてしまう。
+   ブラウザ標準の▼は消し、常に同じ見た目のアイコンだけを表示する */
+input[list]::-webkit-calendar-picker-indicator {
+  display: none !important;
+}
+input[list]::-webkit-list-button {
+  display: none !important;
+  opacity: 0;
+}
+
+/* ロゴ文字「KENBEI」：端末の日本語フォントに左右されないよう欧文フォントで固定 */
+.brand-wordmark {
+  font-family: "Helvetica Neue", Helvetica, Arial, Roboto, "Segoe UI", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+/* タップした感触（押し込みは速く、戻るときに少し間を置く） */
+.tap-press {
+  -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0);
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms ease,
+    filter 180ms ease;
+  will-change: transform;
+}
+.tap-press:active {
+  transform: scale(0.96) translateY(1px);
+  transition-duration: 70ms;
+  filter: brightness(0.97);
+}
+.tap-press:disabled,
+.tap-press[aria-disabled="true"] {
+  transform: none;
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tap-press,
+  .tap-press:active {
+    transition: none;
+    transform: none;
+    filter: none;
+  }
+}
+
+/* 画面の切り替え：パッと切り替わらないよう、ふわっと表示する */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.page-enter {
+  animation: page-enter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
+  }
+}
+
+/* モーダル：背景は暗転してふわっと、本体は中央で拡大+フェードイン
+   （Instagramの投稿詳細のような見た目・動き。閉じる時は逆再生） */
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes modal-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes modal-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes modal-panel-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+.modal-backdrop-enter {
+  animation: modal-backdrop-in 220ms ease-out;
+}
+.modal-backdrop-leave {
+  animation: modal-backdrop-out 200ms ease-in forwards;
+}
+.modal-panel-enter {
+  animation: modal-panel-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.modal-panel-leave {
+  animation: modal-panel-out 200ms ease-in forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop-enter,
+  .modal-backdrop-leave,
+  .modal-panel-enter,
+  .modal-panel-leave {
+    animation: none;
+  }
+}
+
+@media print {
+  body {
+    background: white;
+    font-size: 12pt;
+    color: #000;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .help-print-area {
+    max-width: 210mm;
+    margin: 0 auto;
+  }
+  .help-print-area a {
+    color: #000;
+    text-decoration: none;
+  }
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+}
+
+/* ---- 既存画面との互換 ---- */
 
 button,
 .kb-tap,

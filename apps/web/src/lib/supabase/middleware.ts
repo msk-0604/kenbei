@@ -57,13 +57,15 @@ export async function updateSession(request: NextRequest) {
     return attachRequestId(NextResponse.redirect(url), requestId);
   }
 
-  if (user && (path === "/login" || path === "/signup")) {
+  // 共通ログインの端末から「管理者としてログイン」する場合だけ、ログイン中でも開ける
+  const switchingToAdmin = path === "/login" && request.nextUrl.searchParams.get("mode") === "admin";
+  if (user && !switchingToAdmin && (path === "/login" || path === "/signup")) {
     const next = request.nextUrl.searchParams.get("next");
     const url = request.nextUrl.clone();
     if (next && next.startsWith("/") && !next.startsWith("//")) {
       return attachRequestId(NextResponse.redirect(new URL(next, request.url)), requestId);
     }
-    url.pathname = "/";
+    url.pathname = "/today";
     url.search = "";
     return attachRequestId(NextResponse.redirect(url), requestId);
   }

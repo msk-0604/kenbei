@@ -1,6 +1,6 @@
 export const PROJECT_STATUS_LABELS = {
-  draft: "準備中",
-  active: "施工中",
+  draft: "仮予定",
+  active: "進行中",
   on_hold: "一時停止",
   completed: "完了",
   cancelled: "中止",

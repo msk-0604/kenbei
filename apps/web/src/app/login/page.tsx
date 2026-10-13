@@ -1,44 +1,47 @@
-import Link from "next/link";
-import { AuthShell } from "@/components/auth-shell";
-import { SignInForm } from "@/features/auth/sign-in-form";
+import { ClipboardList } from "lucide-react";
+import { LoginChooser } from "@/features/auth/login-chooser";
 import { safeAuthNextPath } from "@kensapo/domain";
 import { isSupabaseConfigured } from "@/lib/env";
+import { isValidLoginCode, normalizeLoginCode } from "@/lib/passcode";
+
+export const dynamic = "force-dynamic";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; mode?: string; company?: string }>;
 }) {
   const params = await searchParams;
   const nextPath = safeAuthNextPath(params.next) || undefined;
-
-  if (!isSupabaseConfigured()) {
-    return (
-      <AuthShell title="設定が必要です" description="Supabase の環境変数がまだありません。">
-        <p className="text-sm text-zinc-600">
-          `.env.example` を `apps/web/.env.local` にコピーし、URL と anon key を入れてください。
-        </p>
-      </AuthShell>
-    );
-  }
+  const isAdmin = params.mode === "admin";
+  const company = normalizeLoginCode(params.company ?? "");
 
   return (
-    <AuthShell title="ログイン" description="現場の記録から、今日の事務まで。写真・作業・日報をつなげます。">
-      <SignInForm nextPath={nextPath} />
-      <p className="mt-4 text-sm text-zinc-600">
-        <Link href="/forgot-password" className="underline">
-          パスワードを忘れた
-        </Link>
-      </p>
-      <p className="mt-6 text-sm text-zinc-600">
-        初めての方は{" "}
-        <Link
-          href={nextPath ? `/signup?next=${encodeURIComponent(nextPath)}` : "/signup"}
-          className="inline-flex items-center font-medium text-zinc-900 underline"
-        >
-          アカウント作成
-        </Link>
-      </p>
-    </AuthShell>
+    <div className="flex min-h-dvh flex-col justify-center bg-gray-50 px-4 py-8">
+      <div className="mx-auto w-full max-w-md">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-navy-900 shadow-lg">
+            <ClipboardList className="h-7 w-7 text-white" aria-hidden />
+          </div>
+          <h1 className="brand-wordmark text-2xl text-navy-950">KENBEI</h1>
+          <p className="mt-2 text-lg text-gray-600">
+            {isAdmin ? "管理者の合言葉でログインしてください。" : "会社の合言葉か、メールアドレスでログインしてください。"}
+          </p>
+        </div>
+
+        {isSupabaseConfigured() ? (
+          <LoginChooser
+            isAdmin={isAdmin}
+            initialLoginCode={isValidLoginCode(company) ? company : ""}
+            nextPath={nextPath}
+          />
+        ) : (
+          <p className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 text-lg text-amber-900">
+            Supabase の環境変数がまだありません。`.env.example` を `apps/web/.env.local` にコピーし、URL と anon key
+            を入れてください。
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

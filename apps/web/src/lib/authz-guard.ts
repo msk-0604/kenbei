@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { assertPermission, hasPermission, type PermissionCode } from "@kensapo/authz";
-import { workspaceWriteBlockMessage } from "@kensapo/domain";
+import { CREW_ROLE_CODE, workspaceWriteBlockMessage } from "@kensapo/domain";
 import { getEntitlement } from "@/lib/entitlement";
 import { getWorkspace, hasOrganization, type Workspace } from "@/lib/session";
 
@@ -36,4 +36,22 @@ export async function requireWritableWorkspace(): Promise<Workspace | { error: s
   const workspace = await requireWorkspace();
   const locked = await assertOrganizationWritable(workspace.organizationId);
   return locked ?? workspace;
+}
+
+/** kenbei-alpha の「管理者」= 現場を登録できる人（Owner / Executive / Manager / Office） */
+export function isSiteAdmin(workspace: Workspace): boolean {
+  return can(workspace, "project.create");
+}
+
+/** 会社共通の合言葉でログインしている端末（誰が見ているかはサーバーでは分からない） */
+export function isCrewLogin(workspace: Workspace): boolean {
+  return workspace.roleCode === CREW_ROLE_CODE;
+}
+
+export async function requireSiteAdmin(): Promise<Workspace> {
+  const workspace = await requireWorkspace();
+  if (!isSiteAdmin(workspace)) {
+    redirect("/today");
+  }
+  return workspace;
 }

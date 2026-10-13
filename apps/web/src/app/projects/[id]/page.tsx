@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DRAWING_KIND_LABELS, formatFieldValue, PROJECT_STATUS_LABELS } from "@kensapo/domain";
 import { AppShell } from "@/components/app-shell";
-import { AssignMemberForm, AssignmentList, EditProjectForm } from "@/features/projects/forms";
+import { AssignMemberForm, AssignmentList } from "@/features/projects/forms";
 import {
   getProject,
   listAssignments,
@@ -86,7 +86,7 @@ export default async function ProjectDetailPage({
   return (
     <AppShell>
       <p className="text-sm text-zinc-500">
-        <Link href="/projects">現場</Link>
+        <Link href={`/sites/${id}`}>← 現場に戻る</Link>
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">{project.name}</h1>
       <p className="mt-2 text-base text-zinc-600">
@@ -158,20 +158,12 @@ export default async function ProjectDetailPage({
             </a>
           </section>
           {canEdit ? (
-            <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-zinc-100">
-              <h2 className="mb-3 text-base font-medium">基本情報</h2>
-              <EditProjectForm
-                projectId={id}
-                name={project.name}
-                address={project.address}
-                workSummary={project.workSummary}
-                cautionNote={project.cautionNote}
-                customerName={project.customerName}
-                status={project.status}
-                plannedStartOn={project.plannedStartOn}
-                plannedEndOn={project.plannedEndOn}
-              />
-            </section>
+            <Link
+              href={`/sites/${id}/edit`}
+              className="kb-tap inline-flex min-h-12 items-center justify-center rounded-2xl bg-white font-medium ring-1 ring-[var(--kb-line)]"
+            >
+              現場の情報を変更する
+            </Link>
           ) : null}
           <VoiceHistory projectId={id} />
         </div>

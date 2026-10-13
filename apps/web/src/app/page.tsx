@@ -1,9 +1,5 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AppShell } from "@/components/app-shell";
-import { TodayView } from "@/features/today/today-view";
-import { loadTodayBoard } from "@/features/today/queries";
-import { loadOnboardingFlags } from "@/features/onboarding/queries";
 import { MarketingLandingPage } from "@/features/marketing/landing-page";
 import { getWorkspace, hasOrganization } from "@/lib/session";
 
@@ -26,11 +22,8 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ created?: string; project?: string }>;
-}) {
+/** ログイン後の最初の画面は「スケジュール」（/today）。未ログインはLP。 */
+export default async function HomePage() {
   const workspace = await getWorkspace();
   if (!workspace) {
     return <MarketingLandingPage />;
@@ -38,25 +31,5 @@ export default async function HomePage({
   if (!hasOrganization(workspace)) {
     redirect("/onboarding");
   }
-
-  const params = await searchParams;
-  const [{ projects, ops, pendingCaptureId, focusTasks }, onboarding] = await Promise.all([
-    loadTodayBoard(workspace),
-    loadOnboardingFlags(workspace),
-  ]);
-
-  return (
-    <AppShell>
-      <TodayView
-        workspace={workspace}
-        projects={projects}
-        ops={ops}
-        pendingCaptureId={pendingCaptureId}
-        onboarding={onboarding}
-        focusTasks={focusTasks}
-        selectedProjectId={params.project ?? null}
-        createdProject={params.created === "project"}
-      />
-    </AppShell>
-  );
+  redirect("/today");
 }

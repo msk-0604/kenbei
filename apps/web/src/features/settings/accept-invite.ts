@@ -71,12 +71,12 @@ export async function acceptInviteForCurrentUser(
       await notifyWorkspaceMembers(workspaceLike, {
         kind: "invite",
         title: "招待が承諾されました",
-        href: "/settings",
+        href: "/settings/members",
         profileIds: managers.filter((id) => id !== accepted.id),
       });
     }
   }
   revalidatePath("/");
-  revalidatePath("/settings");
+  revalidatePath("/settings/members");
   return { joined: previewRow?.company_name || "会社" };
 }

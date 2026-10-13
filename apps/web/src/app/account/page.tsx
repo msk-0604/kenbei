@@ -105,7 +105,7 @@ export default async function AccountPage() {
     { href: "/capture", label: "音声で報告", note: "話すだけで記録" },
   ];
   const admin: MenuItem[] = [
-    ...(links.memberManage ? [{ href: "/settings", label: "メンバー管理", note: "招待・権限・会社のロゴ" }] : []),
+    ...(links.memberManage ? [{ href: "/settings/members", label: "メンバー管理", note: "招待・権限・会社のロゴ" }] : []),
     ...(links.dataExport ? [{ href: "/settings/data", label: "データを保存", note: "まとめてダウンロード" }] : []),
   ];
 

@@ -13,6 +13,8 @@ import { isUniqueConstraintError, photoSaveErrorMessage } from "@/features/photo
 import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
 import { getAiService } from "@/lib/engines";
 import { listMemberProfileIdsWithPermission, notifyWorkspaceMembers } from "@/lib/notifications";
+import { postOrgNotice } from "@/lib/org-notice";
+import { buildPushPayload } from "@/lib/push/events";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export type RegisteredPhotoItem = {
@@ -122,10 +124,37 @@ export async function registerPhotosAction(input: {
     });
   }
 
+  if (ids.length > 0) {
+    // kenbei-alpha と同じ「写真を追加しました」のお知らせ（本人には届かない）
+    const site = await supabase
+      .from("projects")
+      .select("name")
+      .eq("id", input.projectId)
+      .eq("organization_id", workspace.organizationId)
+      .maybeSingle();
+    const siteName = (site.data as { name: string } | null)?.name ?? "現場";
+    await postOrgNotice(workspace, {
+      projectId: input.projectId,
+      kind: "photo_added",
+      title: "写真が追加されました",
+      body: `${siteName}（${ids.length}枚）`,
+      href: `/sites/${input.projectId}/photos/gallery`,
+      push: buildPushPayload({
+        event: "photo_added",
+        actorName: workspace.displayName,
+        siteName,
+        siteId: input.projectId,
+        photoCount: ids.length,
+      }),
+    });
+  }
+
   revalidatePath("/");
   revalidatePath("/photos");
   revalidatePath("/confirm");
   revalidatePath(`/projects/${input.projectId}`);
+  revalidatePath(`/sites/${input.projectId}`);
+  revalidatePath(`/sites/${input.projectId}/photos/gallery`);
   after(async () => {
     await refinePhotoClassification({
       organizationId: workspace.organizationId,

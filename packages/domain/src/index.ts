@@ -8,6 +8,7 @@ export { calcDurationDays, parseIsoDate } from "./duration";
 export {
   SIGNAL_KINDS,
   SYSTEM_ROLE_CODES,
+  CREW_ROLE_CODE,
   PROJECT_STATUSES,
   CAPTURE_KINDS,
   CAPTURE_FIELD_STATUSES,
