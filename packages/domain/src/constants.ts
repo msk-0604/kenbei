@@ -15,6 +15,9 @@ export const SYSTEM_ROLE_CODES = [
 
 export type SystemRoleCode = (typeof SYSTEM_ROLE_CODES)[number];
 
+/** Shared "company passcode" login for field crews. Not invitable, not a project role. */
+export const CREW_ROLE_CODE = "crew" as const;
+
 export const PROJECT_STATUSES = [
   "draft",
   "active",

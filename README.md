@@ -33,6 +33,7 @@ Phase 2 以降の例:
 - `20260904100000_kenbei_phase24_push_drawings.sql`
 - `20260904120000_kenbei_phase25_210.sql`
 - `20260904140000_kenbei_rc1.sql`
+- `20261013100000_alpha_alignment.sql`（予定・作業員名簿・作業工程・合言葉ログイン。詳細は `docs/16-alpha-alignment.md`）
 
 ```bash
 pnpm dev
@@ -54,6 +55,7 @@ AI キーは任意です。未設定でもテンプレートとファイル名�
 - **本番URL:** `https://app.kenbei.jp`（`NEXT_PUBLIC_APP_URL` / `EXPO_PUBLIC_APP_URL`）
 - **AI:** `OPENAI_API_KEY`（軍師の自然言語）。任意 `KENBEI_AI_MODEL_DEFAULT`（未設定は gpt-4o-mini）。`GEMINI_API_KEY` / `ANTHROPIC_API_KEY` は既存キャプチャ用。
 - **日本語サーバーPDF:** `apps/web/fonts/NotoSansJP-Regular.ttf` をリポジトリに含める（TTF/OTF。Variable Font可。`.ttc` 不可）。`PDF_FONT_PATH` は不要。未配置時は文字化けPDFを出さず 422
+- **Web Push:** `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT`（任意。未設定でもアプリ内のお知らせは動く）
 - **Mobile:** `EXPO_PUBLIC_*` のみ。Service Role / Stripe / OpenAI を入れない
 - Expo Push は実機 + EAS `projectId` が必要です
 

@@ -3,30 +3,53 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
+import { PersonNameGate } from "@/components/person-name-gate";
 import { hideAppChrome } from "@/lib/public-path";
+
+export type ChromeViewer = {
+  organizationId: string;
+  displayName: string;
+  companyName: string;
+  isAdmin: boolean;
+  isCrew: boolean;
+};
 
 export function AppChrome({
   children,
   orgSwitcher,
   trialBanner,
   signedIn = false,
-  canOpenSettings = false,
+  viewer,
 }: {
   children: ReactNode;
   orgSwitcher: ReactNode;
   trialBanner?: ReactNode;
   signedIn?: boolean;
-  canOpenSettings?: boolean;
+  viewer: ChromeViewer | null;
 }) {
   const pathname = usePathname();
   if (hideAppChrome(pathname, signedIn)) {
     return <>{children}</>;
   }
-  return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-5 pt-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:max-w-4xl md:px-8 md:pb-12 md:pt-8">
-      <AppNav orgSwitcher={orgSwitcher} canOpenSettings={canOpenSettings} />
-      {trialBanner}
-      <div className="pb-4 md:pb-0">{children}</div>
+  const shell = (
+    <div className="flex min-h-dvh flex-col bg-white">
+      <AppNav
+        orgSwitcher={orgSwitcher}
+        displayName={viewer?.displayName ?? ""}
+        companyName={viewer?.companyName ?? ""}
+        isAdmin={viewer?.isAdmin ?? false}
+        usesDeviceName={viewer?.isCrew ?? false}
+      />
+      <main className="mx-auto w-full max-w-lg flex-1 overflow-x-hidden px-5 py-8 pb-[calc(9rem+env(safe-area-inset-bottom))]">
+        {trialBanner}
+        <div key={pathname} className="page-enter">
+          {children}
+        </div>
+      </main>
     </div>
   );
+  if (viewer?.isCrew) {
+    return <PersonNameGate organizationId={viewer.organizationId}>{shell}</PersonNameGate>;
+  }
+  return shell;
 }

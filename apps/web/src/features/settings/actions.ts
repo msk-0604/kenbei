@@ -75,7 +75,7 @@ export async function updateCompanySettingsAction(
       .update({ name: displayName, updated_by: workspace.userId })
       .eq("id", workspace.organizationId);
   }
-  revalidatePath("/settings");
+  revalidatePath("/settings/members");
   revalidatePath("/");
   return null;
 }
@@ -152,7 +152,7 @@ export async function createInviteAction(
     token,
     grant: grant.secret,
   });
-  revalidatePath("/settings");
+  revalidatePath("/settings/members");
   return {
     url: `${getAppUrl()}${inviteJoinPath(token)}`,
     email,
@@ -260,7 +260,7 @@ export async function cancelInviteAction(
   if (!data) {
     return { error: "この招待は取り消せません。" };
   }
-  revalidatePath("/settings");
+  revalidatePath("/settings/members");
   return { canceled: true };
 }
 
@@ -334,7 +334,7 @@ export async function setMembershipStatusAction(
     }
     return { error: error.message };
   }
-  revalidatePath("/settings");
+  revalidatePath("/settings/members");
   revalidatePath("/");
   return null;
 }

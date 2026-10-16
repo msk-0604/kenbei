@@ -21,7 +21,7 @@ export default async function ConfirmPage({
   return (
     <AppShell>
       <p className="text-sm text-zinc-500">
-        <Link href={`/projects/${capture.projectId}`}>現場</Link>
+        <Link href={`/sites/${capture.projectId}`}>現場</Link>
       </p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">確認</h1>
       {capture.transcript ? (

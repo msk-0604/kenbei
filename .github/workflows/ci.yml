@@ -31,4 +31,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: npx supabase db query --local "$(cat supabase/tests/rls_organization_isolation.sql)"
+      # supabase db query は複数の文を含む SQL ファイルを実行できないため、psql で直接流す
+      - run: psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f supabase/tests/rls_organization_isolation.sql
+      - run: psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -v ON_ERROR_STOP=1 -f supabase/tests/alpha_alignment_local.sql

@@ -7,7 +7,8 @@ import { LaunchSplash } from "@/components/launch-splash";
 import { OrgSwitcher } from "@/features/org/org-switcher";
 import { TrialStatusBanner } from "@/features/billing/trial-status-banner";
 import { getEntitlement } from "@/lib/entitlement";
-import { getWorkspace } from "@/lib/session";
+import { getWorkspace, type Workspace } from "@/lib/session";
+import { isCrewLogin, isSiteAdmin } from "@/lib/authz-guard";
 import "./globals.css";
 
 // iPhoneでホーム画面から起動した直後の画面（オープニングと同じ見た目）。
@@ -60,7 +61,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#0b1220",
+  themeColor: "#ffffff",
 };
 
 async function OrgSwitcherSlot() {
@@ -86,21 +87,30 @@ async function TrialBannerSlot() {
   );
 }
 
+function chromeViewer(workspace: Workspace | null) {
+  if (!workspace?.organizationId) {
+    return null;
+  }
+  return {
+    organizationId: workspace.organizationId,
+    displayName: workspace.displayName,
+    companyName: workspace.organizationName,
+    isAdmin: isSiteAdmin(workspace),
+    isCrew: isCrewLogin(workspace),
+  };
+}
+
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const workspace = await getWorkspace();
   return (
     <html lang="ja">
-      <body className="min-h-dvh bg-[var(--kb-paper)] text-[var(--kb-ink)] antialiased">
+      <body className="min-h-dvh bg-white text-navy-950 antialiased">
         <LaunchSplash signedIn={Boolean(workspace)} />
         <AppChrome
           signedIn={Boolean(workspace)}
-          canOpenSettings={Boolean(
-            workspace &&
-              (hasPermission(workspace.permissions, "org.manage") ||
-                hasPermission(workspace.permissions, "member.manage")),
-          )}
+          viewer={chromeViewer(workspace)}
           orgSwitcher={
-            <Suspense fallback={<div className="h-10 w-16" />}>
+            <Suspense fallback={null}>
               <OrgSwitcherSlot />
             </Suspense>
           }

@@ -8,7 +8,7 @@ const checkEmail = readFileSync(resolve(process.cwd(), "apps/web/src/app/signup/
 const mail = readFileSync(resolve(process.cwd(), "apps/web/src/features/settings/invite-mail.ts"), "utf8");
 const callback = readFileSync(resolve(process.cwd(), "apps/web/src/app/auth/callback/route.ts"), "utf8");
 const forms = readFileSync(resolve(process.cwd(), "apps/web/src/features/settings/forms.tsx"), "utf8");
-const settings = readFileSync(resolve(process.cwd(), "apps/web/src/app/settings/page.tsx"), "utf8");
+const settings = readFileSync(resolve(process.cwd(), "apps/web/src/app/settings/members/page.tsx"), "utf8");
 const sql = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20260922160000_invite_preview_invited_email.sql"),
   "utf8",

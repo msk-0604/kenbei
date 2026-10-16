@@ -16,7 +16,7 @@ const sql = readFileSync(
   "utf8",
 );
 const actions = readFileSync(resolve(process.cwd(), "apps/web/src/features/settings/actions.ts"), "utf8");
-const settingsPage = readFileSync(resolve(process.cwd(), "apps/web/src/app/settings/page.tsx"), "utf8");
+const settingsPage = readFileSync(resolve(process.cwd(), "apps/web/src/app/settings/members/page.tsx"), "utf8");
 const accountPage = readFileSync(resolve(process.cwd(), "apps/web/src/app/account/page.tsx"), "utf8");
 
 describe("P0 permission migration", () => {

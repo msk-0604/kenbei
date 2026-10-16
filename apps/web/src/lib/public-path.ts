@@ -12,7 +12,8 @@ export function isAnonymousPublicPath(pathname: string): boolean {
     pathname === "/forgot-password" ||
     pathname === "/reset-password" ||
     pathname === "/manifest.webmanifest" ||
-    pathname === "/robots.txt"
+    pathname === "/robots.txt" ||
+    pathname === "/sw.js"
   ) {
     return true;
   }
@@ -35,5 +36,6 @@ export function hideAppChrome(pathname: string, signedIn = false): boolean {
   if (pathname.startsWith("/signup/") || pathname.startsWith("/auth/")) {
     return true;
   }
-  return pathname.endsWith("/print");
+  // 印刷用の画面（日報の印刷・写真の印刷）はヘッダーやナビを出さない
+  return pathname.endsWith("/print") || /\/photos\/pdf$/.test(pathname);
 }

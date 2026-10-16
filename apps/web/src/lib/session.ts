@@ -3,7 +3,7 @@ import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import type { PermissionCode } from "@kensapo/domain";
-import { isPermissionCode } from "@kensapo/domain";
+import { CREW_ROLE_CODE, isPermissionCode } from "@kensapo/domain";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/env";
 import { bindSentryWorkspace } from "@/lib/server-log";
@@ -142,6 +142,17 @@ export const getWorkspace = cache(async (): Promise<Workspace | null> => {
     bindSentryWorkspace(empty);
     return empty;
   }
+  // 共通ログイン（合言葉）の端末は、管理者が「すべてログアウト」したらすぐ締め出す。
+  // getClaims は署名だけを見るので、セッションが消されたかは Auth に確かめる（共通ログインのときだけ）。
+  if (selected.roleCode === CREW_ROLE_CODE) {
+    const { error: sessionError } = await supabase.auth.getUser();
+    if (sessionError) {
+      await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
+      bindSentryWorkspace(null);
+      return null;
+    }
+  }
+
   const permissions = (row.roles?.role_permissions ?? [])
     .map((item) => item.permission_code)
     .filter(isPermissionCode);

@@ -5,6 +5,13 @@ import { pdfFontTraceIncludes } from "./src/lib/pdf-font-trace";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // kenbei-alpha に合わせて「現場」は /sites に移した。日報・チャット等の記録は /projects/[id] のまま。
+  async redirects() {
+    return [
+      { source: "/projects", destination: "/sites", permanent: false },
+      { source: "/projects/new", destination: "/sites/new", permanent: false },
+    ];
+  },
   transpilePackages: [
     "@kensapo/ai",
     "@kensapo/authz",

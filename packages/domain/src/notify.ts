@@ -91,6 +91,14 @@ export function parseKenbeiRoute(
   if (project) {
     return { type: "project", projectId: project };
   }
+  // Web の現場画面（/sites/:id、/sites/:id/progress など）はアプリの現場画面で開く
+  const site = firstGroup(path, new RegExp(`(?:^|/)sites/(${UUID})(?:/.*)?$`));
+  if (site) {
+    return { type: "project", projectId: site };
+  }
+  if (projectFromExtra) {
+    return { type: "project", projectId: projectFromExtra };
+  }
   return null;
 }
 
