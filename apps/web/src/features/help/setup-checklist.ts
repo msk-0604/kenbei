@@ -3,6 +3,8 @@
 export type SetupState = {
   workerCount: number;
   workerPasscodeSet: boolean;
+  /** 管理者のほかに、メールで入るメンバーがいるか（作業員を一人ずつ招待した会社） */
+  invitedMembers?: boolean;
   siteCount: number;
   scheduleCount: number;
   /** 作業員が「作業開始」を押したことがあるか（＝スマホで使い始めた） */
@@ -22,10 +24,10 @@ export function setupSteps(state: SetupState): SetupStep[] {
     },
     {
       key: "passcode",
-      label: "作業員の合言葉を決める",
-      detail: "作業員はメールアドレスなしで、会社コードと合言葉で入れます",
+      label: "作業員のログイン方法を決める",
+      detail: "一人ずつメールで招待（おすすめ）するか、みんなで同じ合言葉にします",
       href: "/settings#passcode",
-      done: state.workerPasscodeSet,
+      done: state.workerPasscodeSet || Boolean(state.invitedMembers),
     },
     {
       key: "sites",
@@ -44,7 +46,7 @@ export function setupSteps(state: SetupState): SetupStep[] {
     {
       key: "phones",
       label: "作業員のスマホで開いてもらう",
-      detail: "設定の「作業員に案内する」から LINE で送るか、案内を印刷して渡します",
+      detail: "招待メールを送るか、合言葉なら「作業員に案内する」から LINE で送る・案内を印刷して渡します",
       href: "/settings#passcode",
       done: state.workStarted,
     },

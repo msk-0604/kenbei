@@ -5,6 +5,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { SAMPLE_PREFIX, SAMPLE_SOURCE } from "@/features/help/sample-data";
 import type { SetupState } from "@/features/help/setup-checklist";
 
+const CREW_ROLE_ID = "00000000-0000-4000-a000-000000000009";
+
 /** 「はじめにやること」の進み具合。見本データは数えない。読めないものは「まだ」として扱う。 */
 export async function getSetupState(organizationId: string): Promise<SetupState & { hasSample: boolean }> {
   const supabase = await createServerSupabaseClient();
@@ -25,7 +27,7 @@ export async function getSetupState(organizationId: string): Promise<SetupState 
     return notSample ? query.not("project_id", "in", notSample) : query;
   };
 
-  const [workers, sites, scheduleCount, started, passcode] = await Promise.all([
+  const [workers, sites, scheduleCount, started, passcode, members] = await Promise.all([
     supabase
       .from("workers")
       .select("id", head)
@@ -47,6 +49,13 @@ export async function getSetupState(organizationId: string): Promise<SetupState 
           .eq("organization_id", organizationId)
           .eq("kind", "worker")
       : Promise.resolve({ count: 0 }),
+    supabase
+      .from("memberships")
+      .select("id", head)
+      .eq("organization_id", organizationId)
+      .in("status", ["active", "invited"])
+      .is("deleted_at", null)
+      .neq("role_id", CREW_ROLE_ID),
   ]);
   return {
     workerCount: workers.count ?? 0,
@@ -54,6 +63,7 @@ export async function getSetupState(organizationId: string): Promise<SetupState 
     siteCount: sites.count ?? 0,
     scheduleCount: scheduleCount.count ?? 0,
     workStarted: (started.count ?? 0) > 0,
+    invitedMembers: (members.count ?? 0) > 1,
     hasSample: sampleIds.length > 0,
   };
 }

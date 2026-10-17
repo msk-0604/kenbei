@@ -5,7 +5,9 @@ import { KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import Link from "next/link";
 import {
+  disableWorkerPasscodeAction,
   getPasscodeStatusAction,
   revokeCrewSessionsAction,
   setPasscodeAction,
@@ -15,9 +17,9 @@ import { WorkerInviteKit } from "@/features/workers/worker-invite-kit";
 
 const CONFIG: Record<PasscodeKind, { title: string; description: string; label: string }> = {
   worker: {
-    title: "作業員ログインの合言葉",
+    title: "作業員のログイン方法",
     description:
-      "作業員はメールアドレスやパスワードの代わりに、会社コードとこの合言葉でログインできます。会社の作業員全員が同じ合言葉を使います。",
+      "合言葉を決めると、作業員はメールアドレスやパスワードの代わりに、会社コードとこの合言葉でログインできます。会社の作業員全員が同じ合言葉を使います。",
     label: "新しい合言葉",
   },
   admin: {
@@ -38,6 +40,33 @@ export function PasscodeSettings({ kind, companyName = "" }: { kind: PasscodeKin
   const [success, setSuccess] = useState("");
   const [revoking, setRevoking] = useState(false);
   const [revokeMessage, setRevokeMessage] = useState("");
+  const [disabling, setDisabling] = useState(false);
+
+  async function handleDisable() {
+    if (
+      !window.confirm(
+        "合言葉ログインをやめて、作業員は一人ずつメールアドレスで入るようにします。合言葉で入っている端末はすべてログアウトします。よろしいですか？",
+      )
+    ) {
+      return;
+    }
+    setDisabling(true);
+    setError("");
+    setSuccess("");
+    try {
+      const result = await disableWorkerPasscodeAction();
+      if (result.ok) {
+        setCurrentlySet(false);
+        setSuccess("合言葉ログインをやめました。作業員は「メンバーと会社の設定」からメールで招待してください。");
+      } else {
+        setError(result.error);
+      }
+    } catch {
+      setError("合言葉ログインをやめられませんでした。もう一度お試しください。");
+    } finally {
+      setDisabling(false);
+    }
+  }
 
   async function handleRevoke() {
     if (
@@ -115,6 +144,26 @@ export function PasscodeSettings({ kind, companyName = "" }: { kind: PasscodeKin
         <KeyRound className="h-5 w-5 text-navy-900" aria-hidden />
         <h2 className="text-base font-bold text-gray-600">{config.title}</h2>
       </div>
+      {kind === "worker" ? (
+        <div className="mb-4 space-y-3 text-base leading-relaxed text-gray-700">
+          <p>作業員のログイン方法は、会社ごとに選べます。</p>
+          <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 px-3 py-2">
+            <p className="font-bold text-emerald-900">① 一人ずつメールアドレスとパスワード（おすすめ・安全）</p>
+            <p className="mt-1">
+              作業員を一人ずつメールで招待します。スマホなら顔認証・指紋でも入れます。
+              <Link href="/settings/members" className="ml-1 font-bold underline">
+                メンバーを招待する
+              </Link>
+            </p>
+          </div>
+          <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-3 py-2">
+            <p className="font-bold text-amber-950">② みんなで同じ合言葉（かんたん）</p>
+            <p className="mt-1">
+              メールアドレスがなくても入れます。ただし、会社のみんなで同じ言葉を使うため、①より安全性が下がります。合言葉が会社の外にもれると、だれでも会社の予定や現場を見られてしまいます。
+            </p>
+          </div>
+        </div>
+      ) : null}
       <p className="mb-4 text-base leading-relaxed text-gray-600">
         {config.description}
         {currentlySet === true ? "（現在、設定済みです）" : currentlySet === false ? "（まだ設定されていません）" : ""}
@@ -142,6 +191,16 @@ export function PasscodeSettings({ kind, companyName = "" }: { kind: PasscodeKin
         </Button>
       </form>
       {kind === "worker" && currentlySet && loginCode ? <WorkerInviteKit loginCode={loginCode} companyName={companyName} /> : null}
+      {kind === "worker" && currentlySet ? (
+        <div className="mt-6 border-t-2 border-gray-100 pt-5">
+          <p className="mb-3 text-base leading-relaxed text-gray-600">
+            一人ずつメールアドレスで入る方法（①）に切り替えるときは、合言葉ログインをやめてください。
+          </p>
+          <Button type="button" variant="secondary" fullWidth loading={disabling} onClick={() => void handleDisable()}>
+            合言葉ログインをやめる
+          </Button>
+        </div>
+      ) : null}
       {kind === "worker" && currentlySet ? (
         <div className="mt-6 border-t-2 border-gray-100 pt-5">
           <p className="mb-3 text-base leading-relaxed text-gray-600">
