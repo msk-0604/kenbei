@@ -3,8 +3,16 @@
 import { redirect } from "next/navigation";
 import { can, requireWorkspace } from "@/lib/authz-guard";
 import { getAppUrl } from "@/lib/env";
-import { persistableBillingPlanCode } from "@kensapo/domain";
+import { classifyBillingAccess, persistableBillingPlanCode } from "@kensapo/domain";
+import {
+  billingStatusFromSubscription,
+  buildInvoiceCustomerParams,
+  buildInvoiceSubscriptionParams,
+  isBankTransferUnavailable,
+  validateInvoiceBillingInput,
+} from "@/features/billing/invoice-billing";
 import { summarizeStripeCheckoutFailure } from "@/features/billing/stripe-error";
+import { recordPaidFunnelEvent } from "@/features/billing/stripe-webhook";
 import { resolveStripePriceForPlan } from "@/lib/entitlement";
 import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
 import { readServerEnv } from "@/lib/server-env";
@@ -27,7 +35,12 @@ export async function startCheckoutFormAction(formData: FormData): Promise<void>
   }
 }
 
-export async function startCheckoutAction(planCode: string): Promise<{ error: string } | null> {
+type BillingPreflight =
+  | { error: string }
+  | { workspace: Awaited<ReturnType<typeof requireWorkspace>>; secret: string; price: string; checkoutPlan: string };
+
+/** 契約を始める前の共通チェック（権限・回数制限・Stripe の設定） */
+async function billingPreflight(planCode: string): Promise<BillingPreflight> {
   const workspace = await requireWorkspace();
   if (!can(workspace, "org.manage")) {
     return { error: "課金を変更する権限がありません。" };
@@ -62,7 +75,15 @@ export async function startCheckoutAction(planCode: string): Promise<{ error: st
       error: `原因: Vercel の ${priceLookup.emptyKeys.join(" / ")} が空です。`,
     };
   }
-  const price = priceLookup.price;
+  return { workspace, secret, price: priceLookup.price, checkoutPlan };
+}
+
+export async function startCheckoutAction(planCode: string): Promise<{ error: string } | null> {
+  const preflight = await billingPreflight(planCode);
+  if ("error" in preflight) {
+    return preflight;
+  }
+  const { workspace, secret, price, checkoutPlan } = preflight;
   const attribution = stripeAttributionMetadata(readAttributionFromCookies(await cookies()));
   const checkoutParams = new URLSearchParams({
     mode: "subscription",
@@ -211,5 +232,123 @@ async function cancelSubscription(): Promise<{ error: string } | null> {
     .from("organization_billing")
     .update({ cancel_at_period_end: true })
     .eq("organization_id", workspace.organizationId);
+  return null;
+}
+
+export async function startInvoiceBillingFormAction(formData: FormData): Promise<void> {
+  const result = await startInvoiceBilling(formData);
+  if (result?.error) {
+    redirect(`/settings/billing?error=${encodeURIComponent(result.error)}`);
+  }
+  redirect("/settings/billing?invoice=1");
+}
+
+type StripeJson = { id?: string; status?: string; current_period_end?: number; error?: { message?: string; param?: string } };
+
+async function stripePost(secret: string, path: string, body: URLSearchParams): Promise<{ status: number; json: StripeJson }> {
+  const res = await fetch(`https://api.stripe.com/v1/${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secret}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  return { status: res.status, json: (await res.json()) as StripeJson };
+}
+
+/** 請求書払い：毎月の請求書が届き、振込かカードで払う契約を作る */
+async function startInvoiceBilling(formData: FormData): Promise<{ error: string } | null> {
+  const input = validateInvoiceBillingInput({
+    billingName: formData.get("billingName"),
+    billingEmail: formData.get("billingEmail"),
+  });
+  if (!input.ok) {
+    return { error: input.error };
+  }
+  const preflight = await billingPreflight("standard");
+  if ("error" in preflight) {
+    return preflight;
+  }
+  const { workspace, secret, price, checkoutPlan } = preflight;
+  const admin = createAdminSupabaseClient();
+  if (!admin) {
+    return { error: "原因: Vercel の SUPABASE_SERVICE_ROLE_KEY が空です。" };
+  }
+  const context = { organizationId: workspace.organizationId, userId: workspace.userId };
+  const current = await admin
+    .from("organization_billing")
+    .select("stripe_customer_id, stripe_subscription_id, status, plan_code, trial_ends_at")
+    .eq("organization_id", workspace.organizationId)
+    .maybeSingle();
+  const row = current.data as {
+    stripe_customer_id: string | null;
+    stripe_subscription_id: string | null;
+    status: string;
+    plan_code: string;
+    trial_ends_at: string | null;
+  } | null;
+  if (row?.stripe_subscription_id && row.status !== "canceled") {
+    const active =
+      classifyBillingAccess({ planCode: row.plan_code, status: row.status, trialEndsAt: row.trial_ends_at }) === "paid_active";
+    return {
+      error: active
+        ? "すでに契約中です。支払い方法の変更は「支払い方法・領収書を確認」から行えます。"
+        : "お支払いが済んでいない請求があります。「支払い方法・領収書を確認」からお支払いください。",
+    };
+  }
+
+  try {
+    let customer = row?.stripe_customer_id ?? null;
+    const customerParams = buildInvoiceCustomerParams({ ...input.value, organizationId: workspace.organizationId });
+    const customerResult = await stripePost(secret, customer ? `customers/${customer}` : "customers", customerParams);
+    if (!customerResult.json.id) {
+      await logServerError("stripe.invoice.customer_failed", { status: customerResult.status, message: customerResult.json.error?.message ?? "" }, context);
+      return { error: customerResult.json.error?.message ?? "請求先を登録できませんでした。" };
+    }
+    customer = customerResult.json.id;
+
+    const attribution = stripeAttributionMetadata(readAttributionFromCookies(await cookies()));
+    const subscriptionParams = (bankTransfer: boolean) =>
+      buildInvoiceSubscriptionParams({
+        customer: customer as string,
+        price,
+        organizationId: workspace.organizationId,
+        planCode: checkoutPlan,
+        bankTransfer,
+        attribution,
+      });
+    let subscription = await stripePost(secret, "subscriptions", subscriptionParams(true));
+    if (!subscription.json.id && isBankTransferUnavailable(subscription.json.error)) {
+      await logServerError("stripe.invoice.bank_transfer_unavailable", { message: subscription.json.error?.message ?? "" }, context);
+      subscription = await stripePost(secret, "subscriptions", subscriptionParams(false));
+    }
+    if (!subscription.json.id) {
+      const summary = summarizeStripeCheckoutFailure(subscription.status, subscription.json);
+      await logServerError(
+        "stripe.invoice.subscription_failed",
+        { status: summary.status, stripe_type: summary.type, stripe_code: summary.code, stripe_message: summary.message },
+        context,
+      );
+      return { error: summary.message };
+    }
+
+    await admin.from("organization_billing").upsert({
+      organization_id: workspace.organizationId,
+      plan_code: checkoutPlan,
+      status: billingStatusFromSubscription(subscription.json.status),
+      stripe_customer_id: customer,
+      stripe_subscription_id: subscription.json.id,
+      trial_ends_at: null,
+      cancel_at_period_end: false,
+      current_period_end: subscription.json.current_period_end
+        ? new Date(subscription.json.current_period_end * 1000).toISOString()
+        : null,
+    });
+    await recordPaidFunnelEvent(admin as unknown as Parameters<typeof recordPaidFunnelEvent>[0], workspace.organizationId, checkoutPlan, attribution);
+  } catch {
+    await logServerError("stripe.invoice.subscription_failed", { reason: "network" }, context);
+    return { error: "請求書払いの手続きを開始できませんでした。時間をおいてやり直してください。" };
+  }
   return null;
 }

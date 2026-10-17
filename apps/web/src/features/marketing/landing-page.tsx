@@ -152,7 +152,7 @@ export function MarketingLandingPage() {
       <section className="mt-16 rounded-3xl bg-[var(--kb-card)] p-6 ring-1 ring-[var(--kb-line)] md:p-8">
         <h2 className="text-2xl font-semibold tracking-tight">今日の現場から、試してみてください。</h2>
         <p className="mt-3 text-sm leading-6 text-zinc-600">
-          14日間無料。続けるなら月額9,800円（税込）。{TRIAL_NO_CARD_LINE}
+          14日間無料。続けるなら月額18,000円（税込）。{TRIAL_NO_CARD_LINE}
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <MarketingCta href="/signup">14日間無料で試す</MarketingCta>

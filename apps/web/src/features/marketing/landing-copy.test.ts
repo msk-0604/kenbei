@@ -13,13 +13,13 @@ import {
 } from "./landing-copy";
 
 describe("landing copy stays on confirmed billing facts", () => {
-  it("sells one plan at 9,800 yen per month", () => {
+  it("sells one plan at 18,000 yen per month", () => {
     const standard = DEFAULT_BILLING_PLANS.find((plan) => plan.code === "standard");
-    expect(standard?.monthlyPriceJpy).toBe(9_800);
+    expect(standard?.monthlyPriceJpy).toBe(18_000);
     expect(standard?.maxMembers).toBe(20);
-    expect(landingPlan()).toEqual({ code: "standard", name: "KENBEI", monthlyPriceJpy: 9_800, maxMembers: 20 });
-    expect(monthlyYenLabel(9_800)).toBe("月額 9,800円");
-    expect(monthlyYenWithTaxLabel(9_800)).toBe("月額 9,800円（税込）");
+    expect(landingPlan()).toEqual({ code: "standard", name: "KENBEI", monthlyPriceJpy: 18_000, maxMembers: 20 });
+    expect(monthlyYenLabel(18_000)).toBe("月額 18,000円");
+    expect(monthlyYenWithTaxLabel(18_000)).toBe("月額 18,000円（税込）");
     expect(memberLimitLabel(20)).toBe("20名まで");
     expect(memberLimitLabel(null)).toBe("人数上限なし");
   });
@@ -29,7 +29,7 @@ describe("landing copy stays on confirmed billing facts", () => {
       " ",
     );
     expect(text).toContain(TAX_INCLUDED_LABEL);
-    expect(text).toMatch(/月額9,800円（税込）/);
+    expect(text).toMatch(/月額18,000円（税込）/);
     expect(text).not.toMatch(/39,800|65,000|STANDARD|BUSINESS/);
     expect(text).not.toMatch(/税別|保存容量|GB|返金|自動連携/);
     expect(text).toMatch(/クレジットカードは不要/);

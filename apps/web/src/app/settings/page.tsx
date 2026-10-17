@@ -52,10 +52,10 @@ export default async function SettingsPage() {
         )}
 
         {isAdmin ? (
-          <>
+          <div id="passcode" className="scroll-mt-20 space-y-4">
             <PasscodeSettings kind="admin" />
             <PasscodeSettings kind="worker" />
-          </>
+          </div>
         ) : null}
 
         <Card>
@@ -79,6 +79,10 @@ export default async function SettingsPage() {
             管理者としてログインする
           </ActionLink>
         ) : null}
+
+        <ActionLink href="/help" variant="secondary" description="困ったとき・初めての設定">
+          使い方・よくある質問
+        </ActionLink>
 
         <LogoutButton />
       </section>
