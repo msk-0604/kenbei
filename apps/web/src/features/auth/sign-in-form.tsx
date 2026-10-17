@@ -1,14 +1,23 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { signInAction } from "@/features/auth/actions";
+import { canUseDevicePasskey, shouldOfferPasskey } from "@/features/auth/passkey-client";
 
 export function SignInForm({ nextPath, defaultEmail }: { nextPath?: string; defaultEmail?: string }) {
   const [state, action, pending] = useActionState(signInAction, null);
+  // 顔認証が使えるスマホで、まだ登録も「あとで」もしていなければ、ログイン後に一度だけ勧める
+  const [offerPasskey, setOfferPasskey] = useState(false);
+  useEffect(() => {
+    if (shouldOfferPasskey()) {
+      void canUseDevicePasskey().then(setOfferPasskey);
+    }
+  }, []);
 
   return (
     <form action={action} className="flex flex-col gap-4">
       {nextPath ? <input type="hidden" name="next" value={nextPath} /> : null}
+      {offerPasskey ? <input type="hidden" name="passkeyOffer" value="1" /> : null}
       <label className="flex flex-col gap-1 text-sm font-medium">
         メールアドレス
         <input

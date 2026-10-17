@@ -20,6 +20,8 @@
     "@kensapo/similar-projects": "workspace:*",
     "@pdf-lib/fontkit": "^1.1.1",
     "@sentry/nextjs": "^10.74.0",
+    "@simplewebauthn/browser": "13.2.2",
+    "@simplewebauthn/server": "13.2.2",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.57.4",
     "lucide-react": "^0.511.0",

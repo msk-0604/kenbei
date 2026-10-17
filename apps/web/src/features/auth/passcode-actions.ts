@@ -5,7 +5,7 @@ import { cookies, headers } from "next/headers";
 import { decideRateLimit } from "@/lib/rate-limit-policy";
 import { isSiteAdmin, requireWorkspace } from "@/lib/authz-guard";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { signInAsUser } from "@/lib/auth/sign-in-as";
 import { ORG_COOKIE } from "@/lib/session";
 import {
   CREW_DISPLAY_NAME,
@@ -291,21 +291,7 @@ export async function passcodeLoginAction(input: {
     return { ok: false, error: WRONG };
   }
 
-  const userResult = await admin.auth.admin.getUserById(profileId);
-  const email = userResult.data?.user?.email;
-  if (userResult.error || !email) {
-    return { ok: false, error: "ログインに失敗しました。もう一度お試しください。" };
-  }
-  const generated = await admin.auth.admin.generateLink({ type: "magiclink", email });
-  const tokenHash = generated.data?.properties?.hashed_token;
-  if (generated.error || !tokenHash) {
-    return { ok: false, error: "ログインに失敗しました。もう一度お試しください。" };
-  }
-
-  const supabase = await createServerSupabaseClient();
-  await supabase.auth.signOut();
-  const { error: verifyError } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash });
-  if (verifyError) {
+  if (!(await signInAsUser(admin, profileId))) {
     return { ok: false, error: "ログインに失敗しました。もう一度お試しください。" };
   }
   const cookieStore = await cookies();
