@@ -15,13 +15,19 @@ function firstQueryValue(value: string | string[] | undefined): string {
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string | string[]; ok?: string | string[]; canceled?: string | string[] }>;
+  searchParams: Promise<{
+    error?: string | string[];
+    ok?: string | string[];
+    canceled?: string | string[];
+    invoice?: string | string[];
+  }>;
 }) {
   const workspace = await requireWorkspace();
   const params = await searchParams;
   const error = redactStripeSecrets(firstQueryValue(params.error)).slice(0, 300);
   const ok = firstQueryValue(params.ok);
   const canceled = firstQueryValue(params.canceled);
+  const invoice = firstQueryValue(params.invoice);
   if (!can(workspace, "org.manage")) {
     return (
       <AppShell>
@@ -48,6 +54,11 @@ export default async function BillingPage({
           お支払い手続きが完了しました。反映まで少し待つ場合があります。
         </p>
       ) : null}
+      {invoice ? (
+        <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 ring-1 ring-emerald-200">
+          請求書払いで契約しました。最初の請求書をメールでお送りします（届くまで数分かかることがあります）。
+        </p>
+      ) : null}
       {canceled ? (
         <p className="mt-4 rounded-2xl bg-zinc-50 px-4 py-3 text-sm text-zinc-700 ring-1 ring-zinc-200">
           手続きをキャンセルしました。
@@ -61,6 +72,7 @@ export default async function BillingPage({
           access={entitlement.access}
           trialDaysLeft={entitlement.trialDaysLeft}
           variant="billing"
+          invoiceDefaults={{ name: workspace.organizationName, email: workspace.email ?? "" }}
         />
       </div>
       {canOpenBillingPortal(true, entitlement.stripeCustomerId) ? (

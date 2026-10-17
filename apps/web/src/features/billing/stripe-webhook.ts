@@ -67,6 +67,43 @@ export function organizationIdFromStripeObject(obj: StripeWebhookObject): string
   return meta?.organization_id || (obj.client_reference_id as string | undefined) || null;
 }
 
+type FunnelAttribution = {
+  visitor_id?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+};
+
+/** 契約した会社を営業ファネルに「paid」として記録する（カード・請求書払いの両方） */
+export async function recordPaidFunnelEvent(
+  admin: BillingAdmin,
+  organizationId: string,
+  planCode: string | null,
+  attribution: FunnelAttribution | undefined,
+): Promise<void> {
+  try {
+    await admin
+      .from("sales_funnel_events")
+      .insert({
+        visitor_id: attribution?.visitor_id || `org:${organizationId}`,
+        organization_id: organizationId,
+        event_kind: "paid",
+        utm_source: attribution?.utm_source ?? null,
+        utm_medium: attribution?.utm_medium ?? null,
+        utm_campaign: attribution?.utm_campaign ?? null,
+        utm_content: attribution?.utm_content ?? null,
+        utm_term: attribution?.utm_term ?? null,
+        plan_code: planCode ? normalizeBillingPlanCode(planCode) : null,
+      })
+      .select("id")
+      .maybeSingle();
+  } catch {
+    // Funnel table may be missing until the approved migration is applied.
+  }
+}
+
 export async function applyStripeWebhookBusiness(
   admin: BillingAdmin,
   event: StripeWebhookEvent,
@@ -88,28 +125,7 @@ export async function applyStripeWebhookBusiness(
         trial_ends_at: null,
         ...(planCode ? { plan_code: planCode } : {}),
       });
-      const attribution = obj.metadata as
-        | { visitor_id?: string; utm_source?: string; utm_medium?: string; utm_campaign?: string; utm_content?: string; utm_term?: string }
-        | undefined;
-      try {
-        await admin
-          .from("sales_funnel_events")
-          .insert({
-            visitor_id: attribution?.visitor_id || `org:${organizationId}`,
-            organization_id: organizationId,
-            event_kind: "paid",
-            utm_source: attribution?.utm_source ?? null,
-            utm_medium: attribution?.utm_medium ?? null,
-            utm_campaign: attribution?.utm_campaign ?? null,
-            utm_content: attribution?.utm_content ?? null,
-            utm_term: attribution?.utm_term ?? null,
-            plan_code: planCode ? normalizeBillingPlanCode(planCode) : null,
-          })
-          .select("id")
-          .maybeSingle();
-      } catch {
-        // Funnel table may be missing until the approved migration is applied.
-      }
+      await recordPaidFunnelEvent(admin, organizationId, planCode, obj.metadata as Record<string, string> | undefined);
     }
   }
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
