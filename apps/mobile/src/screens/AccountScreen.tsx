@@ -40,7 +40,7 @@ function PlanLine() {
                 ? "FREE"
                 : row.plan_code === "enterprise"
                   ? "ENTERPRISE"
-                  : "KENBEI 月額9,800円";
+                  : "KENBEI 月額18,000円";
           setPlan(`${label} / ${row.status === "active" ? "利用中" : row.status}`);
         }
       });

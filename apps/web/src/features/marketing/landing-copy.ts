@@ -3,7 +3,7 @@ import { KENBEI_MAX_MEMBERS, KENBEI_MONTHLY_PRICE_JPY, billingPlanByCode } from 
 export const LANDING_HEADLINE = "現場が終わったら、15分で日報まで。";
 
 export const LANDING_LEAD =
-  "写真を撮る、作業にチェック、日報を出す。施工管理の事務を3つの操作にまとめました。会社まるごと月額9,800円（税込）。";
+  "写真を撮る、作業にチェック、日報を出す。施工管理の事務を3つの操作にまとめました。会社まるごと月額18,000円（税込）。";
 
 export const TRIAL_NO_CARD_LINE = "無料体験の開始に、クレジットカードは不要です。";
 

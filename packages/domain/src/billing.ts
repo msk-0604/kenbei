@@ -16,7 +16,7 @@ export type BillingPlanDefinition = {
 };
 
 export const KENBEI_PLAN_NAME = "KENBEI";
-export const KENBEI_MONTHLY_PRICE_JPY = 9_800;
+export const KENBEI_MONTHLY_PRICE_JPY = 18_000;
 export const KENBEI_MAX_MEMBERS = 20;
 
 export const DEFAULT_BILLING_PLANS: readonly BillingPlanDefinition[] = [
