@@ -114,7 +114,7 @@ export function ScheduleDayList({
 
               <ul className="space-y-4">
                 {group.items.map((s) => (
-                  <li key={s.id}>
+                  <li key={s.id} className="cv-auto">
                     <ScheduleCard
                       schedule={s}
                       hideProjectName

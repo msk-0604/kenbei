@@ -88,7 +88,7 @@ export function PhotoGallery({ projectId, photos }: { projectId: string; photos:
                 className="relative aspect-square overflow-hidden rounded-lg bg-gray-100"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo.url} alt={photo.label} className="h-full w-full object-cover" loading="lazy" />
+                <img src={photo.url} alt={photo.label} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                 {selecting ? (
                   <>
                     <div className={cn("absolute inset-0 transition-colors", selected ? "bg-navy-950/40" : "bg-black/0")} />

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
+import { NavDirection } from "@/components/nav-direction";
 import { PersonNameGate } from "@/components/person-name-gate";
 import { hideAppChrome } from "@/lib/public-path";
 
@@ -33,6 +34,7 @@ export function AppChrome({
   }
   const shell = (
     <div className="flex min-h-dvh flex-col bg-white">
+      <NavDirection />
       <AppNav
         orgSwitcher={orgSwitcher}
         displayName={viewer?.displayName ?? ""}

@@ -56,7 +56,7 @@ export default async function WorkersPage() {
       ) : (
         <ul className="space-y-4">
           {workers.map((worker) => (
-            <li key={worker.id}>
+            <li key={worker.id} className="cv-auto">
               <Card>
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="text-xl font-bold text-navy-950">{worker.name}</h3>

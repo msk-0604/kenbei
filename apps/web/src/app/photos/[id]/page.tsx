@@ -38,7 +38,7 @@ export default async function PhotoDetailPage({
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">写真の整理</h1>
       {photo.url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={photo.url} alt="" className="mt-6 w-full rounded-3xl object-cover" />
+        <img src={photo.url} alt="" decoding="async" className="mt-6 w-full rounded-3xl object-cover" />
       ) : null}
       <p className="mt-4 text-sm text-zinc-500">
         撮影 {photo.takenAt.slice(0, 16).replace("T", " ")} / {photo.capturedByName ?? "不明"}

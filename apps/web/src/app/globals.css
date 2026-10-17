@@ -43,6 +43,39 @@
   --kb-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --kb-micro: 150ms;
   --kb-move: 220ms;
+
+  /* 動きの決まり（Apple 純正アプリのように、速く・なめらかに・やりすぎない）
+     transform と opacity だけを動かし、画面の再計算（レイアウト）を起こさない。
+     スプリングは CSS の linear() で表す。対応していないブラウザは近い cubic-bezier を使う。 */
+  --spring-press: cubic-bezier(0.3, 0, 0.5, 1); /* 押し込み：すっと沈む */
+  --spring-release: cubic-bezier(0.2, 0.9, 0.3, 1.15); /* 戻り：ほんの少しだけ弾む */
+  --spring-smooth: cubic-bezier(0.32, 0.72, 0, 1); /* 画面・シート：iOS の標準に近い */
+  --dur-press: 90ms;
+  --dur-release: 420ms;
+  --dur-page: 360ms;
+  --dur-sheet: 420ms;
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    /* 減衰の強いバネ（行き過ぎ 1〜2% だけ）。iOS の UISpringTimingParameters (damping 0.82) に近い */
+    --spring-release: linear(
+      0, 0.0115, 0.0435 2.2%, 0.1595 4.6%, 0.3285 7.6%, 0.5265 11.2%, 0.6915 14.8%, 0.8155 18.6%,
+      0.9025 22.6%, 0.9575 27%, 0.9905 32%, 1.0065 37.8%, 1.0115 45%, 1.0075 56%, 1.0015 72%, 1
+    );
+    --spring-smooth: linear(
+      0, 0.0081, 0.0313 2.6%, 0.1134 5.4%, 0.2396 8.6%, 0.3986 12.4%, 0.5596 16.6%, 0.6935 20.9%,
+      0.7991 25.5%, 0.8763 30.5%, 0.9292 35.8%, 0.9632 41.6%, 0.9839 48.2%, 0.9946 56.3%, 0.9991 67.7%, 1
+    );
+  }
+}
+
+/* タップの遅れ（ダブルタップ拡大の待ち）をなくす・横方向の引っぱりを止める */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior-x: none;
 }
 
 @theme inline {
@@ -110,20 +143,25 @@ input[list]::-webkit-list-button {
   line-height: 1;
 }
 
-/* タップした感触（押し込みは速く、戻るときに少し間を置く） */
+/* タップした感触：押した瞬間にすっと沈み、指を離すとバネで戻る。
+   will-change は押している間だけ付ける（常に付けると一覧で GPU のレイヤーが増えて重くなる）。 */
 .tap-press {
   -webkit-tap-highlight-color: transparent;
-  transform: translateZ(0);
+  -webkit-touch-callout: none;
   transition:
-    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 180ms ease,
-    filter 180ms ease;
-  will-change: transform;
+    transform var(--dur-release) var(--spring-release),
+    filter var(--dur-release) ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
 }
 .tap-press:active {
-  transform: scale(0.96) translateY(1px);
-  transition-duration: 70ms;
-  filter: brightness(0.97);
+  transform: scale(0.97);
+  filter: brightness(0.96);
+  transition:
+    transform var(--dur-press) var(--spring-press),
+    filter var(--dur-press) ease;
+  will-change: transform;
 }
 .tap-press:disabled,
 .tap-press[aria-disabled="true"] {
@@ -134,31 +172,112 @@ input[list]::-webkit-list-button {
 @media (prefers-reduced-motion: reduce) {
   .tap-press,
   .tap-press:active {
-    transition: none;
+    transition: background-color 120ms ease, color 120ms ease;
     transform: none;
     filter: none;
   }
 }
 
-/* 画面の切り替え：パッと切り替わらないよう、ふわっと表示する */
-@keyframes page-enter {
+/* 画面の切り替え（iOS のナビゲーションに近い動き）
+   ・進む：右から少しだけ寄ってくる　・戻る：左から　・下のタブ：その場でふわっと
+   動かす距離は小さく（16px）、時間は短く。最初のフレームから動き始めるので、待たされた感じがしない。 */
+@keyframes page-push {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translate3d(16px, 0, 0);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
+@keyframes page-pop {
+  from {
+    opacity: 0;
+    transform: translate3d(-16px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes page-fade {
+  from {
+    opacity: 0;
+    transform: scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* fill は backwards：終わったあとに transform を残さない（残すと中の position: fixed がずれる） */
 .page-enter {
-  animation: page-enter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: page-push var(--dur-page) var(--spring-smooth) backwards;
+}
+html[data-nav="back"] .page-enter {
+  animation-name: page-pop;
+}
+html[data-nav="tab"] .page-enter {
+  animation: page-fade 240ms var(--spring-smooth) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-enter {
+  .page-enter,
+  html[data-nav] .page-enter {
+    animation: page-fade 160ms ease-out backwards;
+  }
+}
+
+/* 読み込み中の骨組み（スケルトン）。すぐ終わる読み込みでチラつかないよう、少し待ってから出す */
+@keyframes skeleton-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+.skeleton-screen {
+  animation: skeleton-reveal 200ms ease-out 120ms both;
+}
+.skeleton {
+  border-radius: 1rem;
+  background: linear-gradient(90deg, #eef0f3 0%, #eef0f3 40%, #f7f8fa 50%, #eef0f3 60%, #eef0f3 100%);
+  background-size: 300% 100%;
+  animation: skeleton-shimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
     animation: none;
   }
+}
+
+/* 長い一覧：画面の外の行は描かない（スクロールが軽くなる） */
+.cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 7rem;
+}
+
+/* 選んだタブのアイコンが、ほんの少しだけ弾む */
+@keyframes tab-pop {
+  0% {
+    transform: scale(0.88);
+  }
+  100% {
+    transform: none;
+  }
+}
+.tab-pop {
+  animation: tab-pop var(--dur-release) var(--spring-release) both;
 }
 
 /* モーダル：背景は暗転してふわっと、本体は中央で拡大+フェードイン
@@ -182,7 +301,7 @@ input[list]::-webkit-list-button {
 @keyframes modal-panel-in {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.94);
   }
   to {
     opacity: 1;
@@ -200,16 +319,16 @@ input[list]::-webkit-list-button {
   }
 }
 .modal-backdrop-enter {
-  animation: modal-backdrop-in 220ms ease-out;
+  animation: modal-backdrop-in 260ms ease-out;
 }
 .modal-backdrop-leave {
   animation: modal-backdrop-out 200ms ease-in forwards;
 }
 .modal-panel-enter {
-  animation: modal-panel-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: modal-panel-in var(--dur-sheet) var(--spring-smooth);
 }
 .modal-panel-leave {
-  animation: modal-panel-out 200ms ease-in forwards;
+  animation: modal-panel-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -263,21 +382,26 @@ button,
 .kb-tap,
 a.kb-tap {
   transition:
-    transform var(--kb-micro) var(--kb-ease),
+    transform var(--dur-release) var(--spring-release),
     opacity var(--kb-move) var(--kb-ease),
     background-color var(--kb-micro) var(--kb-ease),
     box-shadow var(--kb-move) var(--kb-ease),
     color var(--kb-micro) var(--kb-ease);
 }
 
-button:hover:not(:disabled),
-.kb-tap:hover {
-  opacity: 0.96;
+@media (hover: hover) {
+  button:hover:not(:disabled),
+  .kb-tap:hover {
+    opacity: 0.96;
+  }
 }
 
 button:active:not(:disabled),
 .kb-tap:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+  transition:
+    transform var(--dur-press) var(--spring-press),
+    background-color var(--kb-micro) var(--kb-ease);
 }
 
 :focus-visible {
@@ -301,7 +425,7 @@ button:active:not(:disabled),
 }
 
 .kb-enter {
-  animation: kb-in var(--kb-move) var(--kb-ease) both;
+  animation: kb-in var(--dur-page) var(--spring-smooth) both;
 }
 
 @keyframes kb-in {
