@@ -44,7 +44,7 @@ export function setupSteps(state: SetupState): SetupStep[] {
     {
       key: "phones",
       label: "作業員のスマホで開いてもらう",
-      detail: "会社コード付きのURLを送り、「作業開始」を押してもらいます",
+      detail: "設定の「作業員に案内する」から LINE で送るか、案内を印刷して渡します",
       href: "/settings#passcode",
       done: state.workStarted,
     },

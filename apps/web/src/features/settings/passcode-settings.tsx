@@ -11,6 +11,7 @@ import {
   setPasscodeAction,
   type PasscodeKind,
 } from "@/features/auth/passcode-actions";
+import { WorkerInviteKit } from "@/features/workers/worker-invite-kit";
 
 const CONFIG: Record<PasscodeKind, { title: string; description: string; label: string }> = {
   worker: {
@@ -27,7 +28,7 @@ const CONFIG: Record<PasscodeKind, { title: string; description: string; label: 
   },
 };
 
-export function PasscodeSettings({ kind }: { kind: PasscodeKind }) {
+export function PasscodeSettings({ kind, companyName = "" }: { kind: PasscodeKind; companyName?: string }) {
   const config = CONFIG[kind];
   const [passcode, setPasscode] = useState("");
   const [currentlySet, setCurrentlySet] = useState<boolean | null>(null);
@@ -140,6 +141,7 @@ export function PasscodeSettings({ kind }: { kind: PasscodeKind }) {
           合言葉を保存する
         </Button>
       </form>
+      {kind === "worker" && currentlySet && loginCode ? <WorkerInviteKit loginCode={loginCode} companyName={companyName} /> : null}
       {kind === "worker" && currentlySet ? (
         <div className="mt-6 border-t-2 border-gray-100 pt-5">
           <p className="mb-3 text-base leading-relaxed text-gray-600">

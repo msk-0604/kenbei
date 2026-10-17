@@ -54,7 +54,7 @@ export default async function SettingsPage() {
         {isAdmin ? (
           <div id="passcode" className="scroll-mt-20 space-y-4">
             <PasscodeSettings kind="admin" />
-            <PasscodeSettings kind="worker" />
+            <PasscodeSettings kind="worker" companyName={workspace.organizationName} />
           </div>
         ) : null}
 
