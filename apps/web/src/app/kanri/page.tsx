@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/kanri/schedules", label: "全員の予定を見る・変更する" },
   { href: "/sites/new", label: "現場を登録する" },
   { href: "/workers/new", label: "作業員を登録する" },
+  { href: "/kanri/import", label: "Excel から作業員・現場をまとめて取り込む" },
   { href: "/sites", label: "現場の進捗と写真を確認する" },
   { href: "/sites?intent=process", label: "工程を変更する" },
   { href: "/kanri/archive", label: "完了した現場の保存を見る" },
