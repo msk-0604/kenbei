@@ -41,7 +41,7 @@ export default async function KanriHomePage() {
         <h1 className="text-3xl font-bold text-gray-950">管理</h1>
         <p className="mt-2 text-lg text-gray-700">現場、予定、従業員の登録はここから行います。</p>
       </header>
-      {setupState ? <SetupChecklistCard steps={setupSteps(setupState)} /> : null}
+      {setupState ? <SetupChecklistCard steps={setupSteps(setupState)} hasSample={setupState.hasSample} /> : null}
       <ul className="space-y-3">
         {LINKS.map((link) => (
           <li key={link.href}>

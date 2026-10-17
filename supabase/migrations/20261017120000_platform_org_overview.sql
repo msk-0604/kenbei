@@ -1,5 +1,6 @@
 -- 運営（KENBEI を売る側）が全社の利用状況を見るための集計。
 -- サービスロール（サーバー）だけが呼べる。画面側は PLATFORM_ADMIN_EMAILS で更に絞る。
+-- 見本データ（projects.source = 'sample'、作業員名が【見本】で始まる）は人数・現場数に数えない。
 
 CREATE INDEX IF NOT EXISTS schedules_org_created ON public.schedules (organization_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS daily_reports_org_created ON public.daily_reports (organization_id, created_at DESC);
@@ -53,8 +54,14 @@ AS $$
       SELECT count(*)::int FROM public.memberships m
       WHERE m.organization_id = o.id AND m.status = 'active' AND m.deleted_at IS NULL
     ),
-    (SELECT count(*)::int FROM public.workers w WHERE w.organization_id = o.id AND w.status = 'active'),
-    (SELECT count(*)::int FROM public.projects p WHERE p.organization_id = o.id AND p.deleted_at IS NULL),
+    (
+      SELECT count(*)::int FROM public.workers w
+      WHERE w.organization_id = o.id AND w.status = 'active' AND w.name NOT LIKE '【見本】%'
+    ),
+    (
+      SELECT count(*)::int FROM public.projects p
+      WHERE p.organization_id = o.id AND p.deleted_at IS NULL AND p.source <> 'sample'
+    ),
     (
       SELECT count(*)::int FROM public.schedules s
       WHERE s.organization_id = o.id AND s.created_at > now() - interval '7 days'

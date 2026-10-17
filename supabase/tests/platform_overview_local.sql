@@ -44,6 +44,9 @@ BEGIN
   INSERT INTO public.projects (organization_id, name, status) VALUES (v_org, '検証現場', 'active') RETURNING id INTO v_project;
   INSERT INTO public.workers (organization_id, name) VALUES (v_org, '田中');
   INSERT INTO public.schedules (organization_id, project_id, schedule_date) VALUES (v_org, v_project, current_date);
+  -- 見本データは数えない
+  INSERT INTO public.projects (organization_id, name, status, source) VALUES (v_org, '【見本】現場', 'active', 'sample');
+  INSERT INTO public.workers (organization_id, name) VALUES (v_org, '【見本】田中 一郎');
 
   EXECUTE 'SET LOCAL ROLE authenticated';
   BEGIN
@@ -59,7 +62,7 @@ BEGIN
   EXECUTE 'RESET ROLE';
   PERFORM pg_temp.expect(v_row.owner_email = 'overview-owner@example.test', 'owner email is listed');
   PERFORM pg_temp.expect(v_row.member_count = 1, 'members are counted');
-  PERFORM pg_temp.expect(v_row.worker_count = 1 AND v_row.site_count = 1, 'workers and sites are counted');
+  PERFORM pg_temp.expect(v_row.worker_count = 1 AND v_row.site_count = 1, 'workers and sites are counted (samples excluded)');
   PERFORM pg_temp.expect(v_row.schedules_7d = 1 AND v_row.schedules_30d = 1, 'recent schedules are counted');
   PERFORM pg_temp.expect(v_row.last_activity_at IS NOT NULL AND v_row.last_sign_in_at IS NOT NULL, 'last activity is known');
   PERFORM pg_temp.expect(v_row.billing_status IS NOT NULL, 'billing row is joined');

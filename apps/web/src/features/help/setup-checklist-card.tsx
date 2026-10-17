@@ -1,11 +1,34 @@
 import Link from "next/link";
+import { createSampleDataAction, removeSampleDataAction } from "@/features/help/sample-actions";
 import { setupProgress, type SetupStep } from "@/features/help/setup-checklist";
 
 /** 管理画面の上に出す「はじめにやること」 */
-export function SetupChecklistCard({ steps }: { steps: SetupStep[] }) {
+function SampleButtons({ hasSample }: { hasSample: boolean }) {
+  return hasSample ? (
+    <form action={removeSampleDataAction} className="mt-3">
+      <p className="text-base text-gray-700">見本の現場・作業員・予定が入っています。触り終わったら消してください。</p>
+      <button type="submit" className="tap-press mt-2 min-h-12 w-full rounded-xl border-2 border-gray-300 bg-white text-base font-bold text-gray-800">
+        見本を消す
+      </button>
+    </form>
+  ) : (
+    <form action={createSampleDataAction} className="mt-3">
+      <button type="submit" className="tap-press min-h-12 w-full rounded-xl border-2 border-sky-400 bg-white text-base font-bold text-sky-900">
+        まず見本の現場で試してみる
+      </button>
+      <p className="mt-1 text-sm text-gray-600">見本の現場・作業員・今日と明日の予定を入れます。あとでまとめて消せます。</p>
+    </form>
+  );
+}
+
+export function SetupChecklistCard({ steps, hasSample = false }: { steps: SetupStep[]; hasSample?: boolean }) {
   const progress = setupProgress(steps);
   if (progress.complete) {
-    return null;
+    return hasSample ? (
+      <section className="rounded-2xl border-2 border-gray-200 bg-white p-4">
+        <SampleButtons hasSample />
+      </section>
+    ) : null;
   }
   const next = steps.find((step) => !step.done);
   return (
@@ -46,6 +69,7 @@ export function SetupChecklistCard({ steps }: { steps: SetupStep[] }) {
           </li>
         ))}
       </ol>
+      {progress.done < 3 || hasSample ? <SampleButtons hasSample={hasSample} /> : null}
       <p className="mt-3 text-base text-gray-700">
         わからないときは{" "}
         <Link href="/help" className="font-bold underline">
