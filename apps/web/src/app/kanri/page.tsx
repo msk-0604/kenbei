@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { SetupChecklistCard } from "@/features/help/setup-checklist-card";
+import { setupSteps } from "@/features/help/setup-checklist";
+import { getSetupState } from "@/features/help/setup-queries";
 import { SiteProgressSummary } from "@/features/sites/site-progress-summary";
 import { getAllProjectsProgressSummaries } from "@/features/sites/queries";
 import { can, requireSiteAdmin } from "@/lib/authz-guard";
@@ -18,13 +21,17 @@ const LINKS = [
 
 export default async function KanriHomePage() {
   const workspace = await requireSiteAdmin();
-  const progressSummaries = await getAllProjectsProgressSummaries().catch(() => []);
+  const [progressSummaries, setupState] = await Promise.all([
+    getAllProjectsProgressSummaries().catch(() => []),
+    getSetupState(workspace.organizationId).catch(() => null),
+  ]);
   const more = [
     { href: "/kanri/presets", label: "よく使う工程の候補を変更する" },
     { href: "/reports", label: "日報を見る・出す" },
     { href: "/tasks", label: "タスク（残作業）" },
     ...(can(workspace, "member.manage") ? [{ href: "/settings/members", label: "メンバーの招待・権限" }] : []),
     ...(can(workspace, "org.manage") ? [{ href: "/settings/billing", label: "ご契約・お支払い" }] : []),
+    { href: "/help", label: "使い方・よくある質問" },
     { href: "/account", label: "そのほかのメニュー" },
   ];
 
@@ -34,6 +41,7 @@ export default async function KanriHomePage() {
         <h1 className="text-3xl font-bold text-gray-950">管理</h1>
         <p className="mt-2 text-lg text-gray-700">現場、予定、従業員の登録はここから行います。</p>
       </header>
+      {setupState ? <SetupChecklistCard steps={setupSteps(setupState)} /> : null}
       <ul className="space-y-3">
         {LINKS.map((link) => (
           <li key={link.href}>

@@ -66,6 +66,9 @@ export function MarketingFooter() {
         <Link href="/legal" className="underline">
           特定商取引法に基づく表記
         </Link>
+        <Link href="/help" className="underline">
+          使い方・よくある質問
+        </Link>
         <Link href="/contact" className="underline">
           お問い合わせ
         </Link>
