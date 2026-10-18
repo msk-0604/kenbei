@@ -12,6 +12,10 @@ import {
 } from "@/features/billing/plan-copy";
 import { INVOICE_DAYS_UNTIL_DUE } from "@/features/billing/invoice-billing";
 
+function formatPeriodEnd(iso: string): string {
+  return new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "long", day: "numeric" }).format(new Date(iso));
+}
+
 function CheckoutForm({ label }: { label: string }) {
   return (
     <form action={startCheckoutFormAction}>
@@ -63,6 +67,8 @@ export function PlanBillingPanel({
   trialDaysLeft,
   variant,
   invoiceDefaults,
+  invoicePending = false,
+  currentPeriodEnd = null,
 }: {
   planCode: string;
   status: string;
@@ -72,6 +78,10 @@ export function PlanBillingPanel({
   variant: "settings" | "billing";
   /** 請求書払いのフォームの初期値（契約画面だけ） */
   invoiceDefaults?: { name: string; email: string };
+  /** 請求書払いを申し込み済みで、入金待ち */
+  invoicePending?: boolean;
+  /** 次回更新日（期末解約の予約中は、使える最後の日） */
+  currentPeriodEnd?: string | null;
 }) {
   const paid = access === "paid_active";
   const locked = access === "trial_expired" || access === "paid_inactive";
@@ -114,7 +124,7 @@ export function PlanBillingPanel({
         <p className="text-base font-semibold" data-testid="plan-status">
           {headline}
           {access === "trial_active" && trialDaysLeft != null ? `（残り${trialDaysLeft}日）` : ""}
-          {status && status !== "active" && status !== "trialing" ? ` / ${status}` : ""}
+          {status && status !== "active" && status !== "trialing" && !invoicePending ? ` / ${status}` : ""}
           {cancelAtPeriodEnd ? "（期末で解約予約）" : ""}
         </p>
         <ul className="mt-4 flex flex-col gap-2 text-sm leading-6 text-zinc-700">
@@ -127,7 +137,21 @@ export function PlanBillingPanel({
             </li>
           ))}
         </ul>
-        {paid ? null : (
+        {paid && currentPeriodEnd ? (
+          <p className="mt-2 text-sm text-zinc-600" data-testid="period-end">
+            {cancelAtPeriodEnd ? "ご利用は" : "次回の更新日は"}
+            {formatPeriodEnd(currentPeriodEnd)}
+            {cancelAtPeriodEnd ? "までです。" : "です。"}
+          </p>
+        ) : null}
+        {invoicePending ? (
+          <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 ring-1 ring-amber-200" data-testid="invoice-pending">
+            請求書払いでお申し込み済みです。お振り込みを確認すると、有料のご契約に切り替わります。
+            {access === "trial_active" ? "それまでは、お試し期間の終わりまでそのまま使えます。" : "入金の確認まで、記録の追加・編集はできません。"}
+            請求書は下の「支払い方法・領収書を確認」からも見られます。
+          </p>
+        ) : null}
+        {paid || invoicePending ? null : (
           <div className="mt-6">
             <CheckoutForm label={checkoutButtonLabel(access)} />
             <p className="mt-3 text-center text-xs text-zinc-500">

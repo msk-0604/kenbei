@@ -4,7 +4,9 @@ import {
   buildInvoiceCustomerParams,
   buildInvoiceSubscriptionParams,
   INVOICE_DAYS_UNTIL_DUE,
+  invoicePendingBilling,
   isBankTransferUnavailable,
+  isInvoicePaymentPending,
   validateInvoiceBillingInput,
 } from "./invoice-billing";
 
@@ -73,5 +75,31 @@ describe("billingStatusFromSubscription", () => {
     expect(billingStatusFromSubscription("past_due")).toBe("past_due");
     expect(billingStatusFromSubscription("incomplete_expired")).toBe("canceled");
     expect(billingStatusFromSubscription(undefined)).toBe("active");
+  });
+});
+
+describe("invoicePendingBilling", () => {
+  const now = new Date("2026-10-18T00:00:00Z");
+
+  it("keeps a running 14-day trial until it ends", () => {
+    expect(invoicePendingBilling({ status: "trialing", trial_ends_at: "2026-10-30T00:00:00Z" }, now)).toEqual({
+      status: "trialing",
+      trial_ends_at: "2026-10-30T00:00:00Z",
+    });
+  });
+
+  it("waits for payment when the trial is over or there was none", () => {
+    expect(invoicePendingBilling({ status: "trialing", trial_ends_at: "2026-10-01T00:00:00Z" }, now).status).toBe("incomplete");
+    expect(invoicePendingBilling({ status: "canceled", trial_ends_at: null }, now).status).toBe("incomplete");
+    expect(invoicePendingBilling(null, now).status).toBe("incomplete");
+  });
+});
+
+describe("isInvoicePaymentPending", () => {
+  it("is pending only with a subscription that is not yet paid", () => {
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "incomplete" })).toBe(true);
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "trialing" })).toBe(true);
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "active" })).toBe(false);
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: null, status: "trialing" })).toBe(false);
   });
 });

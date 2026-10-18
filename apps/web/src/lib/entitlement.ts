@@ -8,6 +8,7 @@ import {
   trialDaysRemaining,
   type BillingAccessKind,
 } from "@kensapo/domain";
+import { isInvoicePaymentPending } from "@/features/billing/invoice-billing";
 import { readServerEnv } from "@/lib/server-env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Workspace } from "@/lib/session";
@@ -21,6 +22,8 @@ export type Entitlement = {
   currentPeriodEnd: string | null;
   stripeCustomerId: string | null;
   trialEndsAt: string | null;
+  /** 請求書払いを申し込み済みで、入金をまだ確認できていない */
+  invoicePending: boolean;
   access: BillingAccessKind;
   trialDaysLeft: number | null;
 };
@@ -29,7 +32,7 @@ export async function getEntitlement(organizationId: string): Promise<Entitlemen
   const supabase = await createServerSupabaseClient();
   const billing = await supabase
     .from("organization_billing")
-    .select("plan_code, status, cancel_at_period_end, current_period_end, stripe_customer_id, trial_ends_at")
+    .select("plan_code, status, cancel_at_period_end, current_period_end, stripe_customer_id, stripe_subscription_id, trial_ends_at")
     .eq("organization_id", organizationId)
     .maybeSingle();
   const row = billing.data as {
@@ -38,6 +41,7 @@ export async function getEntitlement(organizationId: string): Promise<Entitlemen
     cancel_at_period_end: boolean;
     current_period_end: string | null;
     stripe_customer_id: string | null;
+    stripe_subscription_id: string | null;
     trial_ends_at: string | null;
   } | null;
   const catalog = billingPlanByCode(row?.plan_code);
@@ -57,6 +61,7 @@ export async function getEntitlement(organizationId: string): Promise<Entitlemen
     currentPeriodEnd: row?.current_period_end ?? null,
     stripeCustomerId: row?.stripe_customer_id ?? null,
     trialEndsAt,
+    invoicePending: isInvoicePaymentPending({ stripeSubscriptionId: row?.stripe_subscription_id ?? null, status }),
     access,
     trialDaysLeft: access === "trial_active" ? trialDaysRemaining(trialEndsAt) : null,
   };

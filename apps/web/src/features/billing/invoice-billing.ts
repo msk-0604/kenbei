@@ -93,3 +93,23 @@ export function billingStatusFromSubscription(status: string | undefined): strin
   }
   return "active";
 }
+
+/**
+ * 請求書払いを申し込んだ直後の契約の状態。入金（invoice.paid）までは有料にしない。
+ * お試し中ならお試しの期限までそのまま使え、お試しが終わっていれば入金待ち（incomplete）にする。
+ */
+export function invoicePendingBilling(
+  row: { status?: string | null; trial_ends_at?: string | null } | null,
+  now: Date = new Date(),
+): { status: "trialing" | "incomplete"; trial_ends_at: string | null } {
+  const trialEndsAt = row?.trial_ends_at ?? null;
+  if (row?.status === "trialing" && trialEndsAt && new Date(trialEndsAt).getTime() > now.getTime()) {
+    return { status: "trialing", trial_ends_at: trialEndsAt };
+  }
+  return { status: "incomplete", trial_ends_at: trialEndsAt };
+}
+
+/** 請求書払いを申し込み済みで、まだ入金を確認できていないか */
+export function isInvoicePaymentPending(input: { stripeSubscriptionId: string | null; status: string }): boolean {
+  return Boolean(input.stripeSubscriptionId) && (input.status === "trialing" || input.status === "incomplete");
+}

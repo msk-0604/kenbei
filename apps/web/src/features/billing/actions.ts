@@ -5,14 +5,14 @@ import { can, requireWorkspace } from "@/lib/authz-guard";
 import { getAppUrl } from "@/lib/env";
 import { classifyBillingAccess, persistableBillingPlanCode } from "@kensapo/domain";
 import {
-  billingStatusFromSubscription,
   buildInvoiceCustomerParams,
   buildInvoiceSubscriptionParams,
+  invoicePendingBilling,
   isBankTransferUnavailable,
   validateInvoiceBillingInput,
 } from "@/features/billing/invoice-billing";
 import { summarizeStripeCheckoutFailure } from "@/features/billing/stripe-error";
-import { recordPaidFunnelEvent } from "@/features/billing/stripe-webhook";
+import { subscriptionPeriodEndIso } from "@/features/billing/stripe-webhook";
 import { resolveStripePriceForPlan } from "@/lib/entitlement";
 import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
 import { readServerEnv } from "@/lib/server-env";
@@ -243,7 +243,7 @@ export async function startInvoiceBillingFormAction(formData: FormData): Promise
   redirect("/settings/billing?invoice=1");
 }
 
-type StripeJson = { id?: string; status?: string; current_period_end?: number; error?: { message?: string; param?: string } };
+type StripeJson = { id?: string; status?: string; error?: { message?: string; param?: string } };
 
 async function stripePost(secret: string, path: string, body: URLSearchParams): Promise<{ status: number; json: StripeJson }> {
   const res = await fetch(`https://api.stripe.com/v1/${path}`, {
@@ -333,19 +333,18 @@ async function startInvoiceBilling(formData: FormData): Promise<{ error: string 
       return { error: summary.message };
     }
 
+    // 入金を確認するまでは有料にしない（invoice.paid の Webhook で有料に切り替える）。お試し中ならお試しはそのまま。
+    const pending = invoicePendingBilling(row);
     await admin.from("organization_billing").upsert({
       organization_id: workspace.organizationId,
       plan_code: checkoutPlan,
-      status: billingStatusFromSubscription(subscription.json.status),
+      status: pending.status,
       stripe_customer_id: customer,
       stripe_subscription_id: subscription.json.id,
-      trial_ends_at: null,
+      trial_ends_at: pending.trial_ends_at,
       cancel_at_period_end: false,
-      current_period_end: subscription.json.current_period_end
-        ? new Date(subscription.json.current_period_end * 1000).toISOString()
-        : null,
+      current_period_end: subscriptionPeriodEndIso(subscription.json as Record<string, unknown>),
     });
-    await recordPaidFunnelEvent(admin as unknown as Parameters<typeof recordPaidFunnelEvent>[0], workspace.organizationId, checkoutPlan, attribution);
   } catch {
     await logServerError("stripe.invoice.subscription_failed", { reason: "network" }, context);
     return { error: "請求書払いの手続きを開始できませんでした。時間をおいてやり直してください。" };
