@@ -97,9 +97,20 @@ describe("invoicePendingBilling", () => {
 
 describe("isInvoicePaymentPending", () => {
   it("is pending only with a subscription that is not yet paid", () => {
-    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "incomplete" })).toBe(true);
-    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "trialing" })).toBe(true);
-    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "active" })).toBe(false);
-    expect(isInvoicePaymentPending({ stripeSubscriptionId: null, status: "trialing" })).toBe(false);
+    const trialEndsAt = "2026-10-30T00:00:00Z";
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "incomplete", trialEndsAt: null })).toBe(true);
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "trialing", trialEndsAt })).toBe(true);
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "active", trialEndsAt: null })).toBe(false);
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: null, status: "trialing", trialEndsAt })).toBe(false);
+    // カードを登録済みで、お試しの終わりから請求が始まる契約は入金待ちではない
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_card", status: "trialing", trialEndsAt: null })).toBe(false);
+  });
+});
+
+describe("buildInvoiceSubscriptionParams trial carryover", () => {
+  it("starts invoicing at the end of the trial when given", () => {
+    const base = { customer: "cus_1", price: "price_1", organizationId: "org_1", planCode: "pro", bankTransfer: true };
+    expect(buildInvoiceSubscriptionParams({ ...base, trialEnd: 1_800_000_000 }).get("trial_end")).toBe("1800000000");
+    expect(buildInvoiceSubscriptionParams({ ...base, trialEnd: null }).get("trial_end")).toBeNull();
   });
 });

@@ -56,7 +56,7 @@ export default async function BillingPage({
       ) : null}
       {invoice ? (
         <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 ring-1 ring-emerald-200">
-          請求書払いのお申し込みを受け付けました。最初の請求書をメールでお送りします（届くまで1時間ほどかかることがあります）。入金を確認すると、有料のご契約に切り替わります。
+          請求書払いのお申し込みを受け付けました。最初の請求書は、無料体験中なら無料体験が終わる日に、そうでなければまもなく（1時間ほどで）メールでお送りします。入金を確認すると、有料のご契約に切り替わります。
         </p>
       ) : null}
       {canceled ? (
@@ -73,6 +73,7 @@ export default async function BillingPage({
           trialDaysLeft={entitlement.trialDaysLeft}
           invoicePending={entitlement.invoicePending}
           currentPeriodEnd={entitlement.currentPeriodEnd}
+          trialEndsAt={entitlement.trialEndsAt}
           variant="billing"
           invoiceDefaults={{ name: workspace.organizationName, email: workspace.email ?? "" }}
         />

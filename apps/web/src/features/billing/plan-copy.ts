@@ -42,7 +42,7 @@ export const KENBEI_INCLUDED = [
 
 export function currentPlanHeadline(planCode: string, access?: BillingAccessKind): string {
   if (access === "trial_active") {
-    return "いまは14日間の無料体験中です";
+    return "いまは無料体験中です";
   }
   if (access === "trial_expired") {
     return "14日間の無料体験が終了しました";

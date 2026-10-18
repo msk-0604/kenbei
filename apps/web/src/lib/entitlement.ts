@@ -61,7 +61,7 @@ export async function getEntitlement(organizationId: string): Promise<Entitlemen
     currentPeriodEnd: row?.current_period_end ?? null,
     stripeCustomerId: row?.stripe_customer_id ?? null,
     trialEndsAt,
-    invoicePending: isInvoicePaymentPending({ stripeSubscriptionId: row?.stripe_subscription_id ?? null, status }),
+    invoicePending: isInvoicePaymentPending({ stripeSubscriptionId: row?.stripe_subscription_id ?? null, status, trialEndsAt }),
     access,
     trialDaysLeft: access === "trial_active" ? trialDaysRemaining(trialEndsAt) : null,
   };

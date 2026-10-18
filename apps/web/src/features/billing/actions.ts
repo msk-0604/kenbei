@@ -12,6 +12,7 @@ import {
   validateInvoiceBillingInput,
 } from "@/features/billing/invoice-billing";
 import { summarizeStripeCheckoutFailure } from "@/features/billing/stripe-error";
+import { trialCarryoverEnd } from "@/features/billing/trial-carryover";
 import { subscriptionPeriodEndIso } from "@/features/billing/stripe-webhook";
 import { resolveStripePriceForPlan } from "@/lib/entitlement";
 import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
@@ -85,6 +86,13 @@ export async function startCheckoutAction(planCode: string): Promise<{ error: st
   }
   const { workspace, secret, price, checkoutPlan } = preflight;
   const attribution = stripeAttributionMetadata(readAttributionFromCookies(await cookies()));
+  const billingRow = await createAdminSupabaseClient()
+    ?.from("organization_billing")
+    .select("status, trial_ends_at")
+    .eq("organization_id", workspace.organizationId)
+    .maybeSingle();
+  // お試し中なら、カードを登録するだけにして、請求はお試しの終わりから始める
+  const trialEnd = trialCarryoverEnd((billingRow?.data as { status: string; trial_ends_at: string | null } | null) ?? null);
   const checkoutParams = new URLSearchParams({
     mode: "subscription",
     success_url: `${getAppUrl()}/settings/billing?ok=1`,
@@ -97,6 +105,9 @@ export async function startCheckoutAction(planCode: string): Promise<{ error: st
     "metadata[organization_id]": workspace.organizationId,
     "metadata[plan_code]": checkoutPlan,
   });
+  if (trialEnd) {
+    checkoutParams.set("subscription_data[trial_end]", String(trialEnd));
+  }
   for (const [key, value] of Object.entries(attribution)) {
     checkoutParams.set(`metadata[${key}]`, value);
     checkoutParams.set(`subscription_data[metadata][${key}]`, value);
@@ -317,6 +328,7 @@ async function startInvoiceBilling(formData: FormData): Promise<{ error: string 
         planCode: checkoutPlan,
         bankTransfer,
         attribution,
+        trialEnd: trialCarryoverEnd(row),
       });
     let subscription = await stripePost(secret, "subscriptions", subscriptionParams(true));
     if (!subscription.json.id && isBankTransferUnavailable(subscription.json.error)) {

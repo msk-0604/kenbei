@@ -47,6 +47,8 @@ export function buildInvoiceSubscriptionParams(input: {
   /** false のときはカードだけ（Stripe で銀行振込が有効になっていない場合） */
   bankTransfer: boolean;
   attribution?: Record<string, string>;
+  /** お試し中なら、お試しの終わり（UNIX 秒）から請求を始める */
+  trialEnd?: number | null;
 }): URLSearchParams {
   const params = new URLSearchParams({
     customer: input.customer,
@@ -58,6 +60,9 @@ export function buildInvoiceSubscriptionParams(input: {
     "metadata[plan_code]": input.planCode,
     "metadata[billing_method]": "invoice",
   });
+  if (input.trialEnd) {
+    params.set("trial_end", String(input.trialEnd));
+  }
   if (input.bankTransfer) {
     params.set("payment_settings[payment_method_types][0]", "customer_balance");
     params.set("payment_settings[payment_method_types][1]", "card");
@@ -109,7 +114,17 @@ export function invoicePendingBilling(
   return { status: "incomplete", trial_ends_at: trialEndsAt };
 }
 
-/** 請求書払いを申し込み済みで、まだ入金を確認できていないか */
-export function isInvoicePaymentPending(input: { stripeSubscriptionId: string | null; status: string }): boolean {
-  return Boolean(input.stripeSubscriptionId) && (input.status === "trialing" || input.status === "incomplete");
+/**
+ * 請求書払いを申し込み済みで、まだ入金を確認できていないか。
+ * カード払いでお試しの終わりから請求する契約（trialing・trial_ends_at なし）は有料扱いなので含めない。
+ */
+export function isInvoicePaymentPending(input: {
+  stripeSubscriptionId: string | null;
+  status: string;
+  trialEndsAt: string | null;
+}): boolean {
+  if (!input.stripeSubscriptionId) {
+    return false;
+  }
+  return input.status === "incomplete" || (input.status === "trialing" && Boolean(input.trialEndsAt));
 }
