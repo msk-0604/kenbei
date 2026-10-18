@@ -134,3 +134,25 @@ export function isPlatformAdminEmail(email: string | null | undefined, allowList
     .filter(Boolean)
     .includes(target);
 }
+
+export type OrgSourceRow = {
+  organization_id: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+};
+
+/** 運営画面に出す「どこから来た会社か」。フォーム営業は営業記録シートの識別コードも出す。 */
+export function describeOrgSource(row: OrgSourceRow | undefined): { label: string; code: string | null; fromForm: boolean } {
+  const source = (row?.utm_source ?? "").trim();
+  if (!source) {
+    return { label: "不明（直接・検索など）", code: null, fromForm: false };
+  }
+  const code = (row?.utm_content ?? "").trim() || null;
+  if (source === "form") {
+    return { label: "フォーム営業", code, fromForm: true };
+  }
+  const detail = [row?.utm_medium, row?.utm_campaign].map((value) => (value ?? "").trim()).filter(Boolean).join(" / ");
+  return { label: detail ? `${source}（${detail}）` : source, code, fromForm: false };
+}

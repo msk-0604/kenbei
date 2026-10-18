@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
+import { pickSignupAttribution } from "@/features/sales/attribution";
 import { readAttributionFromCookies } from "@/features/sales/attribution-cookies";
 import { insertFunnelEvent } from "@/features/sales/funnel-store";
 import { sendTrialLifecycleEmail, type EmailAdmin } from "@/features/sales/trial-email-send";
@@ -11,11 +12,13 @@ import { logServerWarn } from "@/lib/server-log";
 export async function afterOrganizationCreated(input: {
   organizationId: string;
   email: string | undefined;
+  /** 登録したときにアカウントへ残した流入元（auth の user_metadata） */
+  userMetadata?: unknown;
 }): Promise<void> {
   try {
     const admin = createAdminSupabaseClient();
     const store = await cookies();
-    const attribution = readAttributionFromCookies(store);
+    const attribution = pickSignupAttribution(readAttributionFromCookies(store), input.userMetadata);
     const visitorId = attribution.visitorId ?? `org:${input.organizationId}`;
     if (admin) {
       await insertFunnelEvent(admin as unknown as FunnelAdmin, {

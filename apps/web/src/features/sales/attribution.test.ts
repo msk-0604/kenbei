@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  attributionFromUserMetadata,
+  attributionToUserMetadata,
   deserializeUtmAttribution,
+  pickSignupAttribution,
   firstTouchUtm,
   hasUtmValues,
   isVisitorId,
@@ -44,5 +47,33 @@ describe("attribution", () => {
       visitor_id: visitorId,
       utm_source: "youtube",
     });
+  });
+});
+
+describe("signup attribution kept on the account", () => {
+  const visitorId = "11111111-1111-4111-8111-111111111111";
+  const formUtm = parseUtmSearch(new URLSearchParams("utm_source=form&utm_medium=outbound&utm_content=AB3CD"), "/");
+
+  it("stores nothing when the visitor came without a source", () => {
+    expect(attributionToUserMetadata({ visitorId, utm: parseUtmSearch(new URLSearchParams(""), "/") })).toBeNull();
+  });
+
+  it("recovers the source when the confirmation mail is opened on another device", () => {
+    const metadata = attributionToUserMetadata({ visitorId, utm: formUtm });
+    const picked = pickSignupAttribution({ visitorId: null, utm: parseUtmSearch(new URLSearchParams(""), "/") }, metadata);
+    expect(picked.utm.source).toBe("form");
+    expect(picked.utm.content).toBe("AB3CD");
+    expect(picked.visitorId).toBe(visitorId);
+  });
+
+  it("prefers the cookie on the device that creates the company", () => {
+    const metadata = attributionToUserMetadata({ visitorId, utm: formUtm });
+    const cookieUtm = parseUtmSearch(new URLSearchParams("utm_source=youtube"), "/");
+    expect(pickSignupAttribution({ visitorId: null, utm: cookieUtm }, metadata).utm.source).toBe("youtube");
+  });
+
+  it("ignores metadata that is not ours", () => {
+    expect(attributionFromUserMetadata({ display_name: "山田" })).toEqual({ visitorId: null, utm: null });
+    expect(attributionFromUserMetadata({ kb_utm: "x", kb_vid: "nope" })).toEqual({ visitorId: null, utm: null });
   });
 });

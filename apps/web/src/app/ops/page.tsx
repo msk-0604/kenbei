@@ -3,10 +3,12 @@ import { notFound, redirect } from "next/navigation";
 import { classifyBillingAccess, KENBEI_MONTHLY_PRICE_JPY } from "@kensapo/domain";
 import {
   classifyOrgHealth,
+  describeOrgSource,
   isPlatformAdminEmail,
   summarizeOverview,
   type OrgHealthKind,
   type OrgOverviewRow,
+  type OrgSourceRow,
 } from "@/features/ops/org-health";
 import { readServerEnv } from "@/lib/server-env";
 import { getWorkspace } from "@/lib/session";
@@ -62,6 +64,21 @@ export default async function OpsPage({ searchParams }: { searchParams: Promise<
   }
   const rows = (data as OrgOverviewRow[] | null) ?? [];
   const now = new Date();
+  // どこから来た会社か（お試し開始の記録に残った流入元）。読めなくても画面は出す。
+  const sourceResult = await admin
+    .from("sales_funnel_events")
+    .select("organization_id, utm_source, utm_medium, utm_campaign, utm_content")
+    .eq("event_kind", "trial_started")
+    .not("organization_id", "is", null);
+  const sources = new Map(
+    ((sourceResult.data as OrgSourceRow[] | null) ?? []).map((source) => [source.organization_id ?? "", source]),
+  );
+  const fromForm = rows.filter((row) => describeOrgSource(sources.get(row.organization_id)).fromForm);
+  const fromFormPaying = fromForm.filter(
+    (row) =>
+      classifyBillingAccess({ planCode: row.plan_code, status: row.billing_status, trialEndsAt: row.trial_ends_at, now }) ===
+      "paid_active",
+  ).length;
   const summary = summarizeOverview(rows, KENBEI_MONTHLY_PRICE_JPY, now);
   const filter = (await searchParams).filter ?? "follow";
   const items = rows
@@ -98,6 +115,11 @@ export default async function OpsPage({ searchParams }: { searchParams: Promise<
         ))}
       </dl>
 
+      <p className="rounded-2xl bg-white p-4 text-sm text-gray-700 ring-1 ring-gray-200">
+        フォーム営業から来た会社：<span className="font-bold tabular-nums text-gray-950">{fromForm.length}社</span>（うち契約中{" "}
+        <span className="font-bold tabular-nums text-gray-950">{fromFormPaying}社</span>）。識別コードは営業記録シートのコードと同じです。
+      </p>
+
       <nav className="flex flex-wrap gap-2" aria-label="絞り込み">
         {FILTERS.map((item) => (
           <Link
@@ -117,7 +139,9 @@ export default async function OpsPage({ searchParams }: { searchParams: Promise<
         <p className="rounded-2xl bg-white p-5 text-gray-700 ring-1 ring-gray-200">該当する会社はありません。</p>
       ) : (
         <ul className="space-y-3">
-          {items.map(({ row, health }) => (
+          {items.map(({ row, health }) => {
+            const source = describeOrgSource(sources.get(row.organization_id));
+            return (
             <li key={row.organization_id} className="rounded-2xl bg-white p-4 ring-1 ring-gray-200">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-lg font-bold text-gray-950">{row.name}</p>
@@ -141,8 +165,13 @@ export default async function OpsPage({ searchParams }: { searchParams: Promise<
               <p className="mt-1 text-sm text-gray-600">
                 最終利用 {formatDate(row.last_activity_at)} ・ 最終ログイン {formatDate(row.last_sign_in_at)}
               </p>
+              <p className="mt-1 text-sm text-gray-600">
+                流入元 {source.label}
+                {source.code ? <span className="ml-1 font-mono font-bold text-gray-900">コード {source.code}</span> : null}
+              </p>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>
