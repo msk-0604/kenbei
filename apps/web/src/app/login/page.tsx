@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; mode?: string; company?: string; signedout?: string }>;
+  searchParams: Promise<{ next?: string; mode?: string; company?: string; signedout?: string; confirmed?: string }>;
 }) {
   const params = await searchParams;
   const nextPath = safeAuthNextPath(params.next) || undefined;
@@ -28,6 +28,12 @@ export default async function LoginPage({
             {isAdmin ? "管理者の合言葉でログインしてください。" : "メールアドレスとパスワードでログインしてください。"}
           </p>
         </div>
+
+        {params.confirmed === "1" ? (
+          <p role="status" className="mb-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-4 text-lg text-emerald-900">
+            メールアドレスの確認ができました。登録したメールアドレスとパスワードでログインしてください。
+          </p>
+        ) : null}
 
         {isSupabaseConfigured() ? (
           <LoginChooser
