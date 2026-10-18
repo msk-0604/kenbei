@@ -2,6 +2,7 @@ import { ActionLink } from "@/components/ui/action-link";
 import { Card } from "@/components/ui/card";
 import { NotificationSettings } from "@/features/settings/notification-settings";
 import { PasscodeSettings } from "@/features/settings/passcode-settings";
+import { PasskeySettings } from "@/features/auth/passkey-settings";
 import { ChangeDeviceNameButton, LogoutButton } from "@/features/settings/settings-extras";
 import { DisplayNameForm } from "@/features/profile/display-name-form";
 import { can, isCrewLogin, isSiteAdmin, requireWorkspace } from "@/lib/authz-guard";
@@ -51,11 +52,13 @@ export default async function SettingsPage() {
           </Card>
         )}
 
+        {isCrew ? null : <PasskeySettings />}
+
         {isAdmin ? (
-          <>
+          <div id="passcode" className="scroll-mt-20 space-y-4">
             <PasscodeSettings kind="admin" />
-            <PasscodeSettings kind="worker" />
-          </>
+            <PasscodeSettings kind="worker" companyName={workspace.organizationName} />
+          </div>
         ) : null}
 
         <Card>
@@ -79,6 +82,10 @@ export default async function SettingsPage() {
             管理者としてログインする
           </ActionLink>
         ) : null}
+
+        <ActionLink href="/help" variant="secondary" description="困ったとき・初めての設定">
+          使い方・よくある質問
+        </ActionLink>
 
         <LogoutButton />
       </section>

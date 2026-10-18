@@ -59,12 +59,12 @@ describe("trial email delivery", () => {
     }
     expect(inbox).toHaveLength(3);
     expect(inbox.map((item) => item.to)).toEqual([to, to, to]);
-    expect(inbox[0]?.subject).toBe("KENBEIの14日間無料体験が始まりました");
-    expect(inbox[0]?.text).toMatch(/現場ごとの写真/);
-    expect(inbox[0]?.text).toMatch(/日報PDF/);
+    expect(inbox[0]?.subject).toBe("KENBEIの14日間無料体験が始まりました（最初の30分でやること）");
+    expect(inbox[0]?.text).toMatch(/はじめにやること/);
+    expect(inbox[0]?.text).toMatch(/作業員に案内する/);
     expect(inbox[0]?.text).not.toMatch(/AI軍師/);
-    expect(inbox[0]?.text).toMatch(/9,800円（税込/);
-    expect(inbox[1]?.subject).toMatch(/現場写真と残作業/);
+    expect(inbox[0]?.text).toMatch(/18,000円（税込/);
+    expect(inbox[1]?.subject).toMatch(/作業員のスマホ/);
     expect(inbox[1]?.text).toMatch(/開始から3日/);
     expect(inbox[2]?.subject).toMatch(/終了が近づいています/);
     expect(inbox[2]?.text).toMatch(/あと2日/);

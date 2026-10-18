@@ -123,7 +123,7 @@ export function AppNav({
   return (
     <>
       <div className="sticky top-0 z-40 no-print">
-        <header className="border-b-2 border-gray-200 bg-white">
+        <header className="border-b-2 border-gray-200 bg-white/90 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/80">
           <div className="mx-auto flex min-h-[4.5rem] max-w-lg items-center justify-between gap-3 px-5">
             <Link href="/today" className="tap-press brand-wordmark text-2xl text-navy-950">
               KENBEI
@@ -156,7 +156,7 @@ export function AppNav({
       </div>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(15,23,41,0.06)] no-print"
+        className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-gray-200 bg-white/90 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_rgba(15,23,41,0.06)] backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-white/80 no-print"
         aria-label="メインメニュー"
       >
         <div className="mx-auto grid max-w-lg grid-cols-2 gap-2 px-3 pb-3 pt-3">
@@ -165,14 +165,19 @@ export function AppNav({
               key={href}
               href={href}
               prefetch
+              data-nav-tab
               aria-current={active === href ? "page" : undefined}
               className={cn(
-                "tap-press relative flex min-h-[5rem] flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center transition-colors",
+                "tap-press relative flex min-h-[5rem] flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-center",
                 active === href ? "bg-navy-900 text-white" : "bg-gray-100 text-gray-800 hover:bg-gray-200",
               )}
             >
               <LinkBusy stacked>
-                <Icon className="h-8 w-8 shrink-0" aria-hidden />
+                <Icon
+                  key={active === href ? "on" : "off"}
+                  className={cn("h-8 w-8 shrink-0", active === href && "tab-pop")}
+                  aria-hidden
+                />
                 <span className="text-base font-bold leading-tight">{label}</span>
               </LinkBusy>
             </Link>

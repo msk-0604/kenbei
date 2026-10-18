@@ -1,3 +1,4 @@
+import { preconnect } from "react-dom";
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
@@ -101,6 +102,11 @@ function chromeViewer(workspace: Workspace | null) {
 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
+  // 写真や API の通信先（Supabase）に先につないでおき、最初の読み込みを速くする
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (supabaseUrl) {
+    preconnect(supabaseUrl, { crossOrigin: "anonymous" });
+  }
   const workspace = await getWorkspace();
   return (
     <html lang="ja">

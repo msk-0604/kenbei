@@ -7,6 +7,7 @@ describe("public marketing routes", () => {
     expect(isAnonymousPublicPath("/privacy")).toBe(true);
     expect(isAnonymousPublicPath("/terms")).toBe(true);
     expect(isAnonymousPublicPath("/contact")).toBe(true);
+    expect(isAnonymousPublicPath("/help")).toBe(true);
     expect(isAnonymousPublicPath("/login")).toBe(true);
     expect(isAnonymousPublicPath("/manifest.webmanifest")).toBe(true);
     expect(isAnonymousPublicPath("/projects")).toBe(false);
@@ -18,6 +19,7 @@ describe("public marketing routes", () => {
     expect(hideAppChrome("/privacy", true)).toBe(true);
     expect(hideAppChrome("/terms", false)).toBe(true);
     expect(hideAppChrome("/contact", true)).toBe(true);
+    expect(hideAppChrome("/help", true)).toBe(true);
     expect(hideAppChrome("/photos", true)).toBe(false);
   });
 });

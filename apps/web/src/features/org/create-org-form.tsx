@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { createOrganizationAction } from "@/features/org/actions";
+import { TRADE_TEMPLATES } from "@/lib/trade-progress-templates";
 
 export function CreateOrganizationForm() {
   const [state, action, pending] = useActionState(createOrganizationAction, null);
@@ -34,6 +35,22 @@ export function CreateOrganizationForm() {
         />
       </label>
       <p className="text-sm leading-6 text-zinc-500">日報の「記入者」として表示されます。</p>
+      <label className="flex flex-col gap-1 text-sm font-medium">
+        業種
+        <select
+          name="trade"
+          defaultValue="plumbing"
+          className="min-h-12 rounded-xl border border-zinc-200 bg-white px-4 text-base outline-none focus:border-zinc-900"
+        >
+          {TRADE_TEMPLATES.map((template) => (
+            <option key={template.key} value={template.key}>
+              {template.label}
+            </option>
+          ))}
+          <option value="other">そのほか（あとで決める）</option>
+        </select>
+      </label>
+      <p className="text-sm leading-6 text-zinc-500">その業種のよく使う工程を、最初から入れておきます。あとで直せます。</p>
       {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
       <button
         type="submit"

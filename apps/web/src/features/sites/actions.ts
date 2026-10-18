@@ -410,23 +410,14 @@ export async function deleteSiteAction(siteId: string): Promise<{ ok: true } | {
     return { ok: false, error: workspace.error };
   }
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from("projects")
-    .update({ deleted_at: new Date().toISOString(), updated_by: workspace.userId })
-    .eq("id", siteId)
-    .eq("organization_id", workspace.organizationId)
-    .is("deleted_at", null)
-    .select("id")
-    .maybeSingle();
-  if (error || !data) {
+  // 予定・作業工程を消して deleted_at を入れる（DB 側で管理者かを確かめる）
+  const { data, error } = await supabase.rpc("soft_delete_sites", {
+    p_org_id: workspace.organizationId,
+    p_site_ids: [siteId],
+  });
+  if (error || data !== 1) {
     return { ok: false, error: "削除に失敗しました。もう一度お試しください。" };
   }
-  await supabase.from("schedules").delete().eq("organization_id", workspace.organizationId).eq("project_id", siteId);
-  await supabase
-    .from("project_progress_items")
-    .delete()
-    .eq("organization_id", workspace.organizationId)
-    .eq("project_id", siteId);
   revalidateSite();
   return { ok: true };
 }

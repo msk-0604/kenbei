@@ -109,7 +109,7 @@ function SiteCards({ sites, linkTo }: { sites: SiteCard[]; linkTo: LinkTo }) {
   return (
     <ul className="space-y-4">
       {sites.map((site) => (
-        <li key={site.id}>
+        <li key={site.id} className="cv-auto">
           <Link
             href={
               linkTo === "progress"

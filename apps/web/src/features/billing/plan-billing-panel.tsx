@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { KENBEI_PLAN_NAME, type BillingAccessKind } from "@kensapo/domain";
-import { startCheckoutFormAction } from "@/features/billing/actions";
+import { startCheckoutFormAction, startInvoiceBillingFormAction } from "@/features/billing/actions";
 import { CheckoutSubmitButton } from "@/features/billing/checkout-submit-button";
 import {
   KENBEI_INCLUDED,
@@ -10,6 +10,7 @@ import {
   currentPlanHeadline,
   dailyPriceLabel,
 } from "@/features/billing/plan-copy";
+import { INVOICE_DAYS_UNTIL_DUE } from "@/features/billing/invoice-billing";
 
 function CheckoutForm({ label }: { label: string }) {
   return (
@@ -20,12 +21,48 @@ function CheckoutForm({ label }: { label: string }) {
   );
 }
 
+function InvoiceBillingForm({ defaultName, defaultEmail }: { defaultName: string; defaultEmail: string }) {
+  return (
+    <details className="mt-5 rounded-2xl bg-zinc-50 p-4 ring-1 ring-[var(--kb-line)]">
+      <summary className="cursor-pointer text-sm font-medium">請求書で払う（銀行振込）</summary>
+      <p className="mt-3 text-sm leading-6 text-zinc-600">
+        毎月、請求書をメールでお送りします。請求書に書かれた振込先へ、発行日から{INVOICE_DAYS_UNTIL_DUE}日以内にお振り込みください（カードでも払えます）。振込手数料はご負担ください。
+      </p>
+      <form action={startInvoiceBillingFormAction} className="mt-4 flex flex-col gap-3">
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium">請求書の宛名</span>
+          <input
+            name="billingName"
+            defaultValue={defaultName}
+            required
+            maxLength={120}
+            className="min-h-11 rounded-xl bg-white px-3 ring-1 ring-[var(--kb-line)]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium">請求書を送るメールアドレス</span>
+          <input
+            name="billingEmail"
+            type="email"
+            defaultValue={defaultEmail}
+            required
+            maxLength={254}
+            className="min-h-11 rounded-xl bg-white px-3 ring-1 ring-[var(--kb-line)]"
+          />
+        </label>
+        <CheckoutSubmitButton label="請求書払いで契約する" />
+      </form>
+    </details>
+  );
+}
+
 export function PlanBillingPanel({
   status,
   cancelAtPeriodEnd,
   access,
   trialDaysLeft,
   variant,
+  invoiceDefaults,
 }: {
   planCode: string;
   status: string;
@@ -33,6 +70,8 @@ export function PlanBillingPanel({
   access: BillingAccessKind;
   trialDaysLeft?: number | null;
   variant: "settings" | "billing";
+  /** 請求書払いのフォームの初期値（契約画面だけ） */
+  invoiceDefaults?: { name: string; email: string };
 }) {
   const paid = access === "paid_active";
   const locked = access === "trial_expired" || access === "paid_inactive";
@@ -94,6 +133,9 @@ export function PlanBillingPanel({
             <p className="mt-3 text-center text-xs text-zinc-500">
               カードはこのあとの支払い画面（Stripe）で登録します。
             </p>
+            {invoiceDefaults ? (
+              <InvoiceBillingForm defaultName={invoiceDefaults.name} defaultEmail={invoiceDefaults.email} />
+            ) : null}
           </div>
         )}
       </div>

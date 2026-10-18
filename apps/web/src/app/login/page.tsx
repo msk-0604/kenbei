@@ -25,7 +25,7 @@ export default async function LoginPage({
           </div>
           <h1 className="brand-wordmark text-2xl text-navy-950">KENBEI</h1>
           <p className="mt-2 text-lg text-gray-600">
-            {isAdmin ? "管理者の合言葉でログインしてください。" : "会社の合言葉か、メールアドレスでログインしてください。"}
+            {isAdmin ? "管理者の合言葉でログインしてください。" : "メールアドレスとパスワードでログインしてください。"}
           </p>
         </div>
 

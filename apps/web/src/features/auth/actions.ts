@@ -90,6 +90,9 @@ export async function signInAction(
   }
   const next = safeAuthNextPath(formString(formData, "next"));
   await writeJoinNextCookie(next);
+  if (formString(formData, "passkeyOffer") === "1") {
+    redirect(`/settings/passkey?next=${encodeURIComponent(next || "/")}`);
+  }
   redirect(next || "/");
 }
 

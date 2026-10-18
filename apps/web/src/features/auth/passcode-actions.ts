@@ -5,7 +5,7 @@ import { cookies, headers } from "next/headers";
 import { decideRateLimit } from "@/lib/rate-limit-policy";
 import { isSiteAdmin, requireWorkspace } from "@/lib/authz-guard";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { signInAsUser } from "@/lib/auth/sign-in-as";
 import { ORG_COOKIE } from "@/lib/session";
 import {
   CREW_DISPLAY_NAME,
@@ -145,6 +145,40 @@ export async function setPasscodeAction(
     return error ? { ok: false, error: "保存できませんでした。もう一度お試しください。" } : { ok: true, loginCode };
   }
 
+  // 前に合言葉ログインをやめた会社：共通ログイン用のアカウントをそのまま使い直す
+  const previousCrew = await admin
+    .from("memberships")
+    .select("id, profile_id")
+    .eq("organization_id", organizationId)
+    .eq("role_id", CREW_ROLE_ID)
+    .is("deleted_at", null)
+    .maybeSingle();
+  const crew = previousCrew.data as { id: string; profile_id: string } | null;
+  if (crew) {
+    const restored = await admin.from("organization_passcodes").insert({
+      organization_id: organizationId,
+      kind: "worker",
+      profile_id: crew.profile_id,
+      passcode_hash: hash,
+      updated_by: workspace.userId,
+    });
+    if (restored.error) {
+      return { ok: false, error: "合言葉の準備に失敗しました。もう一度お試しください。" };
+    }
+    const reactivated = await admin
+      .from("memberships")
+      .update({ status: "active", updated_by: workspace.userId })
+      .eq("id", crew.id);
+    if (reactivated.error) {
+      await admin.from("organization_passcodes").delete().eq("organization_id", organizationId).eq("kind", "worker");
+      if (/KENBEI_SEAT_LIMIT/.test(reactivated.error.message)) {
+        return { ok: false, error: "メンバーの人数が上限です。共通ログインも1人分として数えます。" };
+      }
+      return { ok: false, error: "合言葉の準備に失敗しました。もう一度お試しください。" };
+    }
+    return { ok: true, loginCode };
+  }
+
   // 初回：共通ログイン用のアカウントを作る（メールは送らない・パスワードは誰も知らない）
   const created = await admin.auth.admin.createUser({
     email: crewLoginEmail(organizationId),
@@ -185,6 +219,43 @@ export async function setPasscodeAction(
     return { ok: false, error: "合言葉の準備に失敗しました。もう一度お試しください。" };
   }
   return { ok: true, loginCode };
+}
+
+/**
+ * 作業員の合言葉ログインをやめる（一人ずつメールアドレスで入る運用にする）。
+ * 合言葉で入っている端末をログアウトさせ、合言葉を消し、共通ログインの席を空ける。
+ * あとで合言葉を決め直せば、同じ共通ログインのアカウントで再開する。
+ */
+export async function disableWorkerPasscodeAction(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const workspace = await requireWorkspace();
+  if (!isSiteAdmin(workspace)) {
+    return { ok: false, error: "管理者だけが操作できます" };
+  }
+  const admin = createAdminSupabaseClient();
+  if (!admin) {
+    return { ok: false, error: "設定が未完了です（SUPABASE_SERVICE_ROLE_KEY）" };
+  }
+  const organizationId = workspace.organizationId;
+  const worker = (await orgPasscodes(admin, organizationId)).find((row) => row.kind === "worker");
+  if (!worker) {
+    return { ok: true };
+  }
+  // 合言葉を消す前に（消すと共通ログインのアカウントが分からなくなる）端末をログアウトさせる
+  const revoked = await admin.rpc("revoke_crew_sessions", { p_organization_id: organizationId });
+  if (revoked.error) {
+    return { ok: false, error: "合言葉ログインをやめられませんでした。もう一度お試しください。" };
+  }
+  const removed = await admin.from("organization_passcodes").delete().eq("id", worker.id);
+  if (removed.error) {
+    return { ok: false, error: "合言葉ログインをやめられませんでした。もう一度お試しください。" };
+  }
+  await admin
+    .from("memberships")
+    .update({ status: "disabled", updated_by: workspace.userId })
+    .eq("organization_id", organizationId)
+    .eq("profile_id", worker.profile_id)
+    .eq("role_id", CREW_ROLE_ID);
+  return { ok: true };
 }
 
 /** 共通ログインの端末をすべてログアウトさせる。合言葉を変えたあとに使う。 */
@@ -291,21 +362,7 @@ export async function passcodeLoginAction(input: {
     return { ok: false, error: WRONG };
   }
 
-  const userResult = await admin.auth.admin.getUserById(profileId);
-  const email = userResult.data?.user?.email;
-  if (userResult.error || !email) {
-    return { ok: false, error: "ログインに失敗しました。もう一度お試しください。" };
-  }
-  const generated = await admin.auth.admin.generateLink({ type: "magiclink", email });
-  const tokenHash = generated.data?.properties?.hashed_token;
-  if (generated.error || !tokenHash) {
-    return { ok: false, error: "ログインに失敗しました。もう一度お試しください。" };
-  }
-
-  const supabase = await createServerSupabaseClient();
-  await supabase.auth.signOut();
-  const { error: verifyError } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash });
-  if (verifyError) {
+  if (!(await signInAsUser(admin, profileId))) {
     return { ok: false, error: "ログインに失敗しました。もう一度お試しください。" };
   }
   const cookieStore = await cookies();

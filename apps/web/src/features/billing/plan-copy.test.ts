@@ -13,11 +13,11 @@ import {
 } from "./plan-copy";
 
 describe("plan-copy", () => {
-  it("shows one paid price of 9,800 yen", () => {
-    expect(monthlyPriceLabel("standard")).toBe("月額 9,800円");
-    expect(KENBEI_PRICE_LABEL).toBe("月額 9,800円");
-    expect(DEFAULT_BILLING_PLANS.find((plan) => plan.code === "standard")?.monthlyPriceJpy).toBe(9_800);
-    expect(dailyPriceLabel()).toBe("1日あたり約327円");
+  it("shows one paid price of 18,000 yen", () => {
+    expect(monthlyPriceLabel("standard")).toBe("月額 18,000円");
+    expect(KENBEI_PRICE_LABEL).toBe("月額 18,000円");
+    expect(DEFAULT_BILLING_PLANS.find((plan) => plan.code === "standard")?.monthlyPriceJpy).toBe(18_000);
+    expect(dailyPriceLabel()).toBe("1日あたり約600円");
     expect(KENBEI_PRICE_NOTE).toMatch(/税込/);
     const visible = [
       trialPlanLabel(),

@@ -70,7 +70,7 @@ export function NoticeInbox({
       ) : (
         <ul className="space-y-3">
           {items.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} className="cv-auto">
               <button
                 type="button"
                 onClick={() => void openNotice(item)}

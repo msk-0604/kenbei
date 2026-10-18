@@ -176,13 +176,15 @@ describe("trial email schedule", () => {
   it("uses real KENBEI features and tax-inclusive prices", () => {
     const started = trialEmailCopy("trial_started", "https://app.kenbei.jp");
     expect(started.subject).toMatch(/14日間無料体験/);
-    expect(started.text).toMatch(/現場ごとの写真/);
-    expect(started.text).toMatch(/日報PDF/);
+    expect(started.text).toMatch(/はじめにやること/);
+    expect(started.text).toMatch(/kanri\/import/);
+    expect(started.text).toMatch(/作業員に案内する/);
+    expect(started.text).toMatch(/請求書払い/);
     expect(started.text).not.toMatch(/AI軍師/);
-    expect(started.text).toMatch(/月額9,800円（税込/);
+    expect(started.text).toMatch(/月額18,000円（税込/);
     expect(started.text).not.toMatch(/39,800|65,000|STANDARD|BUSINESS/);
     expect(started.text).toMatch(/settings\/billing/);
-    expect(trialEmailCopy("trial_day3", "https://app.kenbei.jp").text).toMatch(/タスク/);
+    expect(trialEmailCopy("trial_day3", "https://app.kenbei.jp").text).toMatch(/作業員に案内する/);
     expect(trialEmailCopy("trial_ending_soon", "https://app.kenbei.jp").text).toMatch(/自動課金しません/);
   });
 

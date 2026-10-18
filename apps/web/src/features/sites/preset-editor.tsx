@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { toSaveUserMessage, withTimeout } from "@/lib/client-errors";
 import { STANDARD_PROGRESS_ITEMS } from "@/lib/standard-progress-items";
+import { TRADE_TEMPLATES, tradeTemplate } from "@/lib/trade-progress-templates";
 import type { ProgressPreset } from "@/features/sites/types";
 
 type Row = ProgressPreset & { id: string };
@@ -21,6 +22,7 @@ export function PresetEditor({ organizationId, initial }: { organizationId: stri
   const [rows, setRows] = useState(initial);
   const [form, setForm] = useState({ category: "", section: "", item_name: "" });
   const [busy, setBusy] = useState(false);
+  const [trade, setTrade] = useState(TRADE_TEMPLATES[0]?.key ?? "plumbing");
   const [error, setError] = useState("");
 
   async function run(task: () => Promise<void>) {
@@ -95,11 +97,23 @@ export function PresetEditor({ organizationId, initial }: { organizationId: stri
     });
   }
 
-  function copyStandard() {
+  /** 業種の標準候補を読み込む。すでにある項目（分類・場所・項目名が同じもの）は足さない。 */
+  function loadTrade() {
+    const template = tradeTemplate(trade);
+    if (!template) {
+      return;
+    }
+    const keyOf = (item: ProgressPreset) => [item.category, item.section ?? "", item.item_name].join("\u0000");
+    const have = new Set(rows.map(keyOf));
+    const fresh = template.items.filter((item) => !have.has(keyOf(item)));
+    if (fresh.length === 0) {
+      setError(`${template.label}の候補はすべて入っています`);
+      return;
+    }
     void run(async () => {
       const supabase = createBrowserSupabaseClient();
       const { error: insertError } = await supabase.from("progress_item_presets").insert(
-        STANDARD_PROGRESS_ITEMS.map((item, index) => ({
+        fresh.map((item, index) => ({
           organization_id: organizationId,
           category: item.category,
           section: item.section,
@@ -113,6 +127,29 @@ export function PresetEditor({ organizationId, initial }: { organizationId: stri
       await reload(supabase);
     });
   }
+
+  const tradePicker = (
+    <div className="space-y-3">
+      <label className="block text-lg font-bold text-gray-800" htmlFor="preset-trade">
+        業種
+      </label>
+      <select
+        id="preset-trade"
+        value={trade}
+        onChange={(e) => setTrade(e.target.value)}
+        className="min-h-14 w-full rounded-xl border-2 border-gray-300 bg-white px-3 text-lg"
+      >
+        {TRADE_TEMPLATES.map((template) => (
+          <option key={template.key} value={template.key}>
+            {template.label}（{template.items.length}件）
+          </option>
+        ))}
+      </select>
+      <Button type="button" variant="secondary" fullWidth loading={busy} onClick={loadTrade}>
+        この業種の標準の候補を読み込む
+      </Button>
+    </div>
+  );
 
   function resetToStandard() {
     if (!window.confirm("会社の候補をすべて消して、標準の候補（水道・管工事）に戻しますか？")) {
@@ -176,9 +213,8 @@ export function PresetEditor({ organizationId, initial }: { organizationId: stri
               まだ会社の候補はありません。いまは標準の候補（水道・管工事の工事進行表、{STANDARD_PROGRESS_ITEMS.length}
               件）を使っています。
             </p>
-            <Button type="button" variant="secondary" fullWidth loading={busy} onClick={copyStandard}>
-              標準の候補を読み込んで、手直しする
-            </Button>
+            <p className="text-lg text-gray-700">ほかの業種の会社は、業種を選んで読み込み、手直ししてください。</p>
+            {tradePicker}
           </div>
         ) : (
           <>
@@ -206,6 +242,10 @@ export function PresetEditor({ organizationId, initial }: { organizationId: stri
                 </li>
               ))}
             </ul>
+            <details className="mt-4">
+              <summary className="cursor-pointer text-lg font-bold text-gray-800">ほかの業種の候補を追加で読み込む</summary>
+              <div className="mt-3">{tradePicker}</div>
+            </details>
             <Button type="button" variant="danger" fullWidth className="mt-4" loading={busy} onClick={resetToStandard}>
               標準の候補に戻す
             </Button>
