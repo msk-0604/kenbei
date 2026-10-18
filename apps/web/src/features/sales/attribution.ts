@@ -72,3 +72,41 @@ export function firstTouchUtm(existing: UtmAttribution | null, incoming: UtmAttr
 export function isVisitorId(value: string | undefined | null): value is string {
   return Boolean(value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value));
 }
+
+const METADATA_UTM_KEY = "kb_utm";
+const METADATA_VISITOR_KEY = "kb_vid";
+
+/**
+ * 登録したときの流入元を、アカウントにも持たせる。
+ * 確認メールを別の端末で開くとクッキーは引き継がれないため。
+ */
+export function attributionToUserMetadata(input: { visitorId: string | null; utm: UtmAttribution }): Record<string, unknown> | null {
+  if (!hasUtmValues(input.utm)) {
+    return null;
+  }
+  return {
+    [METADATA_UTM_KEY]: { ...input.utm },
+    ...(input.visitorId ? { [METADATA_VISITOR_KEY]: input.visitorId } : {}),
+  };
+}
+
+export function attributionFromUserMetadata(metadata: unknown): { visitorId: string | null; utm: UtmAttribution | null } {
+  if (!metadata || typeof metadata !== "object") {
+    return { visitorId: null, utm: null };
+  }
+  const row = metadata as Record<string, unknown>;
+  const vid = typeof row[METADATA_VISITOR_KEY] === "string" ? (row[METADATA_VISITOR_KEY] as string) : null;
+  const raw = row[METADATA_UTM_KEY];
+  const utm = raw && typeof raw === "object" ? deserializeUtmAttribution(encodeURIComponent(JSON.stringify(raw))) : null;
+  return { visitorId: isVisitorId(vid) ? vid : null, utm: utm && hasUtmValues(utm) ? utm : null };
+}
+
+/** 会社を作った端末のクッキーを優先し、なければ登録したときにアカウントへ残した流入元を使う */
+export function pickSignupAttribution(
+  cookie: { visitorId: string | null; utm: UtmAttribution },
+  metadata: unknown,
+): { visitorId: string | null; utm: UtmAttribution } {
+  const saved = attributionFromUserMetadata(metadata);
+  const utm = hasUtmValues(cookie.utm) ? cookie.utm : (saved.utm ?? cookie.utm);
+  return { visitorId: cookie.visitorId ?? saved.visitorId, utm };
+}

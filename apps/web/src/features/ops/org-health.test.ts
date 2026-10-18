@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyOrgHealth, isPlatformAdminEmail, summarizeOverview, type OrgOverviewRow } from "./org-health";
+import { classifyOrgHealth, describeOrgSource, isPlatformAdminEmail, summarizeOverview, type OrgOverviewRow } from "./org-health";
 
 const now = new Date("2026-10-17T12:00:00Z");
 
@@ -88,5 +88,23 @@ describe("isPlatformAdminEmail", () => {
     expect(isPlatformAdminEmail("x@example.jp", "owner@example.jp")).toBe(false);
     expect(isPlatformAdminEmail("owner@example.jp", "")).toBe(false);
     expect(isPlatformAdminEmail(undefined, "owner@example.jp")).toBe(false);
+  });
+});
+
+describe("describeOrgSource", () => {
+  it("shows the sales-sheet code for form outreach", () => {
+    expect(
+      describeOrgSource({ organization_id: "o", utm_source: "form", utm_medium: "outbound", utm_campaign: null, utm_content: "AB3CD" }),
+    ).toEqual({ label: "フォーム営業", code: "AB3CD", fromForm: true });
+  });
+
+  it("falls back to unknown when nothing was recorded", () => {
+    expect(describeOrgSource(undefined)).toEqual({ label: "不明（直接・検索など）", code: null, fromForm: false });
+  });
+
+  it("names other sources with their medium and campaign", () => {
+    expect(
+      describeOrgSource({ organization_id: "o", utm_source: "youtube", utm_medium: "video", utm_campaign: "photos", utm_content: null }).label,
+    ).toBe("youtube（video / photos）");
   });
 });

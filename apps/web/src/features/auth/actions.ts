@@ -1,7 +1,10 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { safeAuthNextPath } from "@kensapo/domain";
+import { attributionToUserMetadata } from "@/features/sales/attribution";
+import { readAttributionFromCookies } from "@/features/sales/attribution-cookies";
 import { getAppUrl } from "@/lib/env";
 import { writeJoinNextCookie } from "@/lib/invite-next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -27,10 +30,12 @@ export async function signUpAction(
   const safeNext = safeAuthNextPath(formString(formData, "next"));
   await writeJoinNextCookie(safeNext);
   const supabase = await createServerSupabaseClient();
+  const attribution = attributionToUserMetadata(readAttributionFromCookies(await cookies()));
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      ...(attribution ? { data: attribution } : {}),
       emailRedirectTo: safeNext
         ? `${getAppUrl()}/auth/callback?next=${encodeURIComponent(safeNext)}`
         : `${getAppUrl()}/auth/callback`,

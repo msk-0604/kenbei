@@ -38,7 +38,7 @@ export async function createOrganizationAction(
     return { error: error.message };
   }
   if (typeof organizationId === "string") {
-    await afterOrganizationCreated({ organizationId, email: user.email });
+    await afterOrganizationCreated({ organizationId, email: user.email, userMetadata: user.user_metadata });
     // 水道・管工事は標準の候補をそのまま使う。ほかの業種は、その業種の工程を会社の候補に入れておく。
     const trade = tradeTemplate(formString(formData, "trade"));
     if (trade && trade.key !== "plumbing") {
