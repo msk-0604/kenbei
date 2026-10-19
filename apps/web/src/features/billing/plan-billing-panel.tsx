@@ -11,6 +11,11 @@ import {
   dailyPriceLabel,
 } from "@/features/billing/plan-copy";
 import { INVOICE_DAYS_UNTIL_DUE } from "@/features/billing/invoice-billing";
+import { trialCarryoverEnd } from "@/features/billing/trial-carryover";
+
+function formatPeriodEnd(iso: string): string {
+  return new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "long", day: "numeric" }).format(new Date(iso));
+}
 
 function CheckoutForm({ label }: { label: string }) {
   return (
@@ -26,7 +31,7 @@ function InvoiceBillingForm({ defaultName, defaultEmail }: { defaultName: string
     <details className="mt-5 rounded-2xl bg-zinc-50 p-4 ring-1 ring-[var(--kb-line)]">
       <summary className="cursor-pointer text-sm font-medium">請求書で払う（銀行振込）</summary>
       <p className="mt-3 text-sm leading-6 text-zinc-600">
-        毎月、請求書をメールでお送りします。請求書に書かれた振込先へ、発行日から{INVOICE_DAYS_UNTIL_DUE}日以内にお振り込みください（カードでも払えます）。振込手数料はご負担ください。
+        毎月、請求書をメールでお送りします。請求書に書かれた振込先へ、発行日から{INVOICE_DAYS_UNTIL_DUE}日以内にお振り込みください（カードでも払えます）。振込手数料はご負担ください。無料体験中に申し込むと、最初の請求書は無料体験が終わる日に届きます。
       </p>
       <form action={startInvoiceBillingFormAction} className="mt-4 flex flex-col gap-3">
         <label className="flex flex-col gap-1 text-sm">
@@ -63,6 +68,9 @@ export function PlanBillingPanel({
   trialDaysLeft,
   variant,
   invoiceDefaults,
+  invoicePending = false,
+  currentPeriodEnd = null,
+  trialEndsAt = null,
 }: {
   planCode: string;
   status: string;
@@ -72,6 +80,12 @@ export function PlanBillingPanel({
   variant: "settings" | "billing";
   /** 請求書払いのフォームの初期値（契約画面だけ） */
   invoiceDefaults?: { name: string; email: string };
+  /** 請求書払いを申し込み済みで、入金待ち */
+  invoicePending?: boolean;
+  /** 次回更新日（期末解約の予約中は、使える最後の日） */
+  currentPeriodEnd?: string | null;
+  /** お試しの終わり。お試し中に申し込むと、請求はこの日から始まる */
+  trialEndsAt?: string | null;
 }) {
   const paid = access === "paid_active";
   const locked = access === "trial_expired" || access === "paid_inactive";
@@ -114,7 +128,7 @@ export function PlanBillingPanel({
         <p className="text-base font-semibold" data-testid="plan-status">
           {headline}
           {access === "trial_active" && trialDaysLeft != null ? `（残り${trialDaysLeft}日）` : ""}
-          {status && status !== "active" && status !== "trialing" ? ` / ${status}` : ""}
+          {status && status !== "active" && status !== "trialing" && !invoicePending ? ` / ${status}` : ""}
           {cancelAtPeriodEnd ? "（期末で解約予約）" : ""}
         </p>
         <ul className="mt-4 flex flex-col gap-2 text-sm leading-6 text-zinc-700">
@@ -127,11 +141,28 @@ export function PlanBillingPanel({
             </li>
           ))}
         </ul>
-        {paid ? null : (
+        {paid && currentPeriodEnd ? (
+          <p className="mt-2 text-sm text-zinc-600" data-testid="period-end">
+            {cancelAtPeriodEnd ? "ご利用は" : "次回の更新日は"}
+            {formatPeriodEnd(currentPeriodEnd)}
+            {cancelAtPeriodEnd ? "までです。" : "です。"}
+          </p>
+        ) : null}
+        {invoicePending ? (
+          <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900 ring-1 ring-amber-200" data-testid="invoice-pending">
+            請求書払いでお申し込み済みです。お振り込みを確認すると、有料のご契約に切り替わります。
+            {access === "trial_active" ? "それまでは、お試し期間の終わりまでそのまま使えます。" : "入金の確認まで、記録の追加・編集はできません。"}
+            請求書は下の「支払い方法・領収書を確認」からも見られます。
+          </p>
+        ) : null}
+        {paid || invoicePending ? null : (
           <div className="mt-6">
             <CheckoutForm label={checkoutButtonLabel(access)} />
-            <p className="mt-3 text-center text-xs text-zinc-500">
+            <p className="mt-3 text-center text-xs text-zinc-500" data-testid="billing-start">
               カードはこのあとの支払い画面（Stripe）で登録します。
+              {access === "trial_active" && trialEndsAt && trialCarryoverEnd({ status: "trialing", trial_ends_at: trialEndsAt })
+                ? `お支払いは無料体験が終わる${formatPeriodEnd(trialEndsAt)}から始まり、それまでは料金はかかりません。`
+                : "お申し込みの日から請求が始まります。"}
             </p>
             {invoiceDefaults ? (
               <InvoiceBillingForm defaultName={invoiceDefaults.name} defaultEmail={invoiceDefaults.email} />

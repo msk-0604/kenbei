@@ -20,13 +20,72 @@ type BillingAdmin = {
     upsert: (row: Record<string, unknown>) => PromiseLike<unknown>;
     update: (row: Record<string, unknown>) => { eq: (column: string, value: string) => PromiseLike<unknown> };
     select: (columns: string) => {
-      eq: (
-        column: string,
-        value: string,
-      ) => { maybeSingle: () => Promise<{ data: { organization_id: string } | null }> };
+      eq: (column: string, value: string) => { maybeSingle: () => Promise<{ data: BillingRowSnapshot | null }> };
     };
   };
 };
+
+/** 契約の状態を決めるのに読む、organization_billing の今の値 */
+type BillingRowSnapshot = { organization_id: string; status?: string | null; trial_ends_at?: string | null };
+
+/**
+ * 次回更新日（UNIX 秒）。
+ * 2025-03-31 より前の Stripe API は subscription.current_period_end、それ以降は items.data[].current_period_end にある。
+ * どちらの API バージョンの Webhook・レスポンスでも読めるようにする。
+ */
+export function subscriptionPeriodEnd(obj: StripeWebhookObject): number | null {
+  const top = Number(obj.current_period_end);
+  if (Number.isFinite(top) && top > 0) {
+    return top;
+  }
+  const items = (obj.items as { data?: { current_period_end?: unknown }[] } | undefined)?.data ?? [];
+  const ends = items.map((item) => Number(item.current_period_end)).filter((value) => Number.isFinite(value) && value > 0);
+  return ends.length > 0 ? Math.max(...ends) : null;
+}
+
+export function subscriptionPeriodEndIso(obj: StripeWebhookObject): string | null {
+  const seconds = subscriptionPeriodEnd(obj);
+  return seconds ? new Date(seconds * 1000).toISOString() : null;
+}
+
+/** 請求書がどの契約のものか（旧 API: invoice.subscription、新 API: invoice.parent.subscription_details.subscription） */
+export function invoiceSubscriptionId(obj: StripeWebhookObject): string | null {
+  const pick = (value: unknown): string | null => {
+    if (typeof value === "string" && value) {
+      return value;
+    }
+    const id = (value as { id?: unknown } | null | undefined)?.id;
+    return typeof id === "string" && id ? id : null;
+  };
+  const parent = obj.parent as { subscription_details?: { subscription?: unknown } } | null | undefined;
+  return pick(obj.subscription) ?? pick(parent?.subscription_details?.subscription);
+}
+
+function invoiceSubscriptionMetadata(obj: StripeWebhookObject): Record<string, string> | undefined {
+  const parent = obj.parent as { subscription_details?: { metadata?: Record<string, string> } } | null | undefined;
+  const legacy = obj.subscription_details as { metadata?: Record<string, string> } | null | undefined;
+  return parent?.subscription_details?.metadata ?? legacy?.metadata ?? undefined;
+}
+
+function trialStillActive(row: BillingRowSnapshot | null, now: Date): boolean {
+  return Boolean(
+    row?.status === "trialing" && row.trial_ends_at && new Date(row.trial_ends_at).getTime() > now.getTime(),
+  );
+}
+
+/**
+ * 請求書払い（collection_method=send_invoice）の契約は、Stripe 上では請求書を送った時点で active になる。
+ * KENBEI では入金（invoice.paid）を確認するまで有料にしない。お試し中なら、お試しの期限まではそのまま使える。
+ */
+export function invoiceBilledStatus(stripeMapped: string, row: BillingRowSnapshot | null, now: Date): string {
+  if (trialStillActive(row, now)) {
+    return "trialing";
+  }
+  if (stripeMapped === "active" || stripeMapped === "trialing") {
+    return row?.status === "active" ? "active" : (row?.status === "past_due" ? "past_due" : "incomplete");
+  }
+  return stripeMapped;
+}
 
 export function isUniqueViolation(error: { code?: string; message?: string } | null): boolean {
   if (!error) {
@@ -108,6 +167,7 @@ export async function applyStripeWebhookBusiness(
   admin: BillingAdmin,
   event: StripeWebhookEvent,
   organizationId: string | null,
+  now: Date = new Date(),
 ): Promise<void> {
   const obj = event.data.object;
   const meta = obj.metadata as { plan_code?: string } | undefined;
@@ -130,45 +190,73 @@ export async function applyStripeWebhookBusiness(
   }
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
     const status = obj.status as string | undefined;
-    const org =
-      organizationId ||
-      (
-        await admin
-          .from("organization_billing")
-          .select("organization_id")
-          .eq("stripe_subscription_id", obj.id as string)
-          .maybeSingle()
-      ).data;
-    const orgId = typeof org === "string" ? org : org?.organization_id;
+    const row = organizationId
+      ? (await admin.from("organization_billing").select("organization_id, status, trial_ends_at").eq("organization_id", organizationId).maybeSingle()).data
+      : (
+          await admin
+            .from("organization_billing")
+            .select("organization_id, status, trial_ends_at")
+            .eq("stripe_subscription_id", obj.id as string)
+            .maybeSingle()
+        ).data;
+    const orgId = organizationId || row?.organization_id;
     if (orgId) {
-      const mapped =
+      const stripeMapped =
         event.type === "customer.subscription.deleted" || status === "canceled" || status === "cancelled"
           ? "canceled"
           : status === "past_due" || status === "unpaid" || status === "active" || status === "trialing"
             ? status
             : "active";
+      const mapped =
+        obj.collection_method === "send_invoice" ? invoiceBilledStatus(stripeMapped, row ?? null, now) : stripeMapped;
       const patch: {
         status: string;
         cancel_at_period_end: boolean;
         current_period_end: string | null;
         plan_code?: string;
+        stripe_subscription_id?: null;
       } = {
         status: mapped,
         cancel_at_period_end: Boolean(obj.cancel_at_period_end),
-        current_period_end: obj.current_period_end
-          ? new Date(Number(obj.current_period_end) * 1000).toISOString()
-          : null,
+        current_period_end: subscriptionPeriodEndIso(obj),
       };
       if (planCode && mapped !== "canceled") {
         patch.plan_code = planCode;
       }
+      if (stripeMapped === "canceled" && mapped === "trialing") {
+        // お試し中に請求書払いの申し込みを取り消した：お試しは続け、もう一度申し込めるようにする
+        patch.stripe_subscription_id = null;
+      }
       await admin.from("organization_billing").update(patch).eq("organization_id", orgId);
     }
   }
+  if (event.type === "invoice.paid" && obj.collection_method === "send_invoice" && Number(obj.amount_paid ?? 0) > 0) {
+    // 請求書払いは、ここで初めて有料にする（カード払いは checkout.session.completed で有料になる）
+    const sub = invoiceSubscriptionId(obj);
+    const row = sub
+      ? (await admin.from("organization_billing").select("organization_id, status, trial_ends_at").eq("stripe_subscription_id", sub).maybeSingle())
+          .data
+      : null;
+    if (row?.organization_id) {
+      await admin.from("organization_billing").update({ status: "active", trial_ends_at: null }).eq("organization_id", row.organization_id);
+      const meta = invoiceSubscriptionMetadata(obj);
+      const paidPlan = meta?.plan_code ? persistableBillingPlanCode(meta.plan_code) : null;
+      await recordPaidFunnelEvent(admin, row.organization_id, paidPlan, meta);
+    }
+  }
   if (event.type === "invoice.payment_failed") {
-    const sub = obj.subscription as string | undefined;
+    const sub = invoiceSubscriptionId(obj);
     if (sub) {
-      await admin.from("organization_billing").update({ status: "past_due" }).eq("stripe_subscription_id", sub);
+      const keepTrial =
+        obj.collection_method === "send_invoice" &&
+        trialStillActive(
+          (await admin.from("organization_billing").select("organization_id, status, trial_ends_at").eq("stripe_subscription_id", sub).maybeSingle())
+            .data,
+          now,
+        );
+      if (!keepTrial) {
+        await admin.from("organization_billing").update({ status: "past_due" }).eq("stripe_subscription_id", sub);
+      }
     }
   }
 }

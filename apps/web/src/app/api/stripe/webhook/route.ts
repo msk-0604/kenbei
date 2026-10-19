@@ -1,4 +1,3 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import {
@@ -7,35 +6,9 @@ import {
   organizationIdFromStripeObject,
   type StripeWebhookEvent,
 } from "@/features/billing/stripe-webhook";
+import { verifyStripeSignature } from "@/features/billing/stripe-signature";
 
 export const runtime = "nodejs";
-
-function verifyStripeSignature(raw: string, header: string | null, secret: string): boolean {
-  if (!header) {
-    return false;
-  }
-  const timestamp = header
-    .split(",")
-    .find((item) => item.startsWith("t="))
-    ?.slice(2);
-  const signatures = header
-    .split(",")
-    .filter((item) => item.startsWith("v1="))
-    .map((item) => item.slice(3));
-  if (!timestamp || signatures.length === 0) {
-    return false;
-  }
-  const expected = createHmac("sha256", secret).update(`${timestamp}.${raw}`).digest("hex");
-  return signatures.some((signature) => {
-    try {
-      const a = Buffer.from(expected, "hex");
-      const b = Buffer.from(signature, "hex");
-      return a.length === b.length && timingSafeEqual(a, b);
-    } catch {
-      return false;
-    }
-  });
-}
 
 export async function POST(request: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;

@@ -4,7 +4,9 @@ import {
   buildInvoiceCustomerParams,
   buildInvoiceSubscriptionParams,
   INVOICE_DAYS_UNTIL_DUE,
+  invoicePendingBilling,
   isBankTransferUnavailable,
+  isInvoicePaymentPending,
   validateInvoiceBillingInput,
 } from "./invoice-billing";
 
@@ -73,5 +75,42 @@ describe("billingStatusFromSubscription", () => {
     expect(billingStatusFromSubscription("past_due")).toBe("past_due");
     expect(billingStatusFromSubscription("incomplete_expired")).toBe("canceled");
     expect(billingStatusFromSubscription(undefined)).toBe("active");
+  });
+});
+
+describe("invoicePendingBilling", () => {
+  const now = new Date("2026-10-18T00:00:00Z");
+
+  it("keeps a running 14-day trial until it ends", () => {
+    expect(invoicePendingBilling({ status: "trialing", trial_ends_at: "2026-10-30T00:00:00Z" }, now)).toEqual({
+      status: "trialing",
+      trial_ends_at: "2026-10-30T00:00:00Z",
+    });
+  });
+
+  it("waits for payment when the trial is over or there was none", () => {
+    expect(invoicePendingBilling({ status: "trialing", trial_ends_at: "2026-10-01T00:00:00Z" }, now).status).toBe("incomplete");
+    expect(invoicePendingBilling({ status: "canceled", trial_ends_at: null }, now).status).toBe("incomplete");
+    expect(invoicePendingBilling(null, now).status).toBe("incomplete");
+  });
+});
+
+describe("isInvoicePaymentPending", () => {
+  it("is pending only with a subscription that is not yet paid", () => {
+    const trialEndsAt = "2026-10-30T00:00:00Z";
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "incomplete", trialEndsAt: null })).toBe(true);
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "trialing", trialEndsAt })).toBe(true);
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_1", status: "active", trialEndsAt: null })).toBe(false);
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: null, status: "trialing", trialEndsAt })).toBe(false);
+    // カードを登録済みで、お試しの終わりから請求が始まる契約は入金待ちではない
+    expect(isInvoicePaymentPending({ stripeSubscriptionId: "sub_card", status: "trialing", trialEndsAt: null })).toBe(false);
+  });
+});
+
+describe("buildInvoiceSubscriptionParams trial carryover", () => {
+  it("starts invoicing at the end of the trial when given", () => {
+    const base = { customer: "cus_1", price: "price_1", organizationId: "org_1", planCode: "pro", bankTransfer: true };
+    expect(buildInvoiceSubscriptionParams({ ...base, trialEnd: 1_800_000_000 }).get("trial_end")).toBe("1800000000");
+    expect(buildInvoiceSubscriptionParams({ ...base, trialEnd: null }).get("trial_end")).toBeNull();
   });
 });
