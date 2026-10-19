@@ -8,7 +8,7 @@ describe("setupSteps", () => {
   it("starts with nothing done and points to the import page", () => {
     const steps = setupSteps(empty);
     expect(setupProgress(steps)).toEqual({ done: 0, total: 5, complete: false });
-    expect(steps[0]?.href).toBe("/kanri/import");
+    expect(steps[0]?.href).toBe("/workers/new");
   });
 
   it("marks steps done as the company sets up", () => {

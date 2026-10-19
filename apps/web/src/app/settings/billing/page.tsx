@@ -51,7 +51,7 @@ export default async function BillingPage({
       ) : null}
       {ok ? (
         <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 ring-1 ring-emerald-200">
-          お支払い手続きが完了しました。反映まで少し待つ場合があります。
+          お申し込みありがとうございます。ご契約の内容は、管理画面のいちばん上か、この「ご契約」の画面でいつでも確かめられます（反映まで少し待つ場合があります）。
         </p>
       ) : null}
       {invoice ? (

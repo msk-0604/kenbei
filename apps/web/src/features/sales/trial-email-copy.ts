@@ -7,7 +7,6 @@ export function trialEmailCopy(
   const base = appUrl.replace(/\/$/, "");
   const billing = `${base}/settings/billing`;
   const kanri = `${base}/kanri`;
-  const importUrl = `${base}/kanri/import`;
   const passcode = `${base}/settings#passcode`;
   const help = `${base}/help`;
   if (kind === "trial_started") {
@@ -18,9 +17,8 @@ export function trialEmailCopy(
       "管理画面の「はじめにやること」を上から進めるだけで、30分ほどで現場で使い始められます。",
       `${kanri}`,
       "",
-      "① 作業員を登録する（Excel の名簿があれば、まとめて取り込めます）",
-      `　${importUrl}`,
-      "② 作業員の合言葉を決める（作業員はメールアドレスなしで入れます）",
+      "① 作業員を登録する（名前を入れるだけです）",
+      "② 作業員のログイン方法を決める（一人ずつメールで招待するか、みんなで同じ合言葉）",
       "③ 現場を1件登録する",
       "④ 明日の予定を入れる",
       "⑤ 作業員に案内を送る（設定の「作業員に案内する」から LINE で送るか、QR付きの案内を印刷して渡すだけ）",
@@ -44,7 +42,6 @@ export function trialEmailCopy(
       `まだのときは、管理画面の「はじめにやること」の残りを進めてください。 ${kanri}`,
       "",
       "よくある止まりどころ",
-      `・作業員の登録が面倒 → Excel の名簿をそのまま取り込めます ${importUrl}`,
       `・作業員への説明が面倒 → 「作業員に案内する」から LINE で送るか、QR付きの案内を印刷して渡すだけです ${passcode}`,
       `・使い方がわからない → ${help}`,
       "",

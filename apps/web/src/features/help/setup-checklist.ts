@@ -18,8 +18,8 @@ export function setupSteps(state: SetupState): SetupStep[] {
     {
       key: "workers",
       label: "作業員を登録する",
-      detail: "名簿があれば Excel からまとめて入れられます",
-      href: state.workerCount > 0 ? "/workers" : "/kanri/import",
+      detail: "名前を入れるだけ。あとから何人でも足せます",
+      href: state.workerCount > 0 ? "/workers" : "/workers/new",
       done: state.workerCount > 0,
     },
     {
