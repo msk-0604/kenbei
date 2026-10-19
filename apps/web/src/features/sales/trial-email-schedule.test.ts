@@ -177,7 +177,7 @@ describe("trial email schedule", () => {
     const started = trialEmailCopy("trial_started", "https://app.kenbei.jp");
     expect(started.subject).toMatch(/14日間無料体験/);
     expect(started.text).toMatch(/はじめにやること/);
-    expect(started.text).toMatch(/kanri\/import/);
+    expect(started.text).not.toMatch(/kanri\/import/);
     expect(started.text).toMatch(/作業員に案内する/);
     expect(started.text).toMatch(/請求書払い/);
     expect(started.text).not.toMatch(/AI軍師/);
