@@ -29,15 +29,7 @@ import { getEntitlement } from "@/lib/entitlement";
 
 export const dynamic = "force-dynamic";
 
-type MenuItem = { href: string; label: string; note?: string; icon: LucideIcon };
-
-/** 毎日使うもの：大きいタイルで並べる */
-const DAILY: MenuItem[] = [
-  { href: "/kanri/schedules", label: "全員の予定", note: "見る・変える", icon: CalendarDays },
-  { href: "/sites", label: "現場と写真", note: "進み具合を見る", icon: Camera },
-  { href: "/reports", label: "日報", note: "見る・出す", icon: FileText },
-  { href: "/tasks", label: "残作業", note: "タスク", icon: ListChecks },
-];
+type MenuItem = { href: string; label: string; icon: LucideIcon };
 
 /** ときどき使う登録 */
 const REGISTER: MenuItem[] = [
@@ -50,18 +42,6 @@ const TONE: Record<"ok" | "trial" | "warn", string> = {
   trial: "bg-sky-50 text-sky-900 ring-sky-200",
   warn: "bg-amber-50 text-amber-900 ring-amber-200",
 };
-
-function StatTile({ label, value, unit }: { label: string; value: number; unit: string }) {
-  return (
-    <div className="rounded-2xl bg-white p-4 ring-1 ring-[var(--kb-line)]">
-      <p className="text-sm font-medium text-gray-600">{label}</p>
-      <p className="mt-1 flex items-baseline gap-1">
-        <span className="text-3xl font-bold tabular-nums text-gray-950">{value}</span>
-        <span className="text-sm text-gray-600">{unit}</span>
-      </p>
-    </div>
-  );
-}
 
 export default async function KanriHomePage() {
   const workspace = await requireSiteAdmin();
@@ -82,6 +62,21 @@ export default async function KanriHomePage() {
         invoicePending: entitlement.invoicePending,
       })
     : null;
+
+  // 毎日使うもの。数字は自分の会社の今の状態なので、開くたびに中身が変わる
+  const daily: (MenuItem & { value: number | null; unit: string; caption: string })[] = [
+    {
+      href: "/kanri/schedules",
+      label: "全員の予定",
+      icon: CalendarDays,
+      value: stats?.schedulesToday ?? null,
+      unit: "件",
+      caption: stats ? `今日（作業開始 ${stats.startedToday}件）` : "今日",
+    },
+    { href: "/sites", label: "現場の写真", icon: Camera, value: stats?.photos7d ?? null, unit: "枚", caption: "この7日間" },
+    { href: "/reports", label: "日報", icon: FileText, value: stats?.reports7d ?? null, unit: "件", caption: "この7日間" },
+    { href: "/tasks", label: "残作業", icon: ListChecks, value: stats?.openTasks ?? null, unit: "件", caption: "まだ終わっていない" },
+  ];
 
   const settings: MenuItem[] = [
     { href: "/kanri/presets", label: "よく使う工程の候補", icon: ListOrdered },
@@ -115,31 +110,24 @@ export default async function KanriHomePage() {
         ) : null}
       </header>
 
-      {stats ? (
-        <section aria-label="今日の現場">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile label="今日の予定" value={stats.schedulesToday} unit="件" />
-            <StatTile label="作業を始めた" value={stats.startedToday} unit="件" />
-            <StatTile label="写真（7日間）" value={stats.photos7d} unit="枚" />
-            <StatTile label="日報（7日間）" value={stats.reports7d} unit="件" />
-          </div>
-        </section>
-      ) : null}
-
       {setupState ? <SetupChecklistCard steps={setupSteps(setupState)} hasSample={setupState.hasSample} /> : null}
 
       <section aria-label="毎日使う">
         <div className="grid grid-cols-2 gap-3">
-          {DAILY.map(({ href, label, note, icon: Icon }) => (
+          {daily.map(({ href, label, icon: Icon, value, unit, caption }) => (
             <Link
               key={href}
               href={href}
-              className="tap-press flex min-h-28 flex-col justify-between rounded-3xl bg-[var(--kb-ink)] p-4 text-white"
+              className="tap-press flex flex-col gap-3 rounded-xl border border-gray-300 bg-white p-4 text-gray-950"
             >
-              <Icon className="h-7 w-7 text-sky-300" aria-hidden />
+              <span className="flex items-center gap-2 text-base font-bold">
+                <Icon className="h-5 w-5 shrink-0 text-gray-700" aria-hidden />
+                {label}
+              </span>
               <span>
-                <span className="block text-lg font-bold leading-tight">{label}</span>
-                {note ? <span className="block text-sm text-white/70">{note}</span> : null}
+                <span className="text-3xl font-bold tabular-nums">{value ?? "—"}</span>
+                <span className="ml-1 text-sm text-gray-600">{unit}</span>
+                <span className="block text-xs text-gray-500">{caption}</span>
               </span>
             </Link>
           ))}
@@ -152,9 +140,9 @@ export default async function KanriHomePage() {
             <Link
               key={href}
               href={href}
-              className="tap-press flex min-h-14 items-center gap-3 rounded-2xl bg-white px-4 text-base font-bold text-gray-950 ring-1 ring-[var(--kb-line)]"
+              className="tap-press flex min-h-14 items-center gap-3 rounded-xl border border-gray-300 bg-white px-4 text-base font-bold text-gray-950"
             >
-              <Icon className="h-5 w-5 shrink-0 text-[var(--kb-accent)]" aria-hidden />
+              <Icon className="h-5 w-5 shrink-0 text-gray-700" aria-hidden />
               {label}
             </Link>
           ))}
@@ -165,7 +153,7 @@ export default async function KanriHomePage() {
 
       <section>
         <h2 className="mb-2 text-base font-bold text-gray-700">設定</h2>
-        <ul className="divide-y divide-[var(--kb-line)] overflow-hidden rounded-2xl bg-white ring-1 ring-[var(--kb-line)]">
+        <ul className="divide-y divide-gray-200 overflow-hidden rounded-xl border border-gray-300 bg-white">
           {settings.map(({ href, label, icon: Icon }) => (
             <li key={href}>
               <Link href={href} className="tap-press flex min-h-14 items-center gap-3 px-4 text-base font-medium text-gray-900">
