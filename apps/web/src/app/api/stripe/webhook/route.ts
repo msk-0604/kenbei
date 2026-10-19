@@ -7,11 +7,13 @@ import {
   type StripeWebhookEvent,
 } from "@/features/billing/stripe-webhook";
 import { verifyStripeSignature } from "@/features/billing/stripe-signature";
+import { readServerEnv } from "@/lib/server-env";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  // 前後の空白・改行（Vercel に貼り付けたときに入りやすい）があると署名が必ず合わないので、ほかの設定と同じく取り除く
+  const secret = readServerEnv("STRIPE_WEBHOOK_SECRET");
   const raw = await request.text();
   if (!secret || !verifyStripeSignature(raw, request.headers.get("stripe-signature"), secret)) {
     return NextResponse.json({ error: "invalid signature" }, { status: 400 });
