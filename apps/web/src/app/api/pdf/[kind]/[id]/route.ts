@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
 import { getPrintCompany, getReport } from "@/features/reports/queries";
-import { weatherLineForPdf } from "@kensapo/domain";
+import { TASK_STATUS_LABELS, weatherLineForPdf } from "@kensapo/domain";
 import { buildReportPdf } from "@/lib/report-pdf";
 import { getWorkspace } from "@/lib/session";
 import { getProject } from "@/features/projects/queries";
 import { listProjectProcesses, listProjectTasks } from "@/features/site-ops/queries";
 import { getProgressItems } from "@/features/sites/queries";
-import { siteProgressPercent } from "@/lib/site-rules";
+import { progressItemLabel, siteProgressPercent } from "@/lib/site-rules";
 import { buildPdf, pdfAttachmentHeaders, pdfFailed } from "@/lib/pdf-document";
+
+const PROGRESS_MARK_LABELS: Record<string, string> = { ok: "完了", attention: "未完了" };
 
 export async function GET(
   _request: Request,
@@ -66,8 +68,11 @@ export async function GET(
     ]);
     const pdf = await buildPdf(`現場サマリー ${project.name}`, [
       `進捗 ${siteProgressPercent(progressItems, processes.map((item) => item.percent))}%`,
+      ...progressItems.map((item) => `${progressItemLabel(item)} ${PROGRESS_MARK_LABELS[item.mark ?? ""] ?? "未確認"}`),
       ...processes.map((item) => `${item.name} ${item.percent}% ${item.delayed ? "遅延" : ""}`),
-      ...tasks.slice(0, 15).map((item) => `${item.title} ${item.status}`),
+      ...tasks
+        .slice(0, 15)
+        .map((item) => `${item.title} ${TASK_STATUS_LABELS[item.status as keyof typeof TASK_STATUS_LABELS] ?? item.status}`),
     ]);
     if (pdfFailed(pdf)) {
       return NextResponse.json({ error: pdf.error }, { status: 422 });
