@@ -6,6 +6,7 @@ import { TASK_STATUS_LABELS, PROCESS_STATUS_LABELS, PRIORITY_LABELS, TASK_QUICK_
 import {
   createProcessAction,
   createTaskAction,
+  deleteTaskAction,
   updateProcessAction,
   updateTaskStatusAction,
 } from "@/features/site-ops/actions";
@@ -230,6 +231,26 @@ function TaskStatusCard({ task }: { task: TaskRecord }) {
         })}
         {success ? <p className="col-span-full text-sm font-medium text-emerald-800">{success}</p> : null}
         {error ? <p className="col-span-full text-sm text-red-600">{error}</p> : null}
+      </div>
+      <div className="mt-2 text-right">
+        <button
+          type="button"
+          disabled={Boolean(pendingStatus)}
+          className="min-h-10 px-2 text-sm text-zinc-500 underline"
+          onClick={() => {
+            if (!window.confirm(`「${task.title}」を消しますか？`)) return;
+            setError(null);
+            void deleteTaskAction(task.id).then((result) => {
+              if (result?.error) {
+                setError(result.error);
+                return;
+              }
+              router.refresh();
+            });
+          }}
+        >
+          このタスクを消す
+        </button>
       </div>
     </li>
   );

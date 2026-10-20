@@ -5,6 +5,7 @@ import { SYSTEM_ROLE_CODES, type SystemRoleCode } from "@kensapo/domain";
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { formString } from "@/lib/form";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { toUserActionError } from "@/lib/user-error";
 
 function isRole(value: string): value is SystemRoleCode {
   return (SYSTEM_ROLE_CODES as readonly string[]).includes(value);
@@ -53,7 +54,7 @@ export async function assignMemberAction(
   if (row) {
     const { error } = await supabase.from("project_members").update(payload).eq("id", row.id);
     if (error) {
-      return { error: error.message };
+      return { error: toUserActionError(error.message, "保存") };
     }
   } else {
     const { error } = await supabase.from("project_members").insert({
@@ -61,7 +62,7 @@ export async function assignMemberAction(
       created_by: workspace.userId,
     });
     if (error) {
-      return { error: error.message };
+      return { error: toUserActionError(error.message, "保存") };
     }
   }
   revalidatePath(`/projects/${projectId}`);

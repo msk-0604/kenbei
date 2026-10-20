@@ -332,7 +332,7 @@ export async function setMembershipStatusAction(
     if (message.includes("permission denied")) {
       return { error: "メンバーを変更する権限がありません。" };
     }
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   revalidatePath("/settings/members");
   revalidatePath("/");

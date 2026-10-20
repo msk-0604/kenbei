@@ -6,7 +6,9 @@ import { PhotoAssistButton } from "@/features/photos/assist-button";
 import { PhotoEditForm } from "@/features/photos/edit-form";
 import { PhotoCreateTaskForm } from "@/features/photos/create-task-form";
 import { getPhoto } from "@/features/photos/queries";
-import { can, requireWorkspace } from "@/lib/authz-guard";
+import { deletePhotoAction } from "@/features/photos/actions";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { can, isSiteAdmin, requireWorkspace } from "@/lib/authz-guard";
 import { tokyoTodayIso } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +25,7 @@ export default async function PhotoDetailPage({
     notFound();
   }
   const canTask = can(workspace, "project.update") || can(workspace, "capture.create");
+  const canDelete = photo.capturedBy === workspace.userId || isSiteAdmin(workspace);
 
   return (
     <AppShell>
@@ -71,6 +74,16 @@ export default async function PhotoDetailPage({
           locationSpot={photo.locationSpot}
           defaultDueOn={tokyoTodayIso()}
         />
+      ) : null}
+      {canDelete ? (
+        <div className="mt-8">
+          <ConfirmDeleteButton
+            action={deletePhotoAction.bind(null, photo.id)}
+            label="この写真を消す"
+            confirmText="この写真を消しますか？消すと、現場の写真一覧と日報の下書きから外れます。"
+            afterHref={photo.projectId ? `/projects/${photo.projectId}?tab=photos` : "/photos"}
+          />
+        </div>
       ) : null}
     </AppShell>
   );

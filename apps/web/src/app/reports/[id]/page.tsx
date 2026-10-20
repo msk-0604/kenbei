@@ -7,7 +7,9 @@ import { getPreviousReportText, getReport } from "@/features/reports/queries";
 import { SharePdfButton } from "@/features/reports/share-pdf-button";
 import { searchPhotos } from "@/features/photos/queries";
 import { listProjectTasks } from "@/features/site-ops/queries";
-import { requireWorkspace } from "@/lib/authz-guard";
+import { isSiteAdmin, requireWorkspace } from "@/lib/authz-guard";
+import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
+import { deleteReportDraftAction, reopenReportAction } from "@/features/reports/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +18,7 @@ export default async function ReportDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireWorkspace();
+  const workspace = await requireWorkspace();
   const { id } = await params;
   const report = await getReport(id);
   if (!report) {
@@ -88,6 +90,25 @@ export default async function ReportDetailPage({
         ) : (
           <p className="text-sm text-zinc-500">日報を確定するとPDFを作れます。</p>
         )}
+      </div>
+      <div className="mt-10 flex flex-col gap-3 border-t border-zinc-100 pt-6">
+        {report.status === "confirmed" && isSiteAdmin(workspace) ? (
+          <ConfirmDeleteButton
+            action={reopenReportAction.bind(null, report.id)}
+            label="確定を取り消して直す"
+            confirmText="確定を取り消して、下書きに戻しますか？直したら、もう一度「日報を確定」してください。"
+            pendingLabel="戻しています…"
+            tone="plain"
+          />
+        ) : null}
+        {isDraft ? (
+          <ConfirmDeleteButton
+            action={deleteReportDraftAction.bind(null, report.id)}
+            label="この下書きを消す"
+            confirmText="この日報の下書きを消しますか？書いた内容は元に戻せません。写真は消えません。"
+            afterHref="/reports"
+          />
+        ) : null}
       </div>
     </AppShell>
   );

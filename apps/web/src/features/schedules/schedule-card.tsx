@@ -13,6 +13,7 @@ import type { ScheduleWithDetails } from "@/features/sites/types";
 export function ScheduleCard({
   schedule,
   onEdit,
+  onCopy,
   onDelete,
   deleting,
   hideProjectName = false,
@@ -20,6 +21,8 @@ export function ScheduleCard({
 }: {
   schedule: ScheduleWithDetails;
   onEdit: () => void;
+  /** 同じ内容の予定をほかの日にも入れる */
+  onCopy?: () => void;
   onDelete: () => void;
   deleting?: boolean;
   hideProjectName?: boolean;
@@ -154,6 +157,11 @@ export function ScheduleCard({
           <Button type="button" variant="secondary" size="md" fullWidth onClick={onEdit}>
             内容を変更する
           </Button>
+          {onCopy ? (
+            <Button type="button" variant="secondary" size="md" fullWidth onClick={onCopy}>
+              ほかの日にもコピーする
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="danger"

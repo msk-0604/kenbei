@@ -7,7 +7,7 @@ import {
   MAX_PHOTOS_PER_BATCH,
 } from "@kensapo/domain";
 import { classifyPhotoHeuristic, type PhotoClassification } from "@kensapo/ai";
-import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, can, isSiteAdmin, requireWorkspace } from "@/lib/authz-guard";
 import { formString } from "@/lib/form";
 import { isUniqueConstraintError, photoSaveErrorMessage } from "@/features/photos/upload-safety";
 import { consumeRateLimit, RATE_LIMIT_UNAVAILABLE_MESSAGE } from "@/lib/rate-limit";
@@ -16,6 +16,9 @@ import { listMemberProfileIdsWithPermission, notifyWorkspaceMembers } from "@/li
 import { postOrgNotice } from "@/lib/org-notice";
 import { buildPushPayload } from "@/lib/push/events";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { softDeleteRow } from "@/lib/soft-delete";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { toUserActionError } from "@/lib/user-error";
 
 export type RegisteredPhotoItem = {
   id: string;
@@ -269,7 +272,7 @@ export async function updatePhotoAction(
     .eq("id", photoId)
     .eq("organization_id", workspace.organizationId);
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   revalidatePath("/photos");
   revalidatePath("/confirm");
@@ -312,7 +315,7 @@ export async function acceptPhotoProposalAction(photoId: string): Promise<{ erro
     .eq("id", photoId)
     .eq("organization_id", workspace.organizationId);
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   revalidatePath("/confirm");
   if (row.project_id) {
@@ -362,7 +365,7 @@ export async function acceptAllProposedPhotosAction(): Promise<{ error: string }
       .eq("id", row.id)
       .eq("organization_id", workspace.organizationId);
     if (error) {
-      return { error: error.message };
+      return { error: toUserActionError(error.message, "保存") };
     }
   }
   revalidatePath("/confirm");
@@ -412,12 +415,64 @@ export async function proposePhotoAssistAction(photoId: string): Promise<{ error
     .eq("id", photoId)
     .eq("organization_id", workspace.organizationId);
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   revalidatePath(`/photos/${photoId}`);
   revalidatePath("/confirm");
   if (row.project_id) {
     revalidatePath(`/projects/${row.project_id}`);
+  }
+  return null;
+}
+
+/**
+ * 写真を消す（撮った本人か管理者）。確定した日報に使っている写真は、先に日報の確定を取り消してもらう。
+ */
+export async function deletePhotoAction(photoId: string): Promise<{ error: string } | null> {
+  const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("photos")
+    .select("id, captured_by, project_id")
+    .eq("id", photoId)
+    .eq("organization_id", workspace.organizationId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  const photo = data as { id: string; captured_by: string | null; project_id: string | null } | null;
+  if (!photo) {
+    return { error: "写真が見つかりません。すでに消されているかもしれません。" };
+  }
+  if (photo.captured_by !== workspace.userId && !isSiteAdmin(workspace)) {
+    return { error: "この写真を消せるのは、撮った人か管理者です。" };
+  }
+  const used = await supabase
+    .from("daily_report_photos")
+    .select("report_id, daily_reports!inner(status, deleted_at)")
+    .eq("photo_id", photoId)
+    .eq("daily_reports.status", "confirmed")
+    .is("daily_reports.deleted_at", null)
+    .limit(1);
+  if ((used.data ?? []).length > 0) {
+    return { error: "確定した日報に使われている写真です。日報の「確定を取り消す」をしてから消してください。" };
+  }
+  const result = await softDeleteRow("photos", photoId, workspace.organizationId, workspace.userId);
+  if (result) {
+    return result;
+  }
+  // 下書きの日報に付いていたら外す（日報の写真の付け外しは本人の権限ではできない人もいるため、サーバーの権限で）
+  await createAdminSupabaseClient()
+    ?.from("daily_report_photos")
+    .delete()
+    .eq("photo_id", photoId)
+    .eq("organization_id", workspace.organizationId);
+  revalidatePath("/photos");
+  if (photo.project_id) {
+    revalidatePath(`/projects/${photo.project_id}`);
+    revalidatePath(`/sites/${photo.project_id}`);
   }
   return null;
 }

@@ -74,9 +74,12 @@ export function summarizeAttendance(records: readonly WorkRecord[]): WorkerAtten
     site.days = siteDates.size;
   }
   return [...byWorker.values()]
-    .map(({ dates, siteDates: _siteDates, ...worker }) => ({
-      ...worker,
-      days: dates.size,
+    .map((worker): WorkerAttendance => ({
+      workerId: worker.workerId,
+      workerName: worker.workerName,
+      days: worker.dates.size,
+      minutes: worker.minutes,
+      openCount: worker.openCount,
       sites: [...worker.sites].sort((a, b) => b.days - a.days || a.siteName.localeCompare(b.siteName, "ja")),
       rows: [...worker.rows].sort((a, b) => a.date.localeCompare(b.date) || (a.startedAt ?? "").localeCompare(b.startedAt ?? "")),
     }))
