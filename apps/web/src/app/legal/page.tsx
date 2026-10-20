@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { KENBEI_MAX_MEMBERS, KENBEI_MONTHLY_PRICE_JPY } from "@kensapo/domain";
 import { KENBEI_LEGAL, KENBEI_SUPPORT_EMAIL, KENBEI_SUPPORT_MAILTO } from "@/features/marketing/contact";
 import { MarketingFrame } from "@/features/marketing/marketing-frame";
+import { INVOICE_DAYS_UNTIL_DUE } from "@/features/billing/invoice-billing";
 
 export const metadata: Metadata = {
   title: "特定商取引法に基づく表記 | KENBEI",
@@ -27,8 +28,14 @@ export default function LegalPage() {
     },
     { label: "販売価格", value: `月額${PRICE}円（税込）。会社ごと・メンバー${KENBEI_MAX_MEMBERS}名まで。` },
     { label: "商品代金以外の必要料金", value: "インターネット接続にかかる通信料はお客様のご負担です。" },
-    { label: "お支払い方法", value: "クレジットカード（Stripeによる決済）" },
-    { label: "お支払い時期", value: "ご契約時に初回分を、以後は毎月同日に自動で請求します。" },
+    {
+      label: "お支払い方法",
+      value: "クレジットカード（Stripeによる決済）、または請求書払い（銀行振込・クレジットカード）",
+    },
+    {
+      label: "お支払い時期",
+      value: `カード払い：ご契約時に初回分を、以後は毎月同日に自動で請求します。無料体験中にご契約いただいた場合は、体験の終了日から請求が始まります。請求書払い：毎月の請求書をメールでお送りします。発行日から${INVOICE_DAYS_UNTIL_DUE}日以内にお支払いください。`,
+    },
     { label: "サービスの提供時期", value: "お支払い手続きの完了後、すぐにご利用いただけます。" },
     {
       label: "無料体験",
