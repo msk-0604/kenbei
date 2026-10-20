@@ -4,7 +4,9 @@ import { weatherLineForPdf } from "@kensapo/domain";
 import { buildReportPdf } from "@/lib/report-pdf";
 import { getWorkspace } from "@/lib/session";
 import { getProject } from "@/features/projects/queries";
-import { listProjectProcesses, listProjectTasks, overallProgress } from "@/features/site-ops/queries";
+import { listProjectProcesses, listProjectTasks } from "@/features/site-ops/queries";
+import { getProgressItems } from "@/features/sites/queries";
+import { siteProgressPercent } from "@/lib/site-rules";
 import { buildPdf, pdfAttachmentHeaders, pdfFailed } from "@/lib/pdf-document";
 
 export async function GET(
@@ -57,9 +59,13 @@ export async function GET(
     if (!project) {
       return NextResponse.json({ error: "not found" }, { status: 404 });
     }
-    const [processes, tasks] = await Promise.all([listProjectProcesses(id), listProjectTasks(id)]);
+    const [processes, tasks, progressItems] = await Promise.all([
+      listProjectProcesses(id),
+      listProjectTasks(id),
+      getProgressItems(id).catch(() => []),
+    ]);
     const pdf = await buildPdf(`現場サマリー ${project.name}`, [
-      `進捗 ${overallProgress(processes)}%`,
+      `進捗 ${siteProgressPercent(progressItems, processes.map((item) => item.percent))}%`,
       ...processes.map((item) => `${item.name} ${item.percent}% ${item.delayed ? "遅延" : ""}`),
       ...tasks.slice(0, 15).map((item) => `${item.title} ${item.status}`),
     ]);

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { isProcessDelayed, isTaskOverdue, projectProgressPercent } from "@kensapo/domain";
+import { isProcessDelayed, isTaskOverdue } from "@kensapo/domain";
 import { tokyoTodayIso } from "@/lib/dates";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { currentOrganizationId } from "@/lib/org-scope";
@@ -145,10 +145,6 @@ type ProcessRow = {
   percent: number;
   status: string;
 };
-
-export function overallProgress(processes: ProcessRecord[]): number {
-  return projectProgressPercent(processes.map((item) => item.percent));
-}
 
 export async function listDelayedProcesses(): Promise<(ProcessRecord & { projectId: string; projectName: string })[]> {
   const organizationId = await currentOrganizationId();

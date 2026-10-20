@@ -16,6 +16,7 @@ import {
 import { confirmReportAction, createTodayReportDraftAction, saveReportAction } from "@/features/reports/actions";
 import type { DailyReportRecord, PreviousReportText } from "@/features/reports/queries";
 import type { PhotoRecord } from "@/features/photos/queries";
+import { defaultReportSiteId, type ReportSiteChoice } from "@/features/reports/site-choices";
 
 import { FormSuccessNotice } from "@/components/action-notice";
 import { TODAY_REPORT_LABEL } from "@/features/today/today-cta";
@@ -56,6 +57,50 @@ export function CreateTodayReportButton({
         {pending ? "日報を作成中…" : label}
       </button>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
+    </div>
+  );
+}
+
+/** 日報一覧から作るとき。現場が複数あれば、どの現場の日報かを先に選んでもらう。 */
+export function CreateTodayReportPicker({ sites }: { sites: ReportSiteChoice[] }) {
+  const [siteId, setSiteId] = useState(() => defaultReportSiteId(sites));
+  const only = sites.length === 1 ? sites[0] : undefined;
+  if (only) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-sm text-zinc-500">現場：{only.name}</p>
+        <CreateTodayReportButton projectId={only.id} />
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
+        どの現場の日報ですか
+        <select
+          value={siteId}
+          onChange={(event) => setSiteId(event.target.value)}
+          className="min-h-12 rounded-xl border border-zinc-200 bg-white px-3 text-base"
+        >
+          <option value="">現場を選んでください</option>
+          {sites.map((site) => (
+            <option key={site.id} value={site.id}>
+              {site.scheduledToday ? `${site.name}（今日の予定あり）` : site.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {siteId ? (
+        <CreateTodayReportButton key={siteId} projectId={siteId} />
+      ) : (
+        <button
+          type="button"
+          disabled
+          className="kb-tap min-h-12 w-full rounded-2xl bg-[var(--kb-ink)] font-medium text-white disabled:opacity-40"
+        >
+          {TODAY_REPORT_LABEL}
+        </button>
+      )}
     </div>
   );
 }

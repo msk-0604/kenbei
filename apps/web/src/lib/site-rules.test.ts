@@ -9,6 +9,7 @@ import {
   oneOffScheduleDates,
   progressItemLabel,
   scheduleSortKey,
+  siteProgressPercent,
   siteStatusLabel,
 } from "./site-rules";
 
@@ -74,6 +75,13 @@ describe("progress checklist", () => {
     expect(choiceFromMark("ok")).toBe("complete");
     expect(choiceFromMark("attention")).toBe("incomplete");
     expect(choiceFromMark(null)).toBe("none");
+  });
+
+  it("site progress uses the checklist first, so every screen shows the same number", () => {
+    expect(siteProgressPercent([{ mark: "ok" }, { mark: null }, { mark: null }], [])).toBe(33);
+    expect(siteProgressPercent([{ mark: "ok" }, { mark: null }], [100, 100])).toBe(50);
+    expect(siteProgressPercent([], [40, 60])).toBe(50);
+    expect(siteProgressPercent([], [])).toBe(0);
   });
 
   it("labels items with their section", () => {
