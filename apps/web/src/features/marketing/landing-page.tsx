@@ -5,6 +5,7 @@ import {
   LANDING_LEAD,
   LANDING_PAINS,
   TRIAL_NO_CARD_LINE,
+  landingPayback,
   landingPlan,
   memberLimitLabel,
   monthlyYenLabel,
@@ -21,7 +22,7 @@ export function MarketingLandingPage() {
       <LandingStructuredData />
       <section className="mt-10 md:mt-16">
         <p className="inline-flex rounded-full bg-white px-3 py-1 text-sm font-medium text-[var(--kb-accent)] ring-1 ring-[var(--kb-line)]">
-          施工管理者・現場監督のための現場事務ツール
+          水道・設備などの専門工事会社のための現場アプリ
         </p>
         <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-tight md:text-6xl">
           現場が終わったら、
@@ -46,7 +47,7 @@ export function MarketingLandingPage() {
 
       <section className="mt-16">
         <h2 className="text-2xl font-semibold tracking-tight">現場の事務、こう変わります</h2>
-        <ul className="mt-5 grid gap-3 md:grid-cols-3">
+        <ul className="mt-5 grid gap-3 md:grid-cols-2">
           {LANDING_PAINS.map((item) => (
             <li key={item.before} className="rounded-3xl bg-white p-5 ring-1 ring-[var(--kb-line)]">
               <p className="text-sm text-zinc-500 line-through decoration-zinc-300">{item.before}</p>
@@ -97,6 +98,8 @@ export function MarketingLandingPage() {
           ))}
         </ol>
       </section>
+
+      <PaybackSection />
 
       <section id="price" className="mt-16 scroll-mt-8">
         <h2 className="text-2xl font-semibold tracking-tight">料金</h2>
@@ -164,5 +167,56 @@ export function MarketingLandingPage() {
         </div>
       </section>
     </MarketingFrame>
+  );
+}
+
+/** 月額が監督の時間に見合うかを、前提つきで見せる */
+function PaybackSection() {
+  const p = landingPayback();
+  const yen = (n: number) => `${Math.round(n).toLocaleString("ja-JP")}円`;
+  return (
+    <section className="mt-16">
+      <h2 className="text-2xl font-semibold tracking-tight">月額{yen(p.priceYen)}で、元は取れる？</h2>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+        事務所に戻ってからの日報（約1時間）が、現場で約15分になるとして計算しました。
+      </p>
+      <div className="mt-5 overflow-hidden rounded-3xl bg-white ring-1 ring-[var(--kb-line)]">
+        <table className="w-full text-left text-sm md:text-base">
+          <thead className="bg-zinc-50 text-zinc-600">
+            <tr>
+              <th className="px-4 py-3 font-medium"></th>
+              <th className="px-4 py-3 font-medium">紙・Excel</th>
+              <th className="px-4 py-3 font-medium text-[var(--kb-accent)]">KENBEI</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--kb-line)]">
+            <tr>
+              <th className="px-4 py-3 font-medium">日報</th>
+              <td className="px-4 py-3 text-zinc-600">事務所で約1時間</td>
+              <td className="px-4 py-3 font-semibold">現場で約15分</td>
+            </tr>
+            <tr>
+              <th className="px-4 py-3 font-medium">写真</th>
+              <td className="px-4 py-3 text-zinc-600">スマホ・LINE から集めて貼る</td>
+              <td className="px-4 py-3 font-semibold">日報に自動で付く</td>
+            </tr>
+            <tr>
+              <th className="px-4 py-3 font-medium">出面</th>
+              <td className="px-4 py-3 text-zinc-600">月末に紙を集めて集計</td>
+              <td className="px-4 py-3 font-semibold">自動で表になる</td>
+            </tr>
+            <tr>
+              <th className="px-4 py-3 font-medium">作業員への連絡</th>
+              <td className="px-4 py-3 text-zinc-600">電話・LINE で一人ずつ</td>
+              <td className="px-4 py-3 font-semibold">予定を入れればスマホに出る</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-4 rounded-2xl bg-sky-50 px-4 py-3 text-base leading-7 text-sky-950">
+        監督1人で、1日{p.minutesPerDay}分×{p.workdays}日＝<strong>月{p.hours}時間</strong>。時給{yen(p.hourlyYen)}なら
+        <strong>約{yen(p.yen)}分</strong>で、月額{yen(p.priceYen)}を上回ります。2人目からは、まるごと浮きます。
+      </p>
+    </section>
   );
 }

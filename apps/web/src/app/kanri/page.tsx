@@ -21,7 +21,9 @@ import { SetupChecklistCard } from "@/features/help/setup-checklist-card";
 import { setupSteps } from "@/features/help/setup-checklist";
 import { getSetupState } from "@/features/help/setup-queries";
 import { contractBadge } from "@/features/kanri/contract-badge";
-import { getKanriTodayStats } from "@/features/kanri/today-stats";
+import { getKanriMonthActivity, getKanriTodayStats } from "@/features/kanri/today-stats";
+import { MonthValueCard } from "@/features/kanri/month-value-card";
+import { tokyoTodayIso } from "@/lib/dates";
 import { SiteProgressSummary } from "@/features/sites/site-progress-summary";
 import { getAllProjectsProgressSummaries } from "@/features/sites/queries";
 import { can, requireSiteAdmin } from "@/lib/authz-guard";
@@ -46,10 +48,11 @@ const TONE: Record<"ok" | "trial" | "warn", string> = {
 export default async function KanriHomePage() {
   const workspace = await requireSiteAdmin();
   const canBilling = can(workspace, "org.manage");
-  const [progressSummaries, setupState, stats, entitlement] = await Promise.all([
+  const [progressSummaries, setupState, stats, monthActivity, entitlement] = await Promise.all([
     getAllProjectsProgressSummaries().catch(() => []),
     getSetupState(workspace.organizationId).catch(() => null),
     getKanriTodayStats(workspace.organizationId).catch(() => null),
+    getKanriMonthActivity(workspace.organizationId).catch(() => null),
     canBilling ? getEntitlement(workspace.organizationId).catch(() => null) : Promise.resolve(null),
   ]);
   const badge = entitlement
@@ -133,6 +136,8 @@ export default async function KanriHomePage() {
           ))}
         </div>
       </section>
+
+      {monthActivity ? <MonthValueCard activity={monthActivity} month={Number(tokyoTodayIso().slice(5, 7))} /> : null}
 
       <section aria-label="登録する">
         <div className="grid grid-cols-2 gap-3">
