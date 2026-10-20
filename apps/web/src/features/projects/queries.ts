@@ -2,6 +2,7 @@ import "server-only";
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { currentOrganizationId } from "@/lib/org-scope";
+import { distinctMemberLabels } from "@/features/workers/member-labels";
 
 export type ProjectListItem = {
   id: string;
@@ -208,11 +209,14 @@ export async function listOrgMembers(): Promise<OrgMemberOption[]> {
   };
   const unwrap = <T,>(value: T | T[] | null): T | null =>
     !value ? null : Array.isArray(value) ? (value[0] ?? null) : value;
-  return ((data as Row[] | null) ?? []).map((row) => ({
+  const members = ((data as Row[] | null) ?? []).map((row) => ({
     membershipId: row.id,
     displayName: unwrap(row.profiles)?.display_name ?? "メンバー",
     roleCode: unwrap(row.roles)?.code ?? "worker",
   }));
+  // 選ぶ画面で同じ名前が並ばないように
+  const labels = distinctMemberLabels(members);
+  return members.map((member, index) => ({ ...member, displayName: labels[index] ?? member.displayName }));
 }
 
 export type CaptureListItem = {

@@ -10,26 +10,34 @@ import { Input } from "@/components/ui/input";
 import type { Worker } from "@/features/sites/types";
 import { Select } from "@/components/ui/input";
 
-function buildInviteMessage(workerName: string, loginCode: string | null): string {
+function buildInviteMessage(workerName: string, loginCode: string | null, hasAccount: boolean): string | null {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const url = loginCode ? `${origin}/login?company=${loginCode}` : `${origin}/login`;
-  return `【KENBEI】${workerName}さんへ\n\n下のURLを開いて、会社の合言葉でログインしてください。\n合言葉が分からない場合は、担当者にお尋ねください。\n\n${url}`;
+  if (hasAccount) {
+    return `【KENBEI】${workerName}さんへ\n\n下のURLを開いて、いつものメールアドレスとパスワードでログインしてください。\n\n${origin}/login`;
+  }
+  if (!loginCode) {
+    return null;
+  }
+  return `【KENBEI】${workerName}さんへ\n\n下のURLを開いて、会社の合言葉でログインしてください。\n合言葉が分からない場合は、担当者にお尋ねください。\n\n${origin}/login?company=${loginCode}`;
 }
 
 function InviteMessageCard({
   workerName,
   loginCode,
+  hasAccount,
   onRegisterAnother,
 }: {
   workerName: string;
   loginCode: string | null;
+  hasAccount: boolean;
   onRegisterAnother: () => void;
 }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
-  const message = buildInviteMessage(workerName, loginCode);
+  const message = buildInviteMessage(workerName, loginCode, hasAccount);
 
   async function handleCopy() {
+    if (!message) return;
     try {
       await navigator.clipboard.writeText(message);
     } catch {
@@ -44,20 +52,41 @@ function InviteMessageCard({
       <p className="rounded-2xl border-2 border-green-200 bg-green-50 px-4 py-3 text-lg font-bold text-green-800">
         {workerName}さんを登録しました
       </p>
-      <section className="space-y-2">
-        <h2 className="text-lg font-bold text-gray-800">
-          LINEなどで送るメッセージ
-        </h2>
-        <p className="text-base text-gray-600">
-          下のメッセージをコピーして、{workerName}さんにLINEなどで送ってください。
-        </p>
-        <pre className="whitespace-pre-wrap rounded-2xl border-2 border-gray-300 bg-white px-5 py-5 text-lg text-gray-900">
-          {message}
-        </pre>
-      </section>
-      <Button type="button" fullWidth size="lg" onClick={() => void handleCopy()}>
-        {copied ? "コピーしました" : "メッセージをコピーする"}
-      </Button>
+      {message ? (
+        <>
+          <section className="space-y-2">
+            <h2 className="text-lg font-bold text-gray-800">
+              LINEなどで送るメッセージ
+            </h2>
+            <p className="text-base text-gray-600">
+              下のメッセージをコピーして、{workerName}さんにLINEなどで送ってください。
+            </p>
+            <pre className="whitespace-pre-wrap rounded-2xl border-2 border-gray-300 bg-white px-5 py-5 text-lg text-gray-900">
+              {message}
+            </pre>
+          </section>
+          <Button type="button" fullWidth size="lg" onClick={() => void handleCopy()}>
+            {copied ? "コピーしました" : "メッセージをコピーする"}
+          </Button>
+        </>
+      ) : (
+        <section className="space-y-3 rounded-2xl border-2 border-amber-200 bg-amber-50 px-5 py-4">
+          <h2 className="text-lg font-bold text-amber-900">
+            {workerName}さんがスマホで見るには、ログインの準備が要ります
+          </h2>
+          <p className="text-base text-amber-900">
+            会社の合言葉を決めるか、{workerName}さんをメールで招待してください。予定はこのまま登録できます。
+          </p>
+          <div className="flex flex-col gap-2">
+            <Button type="button" fullWidth size="lg" onClick={() => router.push("/settings#passcode")}>
+              作業員の合言葉を決める
+            </Button>
+            <Button type="button" variant="secondary" fullWidth size="lg" onClick={() => router.push("/settings/members")}>
+              メールで招待する
+            </Button>
+          </div>
+        </section>
+      )}
       <Button
         type="button"
         variant="secondary"
@@ -162,6 +191,7 @@ export function WorkerForm({
       <InviteMessageCard
         workerName={createdName}
         loginCode={loginCode}
+        hasAccount={Boolean(form.membership_id)}
         onRegisterAnother={() => {
           setCreatedName(null);
           setForm({ name: "", phone: "", membership_id: "", status: "active" });
