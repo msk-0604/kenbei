@@ -140,7 +140,7 @@ export default async function KanriHomePage() {
             <Link
               key={href}
               href={href}
-              className="tap-press flex min-h-14 items-center gap-3 rounded-xl border border-gray-300 bg-white px-4 text-base font-bold text-gray-950"
+              className="tap-press flex min-h-14 items-center gap-2 whitespace-nowrap rounded-xl border border-gray-300 bg-white px-3 text-base font-bold text-gray-950"
             >
               <Icon className="h-5 w-5 shrink-0 text-gray-700" aria-hidden />
               {label}

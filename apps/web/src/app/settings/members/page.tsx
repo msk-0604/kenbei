@@ -1,7 +1,8 @@
 import { AppShell } from "@/components/app-shell";
 import { PlanBillingPanel } from "@/features/billing/plan-billing-panel";
 import { CompanySettingsForm, InviteMemberForm, MembershipStatusForm, PendingInvitesList } from "@/features/settings/forms";
-import { activeMembershipCount } from "@kensapo/domain";
+import Link from "next/link";
+import { CREW_ROLE_CODE, activeMembershipCount } from "@kensapo/domain";
 import { getCompanySettings, listInvites, listOrganizationMembers } from "@/features/settings/queries";
 import { getAppUrl } from "@/lib/env";
 import { can, requireWorkspace } from "@/lib/authz-guard";
@@ -28,8 +29,11 @@ export default async function SettingsPage() {
     canEditCompany ? getEntitlement(workspace.organizationId) : Promise.resolve(null),
   ]);
   const pendingInvites = invites.filter((invite) => !invite.acceptedAt);
-  const activeMembers = members.filter((member) => member.status === "active");
-  const stoppedMembers = members.filter((member) => member.status === "disabled");
+  // 作業員の共通ログイン（合言葉）は一人の人ではないので、設定の合言葉のところで扱う
+  const crewLogin = members.find((member) => member.roleCode === CREW_ROLE_CODE);
+  const people = members.filter((member) => member.roleCode !== CREW_ROLE_CODE);
+  const activeMembers = people.filter((member) => member.status === "active");
+  const stoppedMembers = people.filter((member) => member.status === "disabled");
   const memberCount = activeMembershipCount(members);
 
   return (
@@ -88,6 +92,15 @@ export default async function SettingsPage() {
                 <MembershipStatusForm membershipId={member.membershipId} nextStatus="active" label="有効にする" />
               </li>
             ))}
+            {crewLogin ? (
+              <li className="rounded-2xl bg-zinc-50 px-4 py-3 text-sm">
+                <p className="font-medium">作業員の共通ログイン（合言葉）</p>
+                <p className="text-zinc-500">{crewLogin.status === "active" ? "使っています" : "使っていません"}</p>
+                <Link href="/settings#passcode" className="mt-1 inline-block text-zinc-700 underline">
+                  合言葉の設定で変える
+                </Link>
+              </li>
+            ) : null}
           </ul>
         </section>
       ) : null}

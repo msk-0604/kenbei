@@ -158,11 +158,12 @@ export function TodayBoard({
               {visit.companyName ? (
                 <p className="mt-2 text-lg text-gray-800">会社：{visit.companyName}</p>
               ) : null}
+              {/* 場所を入れていない・住所と同じときは、同じ文を2回出さない */}
+              {visit.place && visit.place !== visit.address ? (
+                <p className="mt-2 text-lg text-gray-800">場所：{visit.place}</p>
+              ) : null}
               <p className="mt-2 text-lg text-gray-800">
-                場所：{visit.place || "未入力"}
-              </p>
-              <p className="mt-2 text-lg text-gray-800">
-                住所：{visit.address || "未入力"}
+                住所：{visit.address || visit.place || "未入力"}
               </p>
               <p className="mt-3 text-lg font-bold text-gray-950">{isToday ? "今日行う作業" : "この日の作業"}</p>
               <p className="whitespace-pre-wrap text-lg text-gray-800">

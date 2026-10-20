@@ -35,7 +35,7 @@ export default async function ArchivePage({ searchParams }: { searchParams: Prom
 
       <Card>
         <form className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input label="完了日（から）" id="archive-from" type="date" name="from" defaultValue={from ?? ""} />
             <Input label="完了日（まで）" id="archive-to" type="date" name="to" defaultValue={to ?? ""} />
           </div>

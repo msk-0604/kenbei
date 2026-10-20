@@ -68,5 +68,5 @@ export function trialPlanLabel(): string {
 }
 
 export function checkoutButtonLabel(access: BillingAccessKind): string {
-  return access === "trial_active" ? "体験後も続ける（月額18,000円）" : "月額18,000円で契約する";
+  return access === "trial_active" ? "月額18,000円で続ける" : "月額18,000円で契約する";
 }

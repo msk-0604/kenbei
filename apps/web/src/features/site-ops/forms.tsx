@@ -241,7 +241,7 @@ export function CreateProcessForm({ projectId }: { projectId: string }) {
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="projectId" value={projectId} />
       <input name="name" required placeholder="工程名（例: 配管）" className="rounded-xl border border-zinc-200 px-4" />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="text-sm text-zinc-600">
           予定開始
           <input type="date" name="plannedStartOn" className="mt-1 w-full rounded-xl border border-zinc-200 px-3" />
