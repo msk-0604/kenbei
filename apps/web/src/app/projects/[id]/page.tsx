@@ -16,11 +16,9 @@ import { PhotoUploader } from "@/features/photos/uploader";
 import { PhotoThumb } from "@/components/photo-thumb";
 import { listProjectReports } from "@/features/reports/queries";
 import { CreateTodayReportButton } from "@/features/reports/forms";
-import {
-  listProjectProcesses,
-  listProjectTasks,
-  overallProgress,
-} from "@/features/site-ops/queries";
+import { listProjectProcesses, listProjectTasks } from "@/features/site-ops/queries";
+import { getProgressItems } from "@/features/sites/queries";
+import { siteProgressPercent } from "@/lib/site-rules";
 import { CreateProcessForm, CreateTaskForm, ProcessList, TaskList } from "@/features/site-ops/forms";
 import { listProjectDrawings } from "@/features/drawings/queries";
 import { DrawingUploadForm } from "@/features/drawings/upload-form";
@@ -74,10 +72,11 @@ export default async function ProjectDetailPage({
 
   const needAssignments = tab === "overview" || tab === "members";
   const needMembers = tab === "tasks" || tab === "members";
-  const [assignments, members, processes] = await Promise.all([
+  const [assignments, members, processes, progressItems] = await Promise.all([
     needAssignments ? listAssignments(id) : Promise.resolve([]),
     needMembers ? listOrgMembers() : Promise.resolve([]),
     listProjectProcesses(id),
+    getProgressItems(id).catch(() => []),
   ]);
   const manager =
     assignments.find((row) => row.roleInProject === "supervisor" || row.roleInProject === "manager") ??
@@ -94,7 +93,7 @@ export default async function ProjectDetailPage({
         {project.customerName ? ` / ${project.customerName}` : ""}
       </p>
       <p className="text-sm text-zinc-500">{project.address ?? "住所未登録"}</p>
-      <p className="mt-2 text-sm text-zinc-500">全体進捗 {overallProgress(processes)}%</p>
+      <p className="mt-2 text-sm text-zinc-500">全体進捗 {siteProgressPercent(progressItems, processes.map((item) => item.percent))}%</p>
 
       {canPhoto ? (
         <div className="mt-5 grid grid-cols-2 gap-2">

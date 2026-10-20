@@ -9,6 +9,7 @@ import { ScheduleCard } from "@/features/schedules/schedule-card";
 import { WorkerNameList } from "@/components/ui/worker-name-list";
 import { notifyCompanyEvent } from "@/lib/push/client";
 import { groupSchedulesByProject } from "@/features/schedules/group";
+import { todayISO } from "@/lib/site-dates";
 import type { ScheduleWithDetails, SiteOption, Worker } from "@/features/sites/types";
 
 export function ScheduleDayList({
@@ -85,7 +86,7 @@ export function ScheduleDayList({
                 </h2>
                 <div className="mt-3">
                   <p className="mb-2 text-base font-bold text-white/80">
-                    今日の作業員（{group.workerNames.length}人）
+                    {selectedDate === todayISO() ? "今日" : "この日"}の作業員（{group.workerNames.length}人）
                   </p>
                   {group.workerNames.length > 0 ? (
                     <ul className="flex flex-wrap gap-2">

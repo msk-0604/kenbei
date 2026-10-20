@@ -4,23 +4,39 @@ import { EmptyGuide } from "@/components/empty-guide";
 import { AppLink } from "@/components/app-nav";
 import { listRecentReports } from "@/features/reports/queries";
 import { listTodayProjects } from "@/features/today/queries";
-import { CreateTodayReportButton } from "@/features/reports/forms";
-import { requireWorkspace } from "@/lib/authz-guard";
+import { getDaySites, listSites, toSiteOptions } from "@/features/sites/queries";
+import { CreateTodayReportPicker } from "@/features/reports/forms";
+import { reportSiteChoices } from "@/features/reports/site-choices";
+import { isSiteAdmin, requireWorkspace } from "@/lib/authz-guard";
+import { tokyoTodayIso } from "@/lib/dates";
 import { CREATE_PROJECT_PATH } from "@/features/projects/routes";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
   const workspace = await requireWorkspace();
-  const [reports, today] = await Promise.all([listRecentReports(), listTodayProjects(workspace)]);
-  const first = today[0];
+  const isAdmin = isSiteAdmin(workspace);
+  const [reports, today, scheduledToday, allSites] = await Promise.all([
+    listRecentReports(),
+    listTodayProjects(workspace),
+    getDaySites(tokyoTodayIso()).catch(() => []),
+    isAdmin ? listSites().then(toSiteOptions) : Promise.resolve([]),
+  ]);
+  const assigned = today.map((project) => ({ id: project.projectId, name: project.projectName }));
+  // 管理者はどの現場でも選べる。それ以外の人は、これまでどおり自分が入っている現場だけ。
+  const assignedIds = new Set(assigned.map((site) => site.id));
+  const sites = reportSiteChoices({
+    scheduledToday: isAdmin ? scheduledToday : scheduledToday.filter((site) => assignedIds.has(site.id)),
+    assigned,
+    others: allSites,
+  });
 
   return (
     <AppShell>
       <h1 className="text-3xl font-semibold tracking-tight">日報</h1>
-      {first && reports.length > 0 ? (
+      {sites.length > 0 && reports.length > 0 ? (
         <div className="mt-6">
-          <CreateTodayReportButton projectId={first.projectId} />
+          <CreateTodayReportPicker sites={sites} />
         </div>
       ) : null}
       <ul className="mt-6 flex flex-col gap-3">
@@ -41,8 +57,8 @@ export default async function ReportsPage() {
             title="まだ日報がありません"
             body="今日の作業と写真から、日報を作れます。"
             action={
-              first ? (
-                <CreateTodayReportButton projectId={first.projectId} />
+              sites.length > 0 ? (
+                <CreateTodayReportPicker sites={sites} />
               ) : (
                 <AppLink href={CREATE_PROJECT_PATH}>現場を作成</AppLink>
               )

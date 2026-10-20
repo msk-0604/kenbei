@@ -8,6 +8,7 @@ import { normalizePersonName, readPersonName } from "@/lib/person-name";
 import { recordScheduleWork } from "@/features/schedules/record-work";
 import { Button } from "@/components/ui/button";
 import { ActionHint } from "@/components/ui/action-hint";
+import { formatClockTime } from "@/lib/site-dates";
 
 function isMine(worker: TodayWorker, mine: string, usesDeviceName: boolean, membershipId: string): boolean {
   if (!usesDeviceName && membershipId && worker.membershipId === membershipId) {
@@ -163,7 +164,7 @@ export function TodayBoard({
               <p className="mt-2 text-lg text-gray-800">
                 住所：{visit.address || "未入力"}
               </p>
-              <p className="mt-3 text-lg font-bold text-gray-950">今日行う作業</p>
+              <p className="mt-3 text-lg font-bold text-gray-950">{isToday ? "今日行う作業" : "この日の作業"}</p>
               <p className="whitespace-pre-wrap text-lg text-gray-800">
                 {visit.workContent || "作業内容は未入力です"}
               </p>
@@ -184,7 +185,14 @@ export function TodayBoard({
                 </>
               ) : null}
 
-              {showWorkButtons && myWorker ? (
+              {showWorkButtons && myWorker && myWorker.status === "completed" ? (
+                <p className="mt-4 rounded-2xl border-2 border-green-200 bg-green-50 px-4 py-3 text-lg font-bold text-green-800">
+                  作業を終了しました（{formatClockTime(myWorker.actualStartTime) || "—"}〜
+                  {formatClockTime(myWorker.actualEndTime) || "—"}）
+                </p>
+              ) : null}
+
+              {showWorkButtons && myWorker && myWorker.status !== "completed" ? (
                 <div className="mt-4 space-y-3">
                   <div>
                     <Button
@@ -192,11 +200,11 @@ export function TodayBoard({
                       fullWidth
                       size="lg"
                       loading={loadingId === myWorker.scheduleId}
-                      disabled={myWorker.status === "in_progress" || myWorker.status === "completed"}
+                      disabled={myWorker.status === "in_progress"}
                       onClick={() => void record(myWorker.scheduleId, "start")}
                     >
-                      {myWorker.status === "in_progress" || myWorker.status === "completed"
-                        ? "作業中です"
+                      {myWorker.status === "in_progress"
+                        ? `作業中です（${formatClockTime(myWorker.actualStartTime) || "—"}〜）`
                         : "作業を開始する"}
                     </Button>
                     <ActionHint>押すと、今の時刻で開始を記録します</ActionHint>
@@ -208,7 +216,7 @@ export function TodayBoard({
                       fullWidth
                       size="lg"
                       loading={loadingId === myWorker.scheduleId}
-                      disabled={!myWorker.actualStartTime || myWorker.status === "completed"}
+                      disabled={!myWorker.actualStartTime && myWorker.status !== "in_progress"}
                       onClick={() => void record(myWorker.scheduleId, "end")}
                     >
                       作業を終了する

@@ -1,5 +1,6 @@
 /** 画面とテストで共有する、現場・予定・作業工程の業務ルール（kenbei-alpha と同じ判定）。 */
 
+import { projectProgressPercent } from "@kensapo/domain";
 import { dateRangeISO } from "@/lib/site-dates";
 
 // ---- 現場の状態 ------------------------------------------------------------
@@ -133,6 +134,20 @@ export function calcProgressSummary(items: readonly { mark: string | null }[]): 
     pending: total - completed,
     percent: total > 0 ? Math.round((completed / total) * 100) : 0,
   };
+}
+
+/**
+ * 現場の進み具合（%）。現場の画面・現場の詳細タブ・現場サマリー PDF で数字が食い違わないよう、ここで一つに決める。
+ * 工事進行表（チェックリスト）があればそれを使い、なければ工程表（ガントチャート）の平均を使う。
+ */
+export function siteProgressPercent(
+  checklist: readonly { mark: string | null }[],
+  processPercents: readonly number[],
+): number {
+  if (checklist.length > 0) {
+    return calcProgressSummary(checklist).percent;
+  }
+  return projectProgressPercent(processPercents);
 }
 
 export function progressItemLabel(item: { section: string | null; item_name: string }): string {
