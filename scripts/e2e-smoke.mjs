@@ -92,15 +92,19 @@ for (const path of PAGES) {
 }
 
 // 3. 管理画面のカード・ボタンを押して、それぞれの画面が開くか
-await page.goto(`${base}/kanri`, { waitUntil: "load" });
+// 管理画面のカードは読み込みのあとから出てくるので、通信が落ち着くまで待ってから数える
+await page.goto(`${base}/kanri`, { waitUntil: "networkidle" });
 const cardHrefs = await page.$$eval("main a[href^='/']", (as) => [...new Set(as.map((a) => a.getAttribute("href")))]).catch(() => []);
+if (cardHrefs.length < 5) problems.push(`[管理画面] カード・ボタンが ${cardHrefs.length} 個しか見つからない`);
 for (const href of cardHrefs) {
-  await page.goto(`${base}/kanri`, { waitUntil: "load" });
+  await page.goto(`${base}/kanri`, { waitUntil: "networkidle" });
   const link = page.locator(`main a[href="${href}"]`).first();
   if (!(await link.isVisible().catch(() => false))) continue;
-  await Promise.all([page.waitForLoadState("load"), link.click()]).catch((e) => problems.push(`[管理画面] ${href} を押せない: ${e.message.slice(0, 80)}`));
-  const landed = page.url().replace(base, "");
-  if (landed.startsWith("/login") || landed === "/kanri") problems.push(`[管理画面] ${href} を押しても移動しない（${landed}）`);
+  const target = href.split("#")[0];
+  await Promise.all([page.waitForURL((url) => url.pathname + url.search === target, { timeout: 15000 }), link.click()]).catch((e) =>
+    problems.push(`[管理画面] ${href} を押しても移動しない（${page.url().replace(base, "")}）: ${e.message.slice(0, 60)}`),
+  );
+  if (page.url().replace(base, "").startsWith("/login")) problems.push(`[管理画面] ${href} を押したらログイン画面に戻された`);
 }
 
 // 4. 集めた内部リンクが 404 / 500 にならないか（Cookie 付きで確認）
