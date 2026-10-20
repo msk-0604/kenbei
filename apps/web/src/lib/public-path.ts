@@ -14,6 +14,7 @@ export function isAnonymousPublicPath(pathname: string): boolean {
     pathname === "/reset-password" ||
     pathname === "/manifest.webmanifest" ||
     pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
     pathname === "/sw.js"
   ) {
     return true;

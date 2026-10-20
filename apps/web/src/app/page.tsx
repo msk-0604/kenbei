@@ -14,7 +14,13 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "KENBEI | 現場が終わったら、15分で日報まで。月額18,000円",
     description:
       "施工管理者・現場監督向け。写真を撮る、作業にチェック、日報を出すの3ステップ。会社まるごと月額18,000円（税込）、14日間無料。",
+    alternates: { canonical: "/" },
     openGraph: {
+      type: "website",
+      siteName: "KENBEI",
+      locale: "ja_JP",
+      url: "/",
+      images: [{ url: "/og.png", width: 1200, height: 630, alt: "KENBEI 現場が終わったら、15分で日報まで。" }],
       title: "KENBEI | 現場が終わったら、15分で日報まで。月額18,000円",
       description:
         "施工管理者・現場監督向け。写真を撮る、作業にチェック、日報を出すの3ステップ。会社まるごと月額18,000円（税込）、14日間無料。",

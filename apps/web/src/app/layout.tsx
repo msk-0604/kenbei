@@ -11,6 +11,7 @@ import { getEntitlement } from "@/lib/entitlement";
 import { getWorkspace, type Workspace } from "@/lib/session";
 import { isCrewLogin, isSiteAdmin } from "@/lib/authz-guard";
 import "./globals.css";
+import { KENBEI_SITE_URL } from "@/features/marketing/contact";
 
 // iPhoneでホーム画面から起動した直後の画面（オープニングと同じ見た目）。
 // iOSは画面サイズにぴったり合う画像しか使わないため、機種ごとに用意している。
@@ -36,9 +37,18 @@ const startupImage = IPHONE_SCREENS.map(([width, height, ratio]) => ({
 }));
 
 export const metadata: Metadata = {
+  metadataBase: new URL(KENBEI_SITE_URL),
   title: "KENBEI",
   description: "現場の記録から、今日の事務まで。施工管理者のためのKENBEI。",
   applicationName: "KENBEI",
+  // LINE・Facebook・X で URL を送ったときに出る画像
+  openGraph: {
+    type: "website",
+    siteName: "KENBEI",
+    locale: "ja_JP",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "KENBEI 現場が終わったら、15分で日報まで。" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og.png"] },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "32x32" },

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { signUpAction } from "@/features/auth/actions";
 
@@ -20,7 +21,7 @@ export function SignUpForm({ nextPath }: { nextPath?: string }) {
         />
       </label>
       <label className="flex flex-col gap-1 text-sm font-medium">
-        パスワード
+        パスワード（8文字以上）
         <input
           name="password"
           type="password"
@@ -38,6 +39,17 @@ export function SignUpForm({ nextPath }: { nextPath?: string }) {
       >
         {pending ? "作成中…" : "アカウントを作成"}
       </button>
+      <p className="text-xs leading-relaxed text-zinc-500">
+        作成すると、
+        <Link href="/terms" className="underline" target="_blank">
+          利用規約
+        </Link>
+        と
+        <Link href="/privacy" className="underline" target="_blank">
+          プライバシーポリシー
+        </Link>
+        に同意したものとします。
+      </p>
     </form>
   );
 }

@@ -11,12 +11,14 @@ import {
 } from "@/features/marketing/landing-copy";
 import { KENBEI_INCLUDED, dailyPriceLabel } from "@/features/billing/plan-copy";
 import { MarketingCta, MarketingFrame } from "@/features/marketing/marketing-frame";
+import { LandingStructuredData } from "@/features/marketing/structured-data";
 
 export function MarketingLandingPage() {
   const plan = landingPlan();
 
   return (
     <MarketingFrame>
+      <LandingStructuredData />
       <section className="mt-10 md:mt-16">
         <p className="inline-flex rounded-full bg-white px-3 py-1 text-sm font-medium text-[var(--kb-accent)] ring-1 ring-[var(--kb-line)]">
           施工管理者・現場監督のための現場事務ツール

@@ -3,6 +3,8 @@ export const KENBEI_SUPPORT_MAILTO = `mailto:${KENBEI_SUPPORT_EMAIL}`;
 /** Public operator label used on the site. Corporate registry name is not in this repo. */
 export const KENBEI_OPERATOR_NAME = "Stark Lab（スタークラボ）";
 export const KENBEI_OPERATOR_URL = "https://starklab.jp";
+/** 検索・SNS の共有で使う、公開ページの正式な URL */
+export const KENBEI_SITE_URL = "https://app.kenbei.jp";
 
 /**
  * 特定商取引法に基づく表記. Fill in the registered name, address and phone

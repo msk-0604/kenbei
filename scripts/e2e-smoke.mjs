@@ -115,6 +115,18 @@ for (const href of links) {
   if (!r || r.status >= 400) broken.push(`${href} → ${r?.status ?? "通信エラー"}`);
 }
 
+// 5. ログインしていない人が見るページと、検索・SNS の共有に使うファイル
+const PUBLIC = ["/", "/signup", "/help", "/sample", "/legal", "/terms", "/privacy", "/contact", "/robots.txt", "/sitemap.xml", "/og.png"];
+const publicProblems = [];
+for (const path of PUBLIC) {
+  const r = await fetch(base + path, { redirect: "manual" }).catch(() => null);
+  if (!r || r.status !== 200) publicProblems.push(`${path} → ${r?.status ?? "通信エラー"}`);
+}
+const lp = await (await fetch(base + "/").catch(() => null))?.text().catch(() => "");
+for (const needle of ['property="og:image"', 'application/ld+json', 'rel="canonical"']) {
+  if (!lp?.includes(needle)) publicProblems.push(`トップページに ${needle} がない`);
+}
+
 await browser.close();
 
 console.log("\n画面                 状態  表示まで  全体     ボタン");
@@ -129,6 +141,8 @@ console.log(`\n管理画面のカード・ボタン：${cardHrefs.length} 個を
 console.log(`内部リンク：${links.size} 件を確認、壊れたリンク ${broken.length} 件`);
 broken.forEach((b) => console.log(`  壊れたリンク ${b}`));
 console.log(`3秒より遅い画面：${slow.length} 件${slow.length ? "（" + slow.map((r) => r.path).join("、") + "）" : ""}`);
+console.log(`公開ページ・共有用のファイル：${PUBLIC.length} 件を確認、問題 ${publicProblems.length} 件`);
+publicProblems.forEach((p) => console.log(`  ${p}`));
 console.log(`問題：${problems.length} 件`);
 problems.forEach((p) => console.log(`  ${p}`));
-process.exit(problems.length || broken.length ? 1 : 0);
+process.exit(problems.length || broken.length || publicProblems.length ? 1 : 0);
