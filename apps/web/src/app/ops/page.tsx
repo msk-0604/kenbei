@@ -97,7 +97,12 @@ export default async function OpsPage({ searchParams }: { searchParams: Promise<
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-3xl font-bold text-gray-950">運営</h1>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h1 className="text-3xl font-bold text-gray-950">運営</h1>
+          <Link href="/ops/analytics" className="rounded-full bg-gray-950 px-4 py-2 text-sm font-bold text-white">
+            分析（PDCA）を見る →
+          </Link>
+        </div>
         <p className="mt-2 text-gray-700">全社の利用状況。「連絡する」に出た会社へ電話・メールしてください。</p>
       </header>
 
