@@ -119,8 +119,9 @@ function SiteCards({ sites, linkTo }: { sites: SiteCard[]; linkTo: LinkTo }) {
             className="block"
           >
             <Card>
-              <div className="flex items-start justify-between gap-3">
-                <div>
+              {/* スマホでは状態のバッジを上に出し、現場名と住所は横幅いっぱいに使う */}
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                <div className="min-w-0">
                   <h3 className="text-2xl font-bold text-gray-950">{site.name}</h3>
                   {site.primeContractorName ? (
                     <p className="mt-1 text-lg text-gray-800">
@@ -137,7 +138,7 @@ function SiteCards({ sites, linkTo }: { sites: SiteCard[]; linkTo: LinkTo }) {
                     {site.address || "未入力です"}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2 self-start">
                   {site.workDuration === "one_off" ? <OneOffBadge /> : null}
                   <StatusBadge status={site.status} />
                 </div>

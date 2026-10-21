@@ -120,7 +120,10 @@ export async function requestPasswordResetAction(
     redirectTo: `${getAppUrl()}/auth/callback?next=/reset-password`,
   });
   if (error) {
-    return { error: error.message };
+    if (/after \d+ seconds|rate limit|too many/i.test(error.message)) {
+      return { error: "続けて送ろうとしたため止めました。1分ほど待ってから、もう一度お試しください。" };
+    }
+    return { error: "メールを送れませんでした。メールアドレスを確かめて、もう一度お試しください。" };
   }
   return { ok: true };
 }
@@ -142,7 +145,13 @@ export async function updatePasswordAction(
   }
   const { error } = await supabase.auth.updateUser({ password });
   if (error) {
-    return { error: error.message };
+    if (/different from the old|same password/i.test(error.message)) {
+      return { error: "前と同じパスワードは使えません。別のパスワードにしてください。" };
+    }
+    if (/weak|at least/i.test(error.message)) {
+      return { error: "パスワードが簡単すぎます。英字と数字を混ぜて8文字以上にしてください。" };
+    }
+    return { error: "パスワードを変えられませんでした。もう一度、再設定のメールからやり直してください。" };
   }
   redirect("/");
 }

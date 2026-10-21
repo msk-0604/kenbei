@@ -6,6 +6,7 @@ import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-g
 import { formString } from "@/lib/form";
 import { drawingStoragePath } from "@/lib/storage-paths";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { toUserActionError } from "@/lib/user-error";
 
 export async function uploadProjectDrawingAction(
   _prev: { error: string } | null,
@@ -77,7 +78,7 @@ export async function uploadProjectDrawingAction(
     upsert: false,
   });
   if (upload.error) {
-    return { error: upload.error.message };
+    return { error: toUserActionError(upload.error.message, "保存") };
   }
   if (plan.markPreviousLatestFalse && latest) {
     const { error } = await supabase
@@ -86,7 +87,7 @@ export async function uploadProjectDrawingAction(
       .eq("id", latest.id)
       .eq("organization_id", workspace.organizationId);
     if (error) {
-      return { error: error.message };
+      return { error: toUserActionError(error.message, "保存") };
     }
   }
   const { error } = await supabase.from("documents").insert({
@@ -108,7 +109,7 @@ export async function uploadProjectDrawingAction(
     created_by: workspace.userId,
   });
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   revalidatePath(`/projects/${projectId}`);
   return null;

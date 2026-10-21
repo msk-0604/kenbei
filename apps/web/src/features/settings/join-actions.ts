@@ -25,6 +25,7 @@ import { getWorkspace, hasOrganization } from "@/lib/session";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toUserActionError } from "@/lib/user-error";
 
 function inviteStateError(state: string | null | undefined): string | null {
   if (state === "used") {
@@ -124,7 +125,7 @@ export async function joinSignupAction(
     if (/already|registered|exists/i.test(error.message)) {
       return { error: inviteAccountExistsMessage() };
     }
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   redirect(
     inviteCheckEmailPath({
@@ -181,7 +182,7 @@ async function redeemInviteSignupAndJoin(input: {
     if (/already|registered|exists/i.test(created.error.message)) {
       return { error: inviteAccountExistsMessage() };
     }
-    return { error: created.error.message };
+    return { error: toUserActionError(created.error.message, "保存") };
   }
 
   const supabase = await createServerSupabaseClient();
@@ -190,7 +191,7 @@ async function redeemInviteSignupAndJoin(input: {
     password: input.password,
   });
   if (signed.error) {
-    return { error: signed.error.message };
+    return { error: toUserActionError(signed.error.message, "保存") };
   }
   const accepted = await acceptInviteForCurrentUser(input.token);
   if ("error" in accepted) {

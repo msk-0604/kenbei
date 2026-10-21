@@ -6,6 +6,7 @@ import { formOptionalDate, formString } from "@/lib/form";
 import { toUserActionError } from "@/lib/user-error";
 import { notifyWorkspaceMembers, listMemberProfileIdsWithPermission, profileIdForMembership } from "@/lib/notifications";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { softDeleteRow } from "@/lib/soft-delete";
 
 export async function createTaskAction(
   _prev: { error: string } | null,
@@ -147,7 +148,7 @@ export async function createProcessAction(
     updated_by: workspace.userId,
   });
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   revalidatePath(`/projects/${projectId}`);
   return null;
@@ -182,7 +183,7 @@ export async function updateProcessAction(
     .eq("id", processId)
     .eq("organization_id", workspace.organizationId);
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/");
@@ -233,9 +234,41 @@ export async function createProposedTasksAction(
     })),
   );
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   revalidatePath(`/projects/${projectId}`);
   revalidatePath("/");
   return { created: titles.length };
+}
+
+/** タスクを消す（作った人か、現場を変更できる人） */
+export async function deleteTaskAction(taskId: string): Promise<{ error: string } | null> {
+  const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("project_tasks")
+    .select("id, project_id, created_by")
+    .eq("id", taskId)
+    .eq("organization_id", workspace.organizationId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  const task = data as { id: string; project_id: string; created_by: string | null } | null;
+  if (!task) {
+    return { error: "タスクが見つかりません。すでに消されているかもしれません。" };
+  }
+  if (task.created_by !== workspace.userId && !can(workspace, "project.update")) {
+    return { error: "このタスクを消せるのは、作った人か管理者です。" };
+  }
+  const result = await softDeleteRow("project_tasks", taskId, workspace.organizationId, workspace.userId);
+  if (result) {
+    return result;
+  }
+  revalidatePath(`/projects/${task.project_id}`);
+  revalidatePath("/tasks");
+  revalidatePath("/");
+  return null;
 }

@@ -127,7 +127,8 @@ export default async function ProjectDetailPage({
             </Link>
           ))}
         </div>
-        <div className="-mx-5 flex gap-1 overflow-x-auto px-5 md:mx-0 md:px-0">
+        {/* 小さいスマホでも横にスクロールしなくて済むよう、入りきらなければ折り返す */}
+        <div className="flex flex-wrap gap-1">
           {TABS.filter((item) => !item.primary).map((item) => (
             <Link
               key={item.id}

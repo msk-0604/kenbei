@@ -88,6 +88,7 @@ export type OrganizationMemberRow = {
   profileId: string;
   displayName: string;
   roleName: string;
+  roleCode: string;
   status: "active" | "disabled" | string;
 };
 
@@ -117,6 +118,7 @@ export async function listOrganizationMembers(): Promise<OrganizationMemberRow[]
     profileId: row.profile_id,
     displayName: one(row.profiles)?.display_name ?? "メンバー",
     roleName: memberFacingRoleLabel(one(row.roles)?.code) || one(row.roles)?.name || "",
+    roleCode: one(row.roles)?.code ?? "",
     status: row.status,
   }));
 }

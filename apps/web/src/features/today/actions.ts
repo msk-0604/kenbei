@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
 import { tokyoTodayIso } from "@/lib/dates";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { toUserActionError } from "@/lib/user-error";
 
 export async function startSiteAction(projectId: string): Promise<{ error: string } | null> {
   const workspace = await requireWorkspace();
@@ -35,7 +36,7 @@ export async function startSiteAction(projectId: string): Promise<{ error: strin
       })
       .eq("id", row.id);
     if (error) {
-      return { error: error.message };
+      return { error: toUserActionError(error.message, "保存") };
     }
   } else {
     const { error } = await supabase.from("site_sessions").insert({
@@ -48,7 +49,7 @@ export async function startSiteAction(projectId: string): Promise<{ error: strin
       updated_by: workspace.userId,
     });
     if (error) {
-      return { error: error.message };
+      return { error: toUserActionError(error.message, "保存") };
     }
   }
   revalidatePath("/");
@@ -74,7 +75,7 @@ export async function endSiteAction(projectId: string): Promise<{ error: string 
     .eq("work_on", today)
     .is("deleted_at", null);
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   revalidatePath("/");
   return null;

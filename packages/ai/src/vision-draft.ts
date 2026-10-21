@@ -1,4 +1,5 @@
 import type { PhotoClassification } from "./contract";
+import { cleanPhotoLabel } from "./photo-label";
 import { fetchWithAiTimeout, isAiTimeoutError, warnAiCallFailure } from "./timeout";
 
 function asClassification(value: unknown, fallback: PhotoClassification): PhotoClassification {
@@ -7,15 +8,15 @@ function asClassification(value: unknown, fallback: PhotoClassification): PhotoC
   }
   const record = value as Record<string, unknown>;
   const tags = Array.isArray(record.tags)
-    ? record.tags.filter((tag): tag is string => typeof tag === "string").slice(0, 8)
+    ? record.tags.filter((tag): tag is string => typeof tag === "string" && cleanPhotoLabel(tag) !== undefined).slice(0, 8)
     : fallback.tags;
   const confidence = typeof record.confidence === "number" ? record.confidence : fallback.confidence;
   return {
     categoryKey: typeof record.categoryKey === "string" ? record.categoryKey : fallback.categoryKey,
-    workType: typeof record.workType === "string" ? record.workType : fallback.workType,
-    locationSpot: typeof record.locationSpot === "string" ? record.locationSpot : fallback.locationSpot,
-    floor: typeof record.floor === "string" ? record.floor : fallback.floor,
-    area: typeof record.area === "string" ? record.area : fallback.area,
+    workType: typeof record.workType === "string" ? cleanPhotoLabel(record.workType) : fallback.workType,
+    locationSpot: typeof record.locationSpot === "string" ? cleanPhotoLabel(record.locationSpot) : fallback.locationSpot,
+    floor: typeof record.floor === "string" ? cleanPhotoLabel(record.floor) : fallback.floor,
+    area: typeof record.area === "string" ? cleanPhotoLabel(record.area) : fallback.area,
     description: typeof record.description === "string" ? record.description : fallback.description,
     tags: tags.length > 0 ? tags : fallback.tags,
     confidence: Math.min(1, Math.max(0, confidence)),

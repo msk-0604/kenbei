@@ -9,7 +9,7 @@ import { ScheduleCard } from "@/features/schedules/schedule-card";
 import { WorkerNameList } from "@/components/ui/worker-name-list";
 import { notifyCompanyEvent } from "@/lib/push/client";
 import { groupSchedulesByProject } from "@/features/schedules/group";
-import { todayISO } from "@/lib/site-dates";
+import { addDaysISO, todayISO } from "@/lib/site-dates";
 import type { ScheduleWithDetails, SiteOption, Worker } from "@/features/sites/types";
 
 export function ScheduleDayList({
@@ -29,6 +29,15 @@ export function ScheduleDayList({
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState<ScheduleWithDetails | null>(null);
+  const [copying, setCopying] = useState<(ScheduleWithDetails & { workerIds: string[] }) | null>(null);
+
+  function startCopy(s: ScheduleWithDetails) {
+    // 同じグループ（一緒に登録した作業員）は全員そのままコピーする
+    const sameGroup = s.group_id ? schedules.filter((other) => other.group_id === s.group_id) : [s];
+    const workerIds = [...new Set(sameGroup.map((other) => other.worker_id).filter((id): id is string => Boolean(id)))];
+    setEditing(null);
+    setCopying({ ...s, workerIds });
+  }
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const grouped = groupSchedulesByProject(schedules);
 
@@ -54,6 +63,23 @@ export function ScheduleDayList({
     });
     if (editing?.id === id) setEditing(null);
     router.refresh();
+  }
+
+  if (copying) {
+    return (
+      <section className="mb-8">
+        <h2 className="mb-2 text-lg font-bold text-gray-800">ほかの日にもコピーする</h2>
+        <p className="mb-4 text-base text-gray-600">日付を選んで登録してください。ほかの内容も、ここで変えられます。</p>
+        <ScheduleForm
+          organizationId={organizationId}
+          workers={workers}
+          projects={projects}
+          template={copying}
+          defaultDate={addDaysISO(copying.schedule_date, 1)}
+          onCancel={() => setCopying(null)}
+        />
+      </section>
+    );
   }
 
   if (editing) {
@@ -121,6 +147,7 @@ export function ScheduleDayList({
                       hideProjectName
                       canManage={canManage}
                       onEdit={() => setEditing(s)}
+                      onCopy={() => startCopy(s)}
                       onDelete={() => handleDelete(s.id)}
                       deleting={deletingId === s.id}
                     />

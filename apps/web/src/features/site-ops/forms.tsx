@@ -6,6 +6,7 @@ import { TASK_STATUS_LABELS, PROCESS_STATUS_LABELS, PRIORITY_LABELS, TASK_QUICK_
 import {
   createProcessAction,
   createTaskAction,
+  deleteTaskAction,
   updateProcessAction,
   updateTaskStatusAction,
 } from "@/features/site-ops/actions";
@@ -231,6 +232,26 @@ function TaskStatusCard({ task }: { task: TaskRecord }) {
         {success ? <p className="col-span-full text-sm font-medium text-emerald-800">{success}</p> : null}
         {error ? <p className="col-span-full text-sm text-red-600">{error}</p> : null}
       </div>
+      <div className="mt-2 text-right">
+        <button
+          type="button"
+          disabled={Boolean(pendingStatus)}
+          className="min-h-10 px-2 text-sm text-zinc-500 underline"
+          onClick={() => {
+            if (!window.confirm(`「${task.title}」を消しますか？`)) return;
+            setError(null);
+            void deleteTaskAction(task.id).then((result) => {
+              if (result?.error) {
+                setError(result.error);
+                return;
+              }
+              router.refresh();
+            });
+          }}
+        >
+          このタスクを消す
+        </button>
+      </div>
     </li>
   );
 }
@@ -241,7 +262,7 @@ export function CreateProcessForm({ projectId }: { projectId: string }) {
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="projectId" value={projectId} />
       <input name="name" required placeholder="工程名（例: 配管）" className="rounded-xl border border-zinc-200 px-4" />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="text-sm text-zinc-600">
           予定開始
           <input type="date" name="plannedStartOn" className="mt-1 w-full rounded-xl border border-zinc-200 px-3" />

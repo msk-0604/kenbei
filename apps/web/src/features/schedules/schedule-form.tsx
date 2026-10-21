@@ -24,6 +24,7 @@ export function ScheduleForm({
   workers,
   projects,
   schedule,
+  template,
   defaultDate,
   onCancel,
   onDelete,
@@ -33,6 +34,8 @@ export function ScheduleForm({
   workers: Worker[];
   projects: SiteOption[];
   schedule?: ScheduleWithDetails;
+  /** コピーして新しく作るときの元の予定（作業員は workerIds を全員分） */
+  template?: ScheduleWithDetails & { workerIds: string[] };
   defaultDate?: string;
   onCancel?: () => void;
   onDelete?: () => void;
@@ -41,7 +44,8 @@ export function ScheduleForm({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const initialProjectId = schedule?.project_id ?? "";
+  const source = schedule ?? template;
+  const initialProjectId = source?.project_id ?? "";
   const initialProject = projects.find((p) => p.id === initialProjectId);
   const [projectName, setProjectName] = useState(siteLabel(initialProject));
   const [showProjectSuggestions, setShowProjectSuggestions] = useState(false);
@@ -49,13 +53,13 @@ export function ScheduleForm({
   const [form, setForm] = useState({
     schedule_date: schedule?.schedule_date ?? defaultDate ?? todayISO(),
     project_id: initialProjectId,
-    worker_ids: schedule?.worker_id ? [schedule.worker_id] : ([] as string[]),
-    client_company_name: schedule?.client_company_name ?? "",
-    location: schedule?.location ?? initialProject?.address ?? "",
-    work_content: schedule?.work_content ?? "",
-    scheduled_start_time: schedule?.scheduled_start_time?.slice(0, 5) ?? "08:30",
-    scheduled_end_time: schedule?.scheduled_end_time?.slice(0, 5) ?? "17:00",
-    memo: schedule?.memo ?? "",
+    worker_ids: template ? template.workerIds : schedule?.worker_id ? [schedule.worker_id] : ([] as string[]),
+    client_company_name: source?.client_company_name ?? "",
+    location: source?.location ?? initialProject?.address ?? "",
+    work_content: source?.work_content ?? "",
+    scheduled_start_time: source?.scheduled_start_time?.slice(0, 5) ?? "08:30",
+    scheduled_end_time: source?.scheduled_end_time?.slice(0, 5) ?? "17:00",
+    memo: source?.memo ?? "",
   });
 
   function selectProject(projectId: string) {

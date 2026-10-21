@@ -6,6 +6,7 @@ import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-g
 import { formString } from "@/lib/form";
 import { documentStoragePath } from "@/lib/storage-paths";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { toUserActionError } from "@/lib/user-error";
 
 export async function uploadDocumentAction(
   _prev: { error: string } | null,
@@ -43,7 +44,7 @@ export async function uploadDocumentAction(
     upsert: false,
   });
   if (upload.error) {
-    return { error: upload.error.message };
+    return { error: toUserActionError(upload.error.message, "保存") };
   }
   const { error } = await supabase.from("documents").insert({
     id: documentId,
@@ -56,7 +57,7 @@ export async function uploadDocumentAction(
     created_by: workspace.userId,
   });
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   revalidatePath("/knowledge");
   return null;

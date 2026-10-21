@@ -33,19 +33,19 @@ export function ScheduleMonthCalendar({
         <button
           type="button"
           onClick={() => goMonth(-1)}
-          className="tap-press min-h-[3.5rem] rounded-xl border-2 border-gray-200 px-3 text-lg font-bold text-navy-900"
+          className="tap-press min-h-[3.5rem] rounded-xl border-2 border-gray-200 shrink-0 whitespace-nowrap px-3 text-lg font-bold text-navy-900"
         >
-          前の月
+          ‹ 前月
         </button>
-        <p className="text-center text-xl font-bold text-navy-950">
+        <p className="whitespace-nowrap text-center text-xl font-bold text-navy-950">
           {formatYearMonth(selectedDate)}
         </p>
         <button
           type="button"
           onClick={() => goMonth(1)}
-          className="tap-press min-h-[3.5rem] rounded-xl border-2 border-gray-200 px-3 text-lg font-bold text-navy-900"
+          className="tap-press min-h-[3.5rem] rounded-xl border-2 border-gray-200 shrink-0 whitespace-nowrap px-3 text-lg font-bold text-navy-900"
         >
-          次の月
+          翌月 ›
         </button>
       </div>
 

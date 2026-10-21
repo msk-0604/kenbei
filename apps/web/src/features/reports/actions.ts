@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-guard";
+import { assertOrganizationWritable, can, isSiteAdmin, requireWorkspace } from "@/lib/authz-guard";
+import { softDeleteRow } from "@/lib/soft-delete";
 import { tokyoTodayIso } from "@/lib/dates";
 import { formNumber, formString } from "@/lib/form";
 import { toUserActionError } from "@/lib/user-error";
@@ -231,6 +232,67 @@ export async function confirmReportAction(reportId: string): Promise<{ error: st
   }
   revalidatePath("/");
   revalidatePath("/confirm");
+  revalidatePath(`/reports/${reportId}`);
+  return null;
+}
+
+/** 日報の下書きを消す（作った人か管理者）。確定した日報は、先に確定を取り消す。 */
+export async function deleteReportDraftAction(reportId: string): Promise<{ error: string } | null> {
+  const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from("daily_reports")
+    .select("id, status, created_by, project_id")
+    .eq("id", reportId)
+    .eq("organization_id", workspace.organizationId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  const report = data as { id: string; status: string; created_by: string | null; project_id: string } | null;
+  if (!report) {
+    return { error: "日報が見つかりません。すでに消されているかもしれません。" };
+  }
+  if (report.status !== "draft") {
+    return { error: "確定した日報は消せません。管理者が「確定を取り消す」をしてから消してください。" };
+  }
+  if (report.created_by !== workspace.userId && !isSiteAdmin(workspace)) {
+    return { error: "この下書きを消せるのは、作った人か管理者です。" };
+  }
+  const result = await softDeleteRow("daily_reports", reportId, workspace.organizationId, workspace.userId);
+  if (result) {
+    return result;
+  }
+  revalidatePath("/reports");
+  revalidatePath(`/projects/${report.project_id}`);
+  return null;
+}
+
+/** 確定した日報を下書きに戻して直せるようにする（管理者だけ）。直したら、もう一度確定する。 */
+export async function reopenReportAction(reportId: string): Promise<{ error: string } | null> {
+  const workspace = await requireWorkspace();
+  const locked = await assertOrganizationWritable(workspace.organizationId);
+  if (locked) {
+    return locked;
+  }
+  if (!isSiteAdmin(workspace)) {
+    return { error: "確定の取り消しは管理者だけができます。" };
+  }
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("daily_reports")
+    .update({ status: "draft", confirmed_at: null, confirmed_by: null, updated_by: workspace.userId })
+    .eq("id", reportId)
+    .eq("organization_id", workspace.organizationId)
+    .eq("status", "confirmed")
+    .select("id")
+    .maybeSingle();
+  if (error || !data) {
+    return { error: toUserActionError(error?.message, "確定の取り消しが") };
+  }
+  revalidatePath("/reports");
   revalidatePath(`/reports/${reportId}`);
   return null;
 }

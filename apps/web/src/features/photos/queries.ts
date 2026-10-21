@@ -3,6 +3,7 @@ import "server-only";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { signedPhotoUrls } from "@/lib/signed-urls";
 import { currentOrganizationId } from "@/lib/org-scope";
+import { cleanPhotoLabel } from "@kensapo/ai";
 
 export type PhotoRecord = {
   id: string;
@@ -77,8 +78,8 @@ function mapPhoto(row: PhotoRow, urls: Map<string, string>): PhotoRecord {
     createdAt: row.created_at,
     capturedBy: row.captured_by,
     capturedByName: one(row.profiles)?.display_name ?? null,
-    workTypeKey: row.work_type_key,
-    locationSpot: row.location_spot,
+    workTypeKey: cleanPhotoLabel(row.work_type_key) ?? null,
+    locationSpot: cleanPhotoLabel(row.location_spot) ?? null,
     floor: row.floor,
     area: row.area,
     comment: row.comment,

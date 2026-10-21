@@ -5,6 +5,7 @@ import { afterOrganizationCreated } from "@/features/sales/after-org-create";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { normalizeDisplayName } from "@/features/profile/display-name";
 import { tradeTemplate } from "@/lib/trade-progress-templates";
+import { toUserActionError } from "@/lib/user-error";
 
 function formString(formData: FormData, key: string): string {
   const value = formData.get(key);
@@ -35,7 +36,7 @@ export async function createOrganizationAction(
 
   const { data: organizationId, error } = await supabase.rpc("create_organization", { p_name: name });
   if (error) {
-    return { error: error.message };
+    return { error: toUserActionError(error.message, "保存") };
   }
   if (typeof organizationId === "string") {
     await afterOrganizationCreated({ organizationId, email: user.email, userMetadata: user.user_metadata });

@@ -12,6 +12,7 @@ import { assertOrganizationWritable, can, requireWorkspace } from "@/lib/authz-g
 import { tokyoTodayIso } from "@/lib/dates";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { AI_TIMEOUT_USER_MESSAGE, isAiTimeoutError } from "@kensapo/ai";
+import { toUserActionError } from "@/lib/user-error";
 
 function asJsonValue(value: unknown): JsonValue {
   if (
@@ -89,7 +90,7 @@ export async function submitVoiceCaptureAction(formData: FormData): Promise<{ er
     updated_by: workspace.userId,
   });
   if (insertCapture.error) {
-    return { error: insertCapture.error.message };
+    return { error: toUserActionError(insertCapture.error.message, "保存") };
   }
 
   const ai = getAiService();
@@ -131,7 +132,7 @@ export async function submitVoiceCaptureAction(formData: FormData): Promise<{ er
     })
     .eq("id", captureId);
   if (captureUpdate.error) {
-    return { error: captureUpdate.error.message };
+    return { error: toUserActionError(captureUpdate.error.message, "保存") };
   }
 
   const fieldRows = structured.fields.map((item) => {
@@ -150,7 +151,7 @@ export async function submitVoiceCaptureAction(formData: FormData): Promise<{ er
   if (fieldRows.length > 0) {
     const fieldsInsert = await supabase.from("capture_fields").insert(fieldRows);
     if (fieldsInsert.error) {
-      return { error: fieldsInsert.error.message };
+      return { error: toUserActionError(fieldsInsert.error.message, "保存") };
     }
   }
 
@@ -214,7 +215,7 @@ export async function confirmFieldAction(formData: FormData): Promise<{ error: s
       })
       .eq("id", fieldId);
     if (error) {
-      return { error: error.message };
+      return { error: toUserActionError(error.message, "保存") };
     }
   } else if (decision === "correct") {
     if (!correction) {
@@ -232,7 +233,7 @@ export async function confirmFieldAction(formData: FormData): Promise<{ error: s
       })
       .eq("id", fieldId);
     if (error) {
-      return { error: error.message };
+      return { error: toUserActionError(error.message, "保存") };
     }
   } else if (decision === "skip") {
     revalidatePath(`/captures/${field.capture_id}/confirm`);

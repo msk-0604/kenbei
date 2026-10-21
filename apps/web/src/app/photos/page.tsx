@@ -65,9 +65,15 @@ export default async function PhotosPage({
           <input name="workType" defaultValue={params.workType ?? ""} placeholder="工種" className="rounded-xl border border-zinc-200 px-4" />
           <input name="location" defaultValue={params.location ?? ""} placeholder="施工箇所" className="rounded-xl border border-zinc-200 px-4" />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <input type="date" name="from" defaultValue={params.from ?? ""} className="rounded-xl border border-zinc-200 px-3" />
-          <input type="date" name="to" defaultValue={params.to ?? ""} className="rounded-xl border border-zinc-200 px-3" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="flex flex-col gap-1 text-sm text-zinc-600">
+            撮影日（から）
+            <input type="date" name="from" defaultValue={params.from ?? ""} className="rounded-xl border border-zinc-200 px-3" />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-zinc-600">
+            撮影日（まで）
+            <input type="date" name="to" defaultValue={params.to ?? ""} className="rounded-xl border border-zinc-200 px-3" />
+          </label>
         </div>
         <button type="submit" className="kb-tap rounded-2xl bg-[var(--kb-ink)] font-medium text-white">
           探す

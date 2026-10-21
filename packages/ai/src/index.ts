@@ -18,6 +18,7 @@ export { createAiService } from "./factory";
 export type { AiServiceOptions } from "./factory";
 export { DEMO_TRANSCRIPT, structureTranscriptHeuristic } from "./heuristic";
 export { classifyPhotoHeuristic } from "./photo-heuristic";
+export { cleanPhotoLabel } from "./photo-label";
 export { draftDailyReportTemplate } from "./report-draft";
 export {
   briefChatSummary,

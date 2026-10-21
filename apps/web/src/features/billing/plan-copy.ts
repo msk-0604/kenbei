@@ -35,6 +35,7 @@ export function dailyPriceLabel(): string {
 export const KENBEI_INCLUDED = [
   "現場・写真・タスク・日報が全部使える",
   "日報はA4・PDFでそのまま提出",
+  "作業員の出面表を Excel・PDF で",
   `メンバー${KENBEI_MAX_MEMBERS}名まで追加料金なし`,
   "スマホのブラウザからすぐ使える",
   "いつでも期末で解約できる",
@@ -68,5 +69,5 @@ export function trialPlanLabel(): string {
 }
 
 export function checkoutButtonLabel(access: BillingAccessKind): string {
-  return access === "trial_active" ? "体験後も続ける（月額18,000円）" : "月額18,000円で契約する";
+  return access === "trial_active" ? "月額18,000円で続ける" : "月額18,000円で契約する";
 }

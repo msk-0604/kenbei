@@ -58,3 +58,36 @@ export async function getKanriTodayStats(organizationId: string, now = new Date(
     openTasks: tasks.count ?? 0,
   };
 }
+
+/** 今月（日本時間の1日から今日まで）の日報・写真・出面（作業開始を押した予定）の数 */
+export async function getKanriMonthActivity(
+  organizationId: string,
+  now = new Date(),
+): Promise<{ reports: number; photos: number; workdays: number }> {
+  const supabase = await createServerSupabaseClient();
+  const head = { count: "exact" as const, head: true };
+  const today = tokyoTodayIso(now);
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const [reports, photos, workdays] = await Promise.all([
+    supabase
+      .from("daily_reports")
+      .select("id", head)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .gte("work_on", monthStart),
+    supabase
+      .from("photos")
+      .select("id", head)
+      .eq("organization_id", organizationId)
+      .is("deleted_at", null)
+      .gte("created_at", `${monthStart}T00:00:00+09:00`),
+    supabase
+      .from("schedules")
+      .select("id", head)
+      .eq("organization_id", organizationId)
+      .gte("schedule_date", monthStart)
+      .not("worker_id", "is", null)
+      .not("actual_start_time", "is", null),
+  ]);
+  return { reports: reports.count ?? 0, photos: photos.count ?? 0, workdays: workdays.count ?? 0 };
+}
